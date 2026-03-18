@@ -603,11 +603,6 @@ def _persist_to_env(keys: list, data: dict):
         log.error(f"[CONFIG] .env yazma hatası: {e}")
 
 
-@app.route("/api/config/test-mode", methods=["POST"])
-def toggle_test_mode():
-    config.TEST_MODE = not config.TEST_MODE
-    emit_event("test_mode_changed", {"test_mode": config.TEST_MODE})
-    return jsonify({"TEST_MODE": config.TEST_MODE})
 
 
 # ─── STATS ─────────────────────────────────────────────────────
@@ -923,6 +918,9 @@ def send_to_selected():
     if not emails:
         return jsonify({"error": "Email listesi boş"}), 400
 
+    from core.send_engine import SendEngine, EmailMessage
+    send_eng = SendEngine()
+
     sent_count = 0
     errors = 0
     for email in emails:
@@ -932,6 +930,11 @@ def send_to_selected():
                 lead = {"email": email, "company": "", "sector": ""}
 
             lead_dict = dict(lead) if hasattr(lead, 'keys') else lead
+
+            # Duplicate kontrolü
+            if db.is_duplicate_email(email):
+                log.info(f"[SEND-SELECTED] Duplicate: {email} — atlandı")
+                continue
 
             # Draft oluştur
             draft = copywriter.write(lead_dict)
@@ -947,21 +950,41 @@ def send_to_selected():
                 qc = quality.check(draft)
                 score = qc.get("score", 0) if qc else 0
 
-            # TEST modunda gönderme
-            if config.TEST_MODE:
-                log.info(f"[SEND-SELECTED] TEST: {email} — QC: {score} (gönderilmedi)")
-                sent_count += 1
-                continue
+            # A/B test ile konu seç
+            chosen_subject = getattr(draft, 'chosen_subject', None) or getattr(draft, 'subject_a', email)
 
-            # Gönder
-            from core.send_engine import send_engine
-            result = send_engine.send(email, draft)
-            if result:
+            # Draft'ı DB'ye kaydet
+            db.save_draft(email, draft)
+
+            # EmailMessage oluştur ve gönder
+            msg = EmailMessage(
+                to_email=email,
+                to_name=lead_dict.get("company", ""),
+                subject=chosen_subject,
+                html_body=getattr(draft, 'body_html', ''),
+                text_body=getattr(draft, 'body_text', ''),
+                lead_id=email,
+            )
+            result = send_eng.send(msg)
+
+            if result.success:
                 sent_count += 1
-                db.mark_sent(email) if hasattr(db, 'mark_sent') else None
+                # Gönderimi DB'ye logla
+                db.log_sent(
+                    email=email,
+                    company=lead_dict.get("company", ""),
+                    sector=lead_dict.get("sector", ""),
+                    subject=chosen_subject,
+                    method=result.method,
+                    message_id=result.message_id,
+                    test_mode=False,
+                    ab_variant="A",
+                )
                 emit_event("email_sent", {"email": email, "company": lead_dict.get("company", "")})
+                log.info(f"[SEND-SELECTED] ✅ {email} — {result.method}")
             else:
                 errors += 1
+                log.warning(f"[SEND-SELECTED] ❌ {email} — {result.error}")
         except Exception as e:
             log.error(f"[SEND-SELECTED] {email} hatası: {e}")
             errors += 1

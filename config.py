@@ -31,7 +31,7 @@ class Config:
     BCC_EMAIL          = os.getenv("BCC_EMAIL", "sales@fleettrackholland.nl")
 
     # ─── ÇALIŞMA MODU ────────────────────────────────────────────
-    TEST_MODE          = os.getenv("TEST_MODE", "true").lower() == "true"
+    TEST_MODE          = False  # Daima CANLI mod
     HUMAN_REVIEW       = os.getenv("HUMAN_REVIEW", "false").lower() == "true"
     DELAY_MIN          = int(os.getenv("DELAY_MIN", "15"))
     DELAY_MAX          = int(os.getenv("DELAY_MAX", "35"))
@@ -82,11 +82,10 @@ class Config:
         errors = []
         if not self.ANTHROPIC_API_KEY:
             errors.append("ANTHROPIC_API_KEY eksik")
-        if not self.TEST_MODE:
-            if not self.BREVO_API_KEY and not self.BREVO_SMTP_PASS:
-                errors.append("BREVO_API_KEY veya BREVO_SMTP_PASS gerekli")
-            if not self.SENDER_EMAIL:
-                errors.append("SENDER_EMAIL eksik")
+        if not self.BREVO_API_KEY and not self.BREVO_SMTP_PASS:
+            errors.append("BREVO_API_KEY veya BREVO_SMTP_PASS gerekli")
+        if not self.SENDER_EMAIL:
+            errors.append("SENDER_EMAIL eksik")
         return errors
 
 config = Config()

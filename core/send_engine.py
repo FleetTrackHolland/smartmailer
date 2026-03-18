@@ -129,11 +129,6 @@ class SendEngine:
     # ─── ANA GÖNDERIM ─────────────────────────────────────────────
 
     def send(self, msg: EmailMessage) -> SendResult:
-        if config.TEST_MODE:
-            log.info(f"[TEST] → {msg.to_email} | {msg.subject[:60]}")
-            self._daily_sent += 1
-            self._total_sent += 1
-            return SendResult(True, "test-" + msg.lead_id, method="test_mode")
 
         # Warm-up limit kontrolü
         can, reason = self.can_send_today()
