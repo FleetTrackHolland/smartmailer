@@ -1,0 +1,14 @@
+# SmartMailer Ultimate — Bağımlılıklar
+# Kurulum: pip install -r requirements.txt
+
+python-dotenv==1.0.1      # .env dosyası okuma
+anthropic>=0.40.0         # Claude API (mail üretimi)
+sib-api-v3-sdk>=7.6.0    # Brevo e-posta gönderimi
+requests>=2.31.0          # HTTP çağrıları
+jinja2>=3.1.0             # HTML email şablonu
+flask>=3.0.0              # Web dashboard
+flask-cors>=4.0.0         # CORS desteği
+flask-socketio>=5.3.0     # Real-time WebSocket
+beautifulsoup4>=4.12.0    # HTML parsing (FleetTrack CRM)
+lxml>=5.0.0               # Hızlı HTML parser
+dnspython>=2.4.0          # MX record doğrulama

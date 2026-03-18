@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartMailer Ultimate — AI-Powered Lead Discovery & Campaign Engine</title>
+    <meta name="description" content="SmartMailer Ultimate: AI destekli lead keşfi, kampanya yönetimi ve otomatik email gönderim platformu. 10+ kaynaktan lead bulma, Claude AI ile kişiselleştirilmiş email yazma.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css?v=3">
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<nav class="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-icon">⚡</div>
+        <div><h1>SmartMailer</h1><span class="brand-sub">ULTIMATE</span></div>
+    </div>
+    <div class="sidebar-nav">
+        <button class="nav-btn active" data-tab="dashboard"><span class="nav-icon">📊</span><span class="nav-text">Dashboard</span></button>
+        <button class="nav-btn" data-tab="leads"><span class="nav-icon">🔍</span><span class="nav-text">Lead Keşif</span></button>
+        <button class="nav-btn" data-tab="sentmails"><span class="nav-icon">📬</span><span class="nav-text">Giden Mailler</span></button>
+        <button class="nav-btn" data-tab="followup"><span class="nav-icon">🔄</span><span class="nav-text">Follow-Up Engine</span></button>
+        <button class="nav-btn" data-tab="campaign"><span class="nav-icon">🚀</span><span class="nav-text">Kampanya</span></button>
+        <button class="nav-btn" data-tab="agents"><span class="nav-icon">🤖</span><span class="nav-text">Agent'lar</span></button>
+        <button class="nav-btn" data-tab="automation"><span class="nav-icon">⚙️</span><span class="nav-text">Otomasyon</span></button>
+        <button class="nav-btn" data-tab="responses"><span class="nav-icon">📥</span><span class="nav-text">Yanıtlar</span></button>
+        <button class="nav-btn" data-tab="settings"><span class="nav-icon">🔧</span><span class="nav-text">Ayarlar</span></button>
+    </div>
+    <div class="sidebar-footer">
+        <div class="mode-badge" id="mode-badge" onclick="toggleSystemMode()" title="Sistemi başlat/durdur — Tüm otomasyonu kontrol eder">
+            <span class="mode-dot"></span>
+            <span id="mode-text">TEST MODU</span>
+            <span class="mode-toggle-hint">▶</span>
+        </div>
+        <div class="mode-detail">Tıklayarak mod değiştir</div>
+    </div>
+</nav>
+
+<!-- ═══ MAIN CONTENT ═══ -->
+<main class="main-content">
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 1: DASHBOARD
+     ═══════════════════════════════════════════════════════════ -->
+<div id="tab-dashboard" class="tab-content active">
+    <div class="page-header">
+        <div><h2>Komut Merkezi</h2><p class="page-desc">SmartMailer Ultimate — Tüm sistemin genel durumu</p></div>
+        <div class="header-actions"><span class="last-update" id="last-update"></span></div>
+    </div>
+
+    <div class="stats-grid">
+        <div class="stat-card gradient-1" onclick="switchTab('leads')"><div class="stat-icon">👥</div><div class="stat-info"><span class="stat-value" id="stat-leads">0</span><span class="stat-label">Toplam Lead</span></div><span class="stat-arrow">→</span></div>
+        <div class="stat-card gradient-2" onclick="switchTab('sentmails')"><div class="stat-icon">📧</div><div class="stat-info"><span class="stat-value" id="stat-sent">0</span><span class="stat-label">Gönderilen</span></div><span class="stat-arrow">→</span></div>
+        <div class="stat-card gradient-5" onclick="switchTab('responses')"><div class="stat-icon">👁</div><div class="stat-info"><span class="stat-value" id="stat-opens">0</span><span class="stat-label">Açılma</span></div><span class="stat-arrow">→</span></div>
+        <div class="stat-card gradient-3" onclick="switchTab('responses')"><div class="stat-icon">🔥</div><div class="stat-info"><span class="stat-value" id="stat-hot">0</span><span class="stat-label">Hot Leads</span></div><span class="stat-arrow">→</span></div>
+        <div class="stat-card gradient-4" onclick="switchTab('campaign')"><div class="stat-icon">📈</div><div class="stat-info"><span class="stat-value" id="stat-openrate">0%</span><span class="stat-label">Açılma Oranı</span></div><span class="stat-arrow">→</span></div>
+        <div class="stat-card gradient-6" onclick="switchTab('followup')"><div class="stat-icon">🔄</div><div class="stat-info"><span class="stat-value" id="stat-followups">0</span><span class="stat-label">Follow-Up</span></div><span class="stat-arrow">→</span></div>
+    </div>
+
+    <!-- Brevo Spam-Safe Info -->
+    <div class="card card-info">
+        <div class="card-header">
+            <h3>📧 Brevo Email Gönderim Durumu</h3>
+            <span class="info-tooltip" data-tip="Brevo Free Plan: Günlük 300 email limiti. Spam'a düşmemek için önerilen: 80-100 email/gün. IP warmup dönemi (ilk 2 hafta) günlük 20-40 ile başlayın, yavaş artırın.">ⓘ</span>
+        </div>
+        <div class="info-grid">
+            <div class="info-item"><span class="info-label">Günlük Limit</span><span class="info-value" style="color:var(--amber)">300</span><small>Brevo Free Plan</small></div>
+            <div class="info-item"><span class="info-label">Bugün Gönderilen</span><span class="info-value" style="color:var(--green)" id="daily-sent">0</span></div>
+            <div class="info-item"><span class="info-label">Güvenli Limit</span><span class="info-value" style="color:var(--cyan)">80-100</span><small>Spam'a düşmemek için</small></div>
+            <div class="info-item"><span class="info-label">Kalan</span><span class="info-value" id="daily-remaining">0</span></div>
+            <div class="info-item"><span class="info-label">Duplicate Engel</span><span class="info-value" style="color:var(--green)" id="stat-dup-prevented">0</span><small>Tekrar gönderim engellendi</small></div>
+        </div>
+        <div class="daily-progress" style="margin-top:14px">
+            <div class="progress-bar"><div class="progress-fill" id="daily-progress-fill"></div></div>
+            <div class="progress-text">Günlük kullanım: <strong id="daily-pct">0</strong>% — Güvenli limit: <strong id="daily-limit">80</strong></div>
+        </div>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card">
+            <div class="card-header"><h3>📊 Kaynak Dağılımı</h3><span class="info-tooltip" data-tip="Leadlerin hangi kaynaktan keşfedildiğinin dağılımı. DeTelefoongids, Opendi, Telefoonboek, OpenStreetMap, Bing, DuckDuckGo, website crawl gibi 10+ kaynaktan toplanır.">ⓘ</span></div>
+            <div class="source-stats-grid" id="source-stats"><p class="text-muted">Veri yükleniyor...</p></div>
+        </div>
+        <div class="card">
+            <div class="card-header"><h3>📬 Son Gönderimler</h3></div>
+            <div class="table-container" style="max-height:300px;overflow-y:auto">
+                <table><thead><tr><th>Email</th><th>Şirket</th><th>Konu</th><th>Tarih</th><th>Detay</th></tr></thead>
+                <tbody id="recent-sent-body"><tr><td colspan="5" class="empty-state">Henüz gönderim yok</td></tr></tbody></table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 2: LEAD KEŞIF
+     ═══════════════════════════════════════════════════════════ -->
+<div id="tab-leads" class="tab-content">
+    <div class="page-header">
+        <div><h2>🔍 Lead Keşif & Yönetim</h2><p class="page-desc">10+ kaynaktan AI destekli lead keşfi. Her kaynağın gerçek adı gösterilir.</p></div>
+        <div class="header-actions"><span class="info-tooltip" data-tip="Lead keşfi: DeTelefoongids, Opendi, Telefoonboek.nl, OpenStreetMap, Bing, DuckDuckGo, Startpage, AI bilgi bankası, website crawl, email tahmini. Paralel 5 şehir taraması yapar. Sonuçlar email, şirket adı, sektör, konum ve AI skor ile listelenir.">ⓘ</span></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>Yeni Lead Keşfi</h3></div>
+        <div class="form-row">
+            <div class="form-group"><label>Sektör</label><input type="text" id="discover-sector" value="transport" placeholder="örn: transport, bouw"></div>
+            <div class="form-group"><label>Konum</label><input type="text" id="discover-location" value="Nederland" placeholder="örn: Nederland, Amsterdam"></div>
+            <button class="btn btn-primary" onclick="discoverLeads()">🔍 Keşfet</button>
+            <button class="btn btn-accent" onclick="scoreAllLeads()">🔮 Tümünü AI ile Puanla</button>
+        </div>
+        <div class="discover-status" id="discover-status"></div>
+        <div class="source-breakdown" id="discover-source-breakdown"></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h3>Lead Listesi <span class="text-muted" style="font-weight:400"> — <span id="leads-count">0</span> lead</span></h3>
+            <div class="table-actions-inline">
+                <button class="btn btn-sm btn-primary" id="btn-send-selected" disabled onclick="sendSelectedLeads()">📬 Seçilenlere Gönder</button>
+                <button class="btn btn-sm btn-ghost" id="btn-skip-selected" disabled onclick="skipSelectedLeads()">⏭ Atla</button>
+            </div>
+        </div>
+        <div class="table-container" style="max-height:600px;overflow-y:auto">
+            <table>
+                <thead><tr>
+                    <th class="th-check"><input type="checkbox" onchange="toggleAllLeads(this)"></th>
+                    <th class="sortable" data-sort="company" onclick="sortLeads('company')">Şirket <span class="sort-icon">↕</span></th>
+                    <th class="sortable" data-sort="email" onclick="sortLeads('email')">Email <span class="sort-icon">↕</span></th>
+                    <th class="sortable" data-sort="sector" onclick="sortLeads('sector')">Sektör <span class="sort-icon">↕</span></th>
+                    <th class="sortable" data-sort="location" onclick="sortLeads('location')">Konum <span class="sort-icon">↕</span></th>
+                    <th class="sortable" data-sort="ai_score" onclick="sortLeads('ai_score')">AI Skor <span class="sort-icon">↕</span></th>
+                    <th class="sortable" data-sort="source" onclick="sortLeads('source')">Kaynak <span class="sort-icon">↕</span></th>
+                    <th class="sortable" data-sort="send_status" onclick="sortLeads('send_status')">Durum <span class="sort-icon">↕</span></th>
+                    <th>İşlem</th>
+                </tr></thead>
+                <tbody id="leads-body"><tr><td colspan="9" class="empty-state">Yükleniyor...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 3: GİDEN MAİLLER (YENİ)
+     ═══════════════════════════════════════════════════════════ -->
+<div id="tab-sentmails" class="tab-content">
+    <div class="page-header">
+        <div><h2>📬 Giden Mailler</h2><p class="page-desc">Tüm gönderilen emaillerin listesi — tıklayarak içeriği görüntüleyin</p></div>
+        <div class="header-actions"><span class="info-tooltip" data-tip="Gönderilen her email burada listelenir. Tıklayarak email içeriğini, konu başlıklarını (A/B/C), QC skorunu ve yanıt durumunu görüntüleyebilirsiniz. Duplicate gönderim sistemi aynı adrese tekrar email gönderilmesini engeller.">ⓘ</span></div>
+    </div>
+
+    <div class="stats-grid stats-grid-small">
+        <div class="stat-card gradient-2"><div class="stat-icon">📧</div><div class="stat-info"><span class="stat-value" id="sent-total">0</span><span class="stat-label">Toplam Giden</span></div></div>
+        <div class="stat-card gradient-5"><div class="stat-icon">👁</div><div class="stat-info"><span class="stat-value" id="sent-opened">0</span><span class="stat-label">Açılan</span></div></div>
+        <div class="stat-card gradient-3"><div class="stat-icon">💬</div><div class="stat-info"><span class="stat-value" id="sent-replied">0</span><span class="stat-label">Yanıt Alan</span></div></div>
+        <div class="stat-card gradient-4"><div class="stat-icon">🛡</div><div class="stat-info"><span class="stat-value" id="sent-dup-blocked">0</span><span class="stat-label">Duplicate Engel</span></div></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>Gönderim Geçmişi</h3></div>
+        <div class="table-container" style="max-height:600px;overflow-y:auto">
+            <table>
+                <thead><tr>
+                    <th>Tarih</th><th>Email</th><th>Şirket</th><th>Konu</th><th>QC</th><th>Açıldı</th><th>Yanıt</th><th>Detay</th>
+                </tr></thead>
+                <tbody id="sentmails-body"><tr><td colspan="8" class="empty-state">Yükleniyor...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 4: FOLLOW-UP ENGINE (YENİ)
+     ═══════════════════════════════════════════════════════════ -->
+<div id="tab-followup" class="tab-content">
+    <div class="page-header">
+        <div><h2>🔄 Follow-Up Engine</h2><p class="page-desc">3 aşamalı otomatik takip sistemi — yanıt gelene kadar nazik hatırlatmalar</p></div>
+        <div class="header-actions">
+            <button class="btn btn-primary" onclick="processFollowups()">🔄 Bekleyenleri İşle</button>
+            <span class="info-tooltip" data-tip="Follow-Up Engine 3 aşamalıdır: 1️⃣ 3. gün: Nazik hatırlatma 2️⃣ 7. gün: Ek değer teklifi 3️⃣ 14. gün: Son şans. Yanıt gelen kişilere follow-up otomatik iptal edilir.">ⓘ</span>
+        </div>
+    </div>
+
+    <!-- Follow-Up Stats -->
+    <div class="stats-grid stats-grid-small">
+        <div class="stat-card gradient-1"><div class="stat-icon">📊</div><div class="stat-info"><span class="stat-value" id="fu-total">0</span><span class="stat-label">Toplam F/U</span></div></div>
+        <div class="stat-card gradient-4"><div class="stat-icon">⏳</div><div class="stat-info"><span class="stat-value" id="fu-pending">0</span><span class="stat-label">Bekleyen</span></div></div>
+        <div class="stat-card gradient-2"><div class="stat-icon">✅</div><div class="stat-info"><span class="stat-value" id="fu-sent">0</span><span class="stat-label">Gönderildi</span></div></div>
+        <div class="stat-card gradient-3"><div class="stat-icon">🚫</div><div class="stat-info"><span class="stat-value" id="fu-cancelled">0</span><span class="stat-label">İptal</span></div></div>
+    </div>
+
+    <!-- Step Breakdown -->
+    <div class="card">
+        <div class="card-header"><h3>Aşama Detayları</h3></div>
+        <div class="pipeline-steps" id="fu-steps">
+            <div class="pipeline-step"><span class="pipe-num">1</span><span class="pipe-label">3. Gün</span><span class="pipe-detail">Nazik hatırlatma</span><div style="margin-top:8px"><strong id="fu-step1-count">0</strong> <span class="text-muted">gönderildi</span></div></div>
+            <span class="pipeline-arrow">→</span>
+            <div class="pipeline-step"><span class="pipe-num">2</span><span class="pipe-label">7. Gün</span><span class="pipe-detail">Ek değer teklifi</span><div style="margin-top:8px"><strong id="fu-step2-count">0</strong> <span class="text-muted">gönderildi</span></div></div>
+            <span class="pipeline-arrow">→</span>
+            <div class="pipeline-step"><span class="pipe-num">3</span><span class="pipe-label">14. Gün</span><span class="pipe-detail">Son şans</span><div style="margin-top:8px"><strong id="fu-step3-count">0</strong> <span class="text-muted">gönderildi</span></div></div>
+        </div>
+    </div>
+
+    <!-- Follow-Up List -->
+    <div class="card">
+        <div class="card-header"><h3>Follow-Up Listesi</h3></div>
+        <div class="table-container" style="max-height:500px;overflow-y:auto">
+            <table>
+                <thead><tr><th>Email</th><th>Şirket</th><th>Aşama</th><th>Planlanan</th><th>Durum</th><th>Gönderim</th><th>Detay</th></tr></thead>
+                <tbody id="followup-body"><tr><td colspan="7" class="empty-state">Yükleniyor...</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 5: KAMPANYA
+     ═══════════════════════════════════════════════════════════ -->
+<div id="tab-campaign" class="tab-content">
+    <div class="page-header">
+        <div><h2>🚀 Kampanya Yönetimi</h2><p class="page-desc">AI destekli toplu email kampanyası — Claude AI her şirkete özel email yazar</p></div>
+        <div class="header-actions"><span class="info-tooltip" data-tip="Claude AI her lead'in şirket adı, sektörü ve detayına göre benzersiz, kişiselleştirilmiş email yazar. 3 farklı konu başlığı (A/B/C) üretir, en iyi performans göstereni A/B testi ile seçer. QC skoru 90+ geçmeden gönderilmez.">ⓘ</span></div>
+    </div>
+
+    <!-- Brevo Limit Info -->
+    <div class="card card-info">
+        <div class="card-header"><h3>⚠️ Brevo Spam-Safe Gönderim Rehberi</h3></div>
+        <div class="info-grid">
+            <div class="info-item"><span class="info-label">Brevo Free Limit</span><span class="info-value" style="color:var(--amber)">300/gün</span></div>
+            <div class="info-item"><span class="info-label">Önerilen Güvenli</span><span class="info-value" style="color:var(--green)">80-100/gün</span></div>
+            <div class="info-item"><span class="info-label">IP Warmup (ilk 2 hf)</span><span class="info-value" style="color:var(--cyan)">20-40/gün</span></div>
+            <div class="info-item"><span class="info-label">Bugün Gönderilen</span><span class="info-value" id="camp-today-sent">0</span></div>
+            <div class="info-item"><span class="info-label">Kalan Güvenli</span><span class="info-value" style="color:var(--green)" id="camp-remaining">0</span></div>
+        </div>
+        <p class="section-desc" style="margin-top:14px">💡 <strong>Neden 80-100?</strong> Brevo Free Plan 300 günlük izin verse de, yeni IP'den 100+ email/gün göndermek spam filtrelerine yakalanma riskini artırır. İlk 2 hafta günlük 20-40, sonra 60-80, 3. haftadan sonra 80-100 ile güvenli şekilde artırın.</p>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>Kampanya Başlat</h3></div>
+        <div class="form-row">
+            <div class="form-group"><label>Günlük Limit</label><input type="number" id="campaign-limit" value="80" min="1" max="300"></div>
+            <div class="form-group"><label>Test Modu</label><label class="toggle"><input type="checkbox" id="campaign-test-mode" checked><span class="toggle-slider"></span></label><span class="toggle-hint">Test: Gerçek gönderim yapmaz</span></div>
+            <button class="btn btn-primary" id="btn-start-campaign" onclick="startCampaign()">🚀 Başlat</button>
+            <button class="btn btn-danger" id="btn-stop-campaign" onclick="stopCampaign()" style="display:none">⏹ Durdur</button>
+        </div>
+    </div>
+
+    <div class="card" id="campaign-status-card" style="display:none">
+        <div class="card-header"><h3>📊 Kampanya Durumu</h3><span class="campaign-badge">Aktif</span></div>
+        <div class="campaign-stats" id="campaign-stats"></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>✍️ Toplu Email Taslağı Üret</h3><span class="info-tooltip" data-tip="'Toplu Üret' butonu, seçilen sayıda lead için Claude AI ile kişiselleştirilmiş email taslakları oluşturur. Her email o şirketin adı, sektörü ve bilgilerine göre özgündür. Üretilen taslakları tıklayarak içeriğini görebilirsiniz.">ⓘ</span></div>
+        <div class="form-row">
+            <div class="form-group"><label>Taslak Sayısı</label><input type="number" id="preview-count" value="5" min="1" max="20"></div>
+            <button class="btn btn-accent" onclick="bulkPreview()">✍️ Claude AI ile Üret</button>
+        </div>
+        <div class="drafts-container" id="drafts-container"></div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 6: AGENT'LAR
+     ═══════════════════════════════════════════════════════════ -->
+<div id="tab-agents" class="tab-content">
+    <div class="page-header">
+        <div><h2>🤖 Akıllı Agent'lar</h2><p class="page-desc">Kendi kendini geliştiren, öğrenen AI agent sistemi — her biri tıklayınca detay gösterir</p></div>
+        <div class="header-actions">
+            <button class="btn btn-ghost btn-sm" onclick="loadAgentLearnings()">📈 Öğrenme Raporu</button>
+            <span class="info-tooltip" data-tip="Agent'lar zamanla kendilerini geliştirir: Müşteri yanıtlarından öğrenir (pozitif/negatif), QC puanlarından email kalitesini artırır, A/B test sonuçlarından en iyi stratejiyi bulur, kullanıcı müdahalelerini kaydeder. Her agent'a tıklayarak detay ve feedback verebilirsiniz.">ⓘ</span>
+        </div>
+    </div>
+
+    <div class="agents-grid" id="agents-grid"></div>
+
+    <!-- Agent Self-Improvement Section -->
+    <div class="card">
+        <div class="card-header"><h3>🧠 Agent Öğrenme Sistemi</h3></div>
+        <p class="section-desc">Agent'lar 4 yoldan kendilerini geliştirir: 1) Müşteri yanıtlarına göre email stratejisi optimize eder, 2) QC puanlarını analiz edip daha iyi email yazar, 3) A/B test sonuçlarından en iyi konu başlığı formatını öğrenir, 4) Kullanıcı müdahale/feedback'lerini kaydeder ve uygular.</p>
+        <div id="agent-learning-stats" class="auto-stats"></div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>🛡 Watchdog Raporu</h3><span class="info-tooltip" data-tip="Watchdog tüm sistemin sağlığını izler: API bağlantıları, veritabanı, email gönderim durumu, agent sağlıkları. Sorun tespit ederse uyarı verir.">ⓘ</span></div>
+        <div class="watchdog-report" id="watchdog-report"><p class="text-muted">Yükleniyor...</p></div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 7: OTOMASYON
+     ═══════════════════════════════════════════════════════════ -->
+<div id="tab-automation" class="tab-content">
+    <div class="page-header">
+        <div><h2>⚙️ Otomasyon Pipeline</h2><p class="page-desc">6 aşamalı tam otomatik döngü — 30 dakikada bir tekrar eder</p></div>
+        <div class="header-actions">
+            <button class="btn btn-primary" id="btn-start-auto" onclick="startAutomation()">▶ Başlat</button>
+            <button class="btn btn-danger" id="btn-stop-auto" onclick="stopAutomation()" style="display:none">⏹ Durdur</button>
+            <span class="info-tooltip" data-tip="Otomasyon pipeline 6 aşamadan oluşur ve her 30 dakikada otomatik tekrar eder: 1️⃣ Lead Keşfi 2️⃣ AI Puanlama 3️⃣ Email Yazma (Claude) 4️⃣ QC + Gönderim (Brevo) 5️⃣ Follow-Up 6️⃣ Yanıt Takip. Her aşama detaylı loglanır.">ⓘ</span>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>Pipeline Durumu</h3></div>
+        <div class="auto-status">
+            <span class="auto-indicator stopped" id="auto-indicator"></span>
+            <div><strong id="auto-status-text">Durdurulmuş</strong><br><span class="text-muted" id="auto-action-text">—</span></div>
+            <div class="auto-cycle-info">
+                <span class="cycle-badge" id="cycle-badge">Cycle 0</span>
+                <span class="text-muted" id="auto-last-cycle">Son: —</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>Pipeline Aşamaları</h3></div>
+        <div class="pipeline-steps">
+            <div class="pipeline-step" id="pipe-step-1"><span class="pipe-num">1</span><span class="pipe-label">Keşif</span><span class="pipe-detail">10+ kaynaktan lead</span></div>
+            <span class="pipeline-arrow">→</span>
+            <div class="pipeline-step" id="pipe-step-2"><span class="pipe-num">2</span><span class="pipe-label">Puanlama</span><span class="pipe-detail">Claude AI skor</span></div>
+            <span class="pipeline-arrow">→</span>
+            <div class="pipeline-step" id="pipe-step-3"><span class="pipe-num">3</span><span class="pipe-label">Email Yazma</span><span class="pipe-detail">Kişisel AI email</span></div>
+            <span class="pipeline-arrow">→</span>
+            <div class="pipeline-step" id="pipe-step-4"><span class="pipe-num">4</span><span class="pipe-label">QC & Gönderim</span><span class="pipe-detail">≥90 skor zorunlu</span></div>
+            <span class="pipeline-arrow">→</span>
+            <div class="pipeline-step" id="pipe-step-5"><span class="pipe-num">5</span><span class="pipe-label">Follow-Up</span><span class="pipe-detail">3 aşamalı takip</span></div>
+            <span class="pipeline-arrow">→</span>
+            <div class="pipeline-step" id="pipe-step-6"><span class="pipe-num">6</span><span class="pipe-label">Yanıt Takip</span><span class="pipe-detail">AI sınıflandırma</span></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>📋 Canlı Log</h3></div>
+        <div class="log-container" id="automation-log">Log yükleniyor...</div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 8: YANITLAR
+     ═══════════════════════════════════════════════════════════ -->
+<div id="tab-responses" class="tab-content">
+    <div class="page-header">
+        <div><h2>📥 Yanıtlar & Hot Leads</h2><p class="page-desc">Claude AI yanıtları sınıflandırır — tüm kopyalar sales@fleettrackholland.nl adresine iletilir</p></div>
+        <div class="header-actions"><span class="info-tooltip" data-tip="Gelen yanıtlar Claude AI ile otomatik sınıflandırılır: İlgili, İlgisiz, Soru, Ofis Dışı. İlgili yanıtlar 'Hot Lead' olarak işaretlenir. Tüm gelen/giden email kopyaları sales@fleettrackholland.nl adresine CC olarak iletilir.">ⓘ</span></div>
+    </div>
+
+    <div class="stats-grid stats-grid-small" id="response-stats-grid"></div>
+
+    <div class="card">
+        <div class="card-header"><h3>🔥 Hot Leads</h3></div>
+        <div class="table-container">
+            <table><thead><tr><th>Şirket</th><th>Email</th><th>Özet</th><th>Sınıf</th><th>Tarih</th><th>Detay</th></tr></thead>
+            <tbody id="hot-leads-body"><tr><td colspan="6" class="empty-state">Henüz hot lead yok</td></tr></tbody></table>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>📧 Follow-Up Durumu</h3></div>
+        <div id="followup-stats"></div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TAB 9: AYARLAR
+     ═══════════════════════════════════════════════════════════ -->
+<div id="tab-settings" class="tab-content">
+    <div class="page-header">
+        <div><h2>🔧 Ayarlar</h2><p class="page-desc">Sistem yaplandırması — değişiklikleri kaydedin</p></div>
+        <div class="header-actions"><button class="btn btn-primary" onclick="saveSettings()">💾 Kaydet</button></div>
+    </div>
+
+    <div class="settings-sections">
+        <!-- Genel -->
+        <div class="card">
+            <div class="card-header"><h3>⚡ Genel Ayarlar</h3></div>
+            <div class="settings-form">
+                <div class="setting-row"><label>Test Modu</label><label class="toggle"><input type="checkbox" id="set-test-mode"><span class="toggle-slider"></span></label></div>
+                <small>Açık: Gerçek email gönderilmez. Kapalı: CANLI gönderim</small>
+                <div class="setting-row"><label>Günlük Limit</label><input type="number" id="set-daily-limit" min="1" max="300"></div>
+                <small>Brevo Free: max 300. Spam-safe: 80-100</small>
+                <div class="setting-row"><label>Gecikme (Min sn)</label><input type="number" id="set-delay-min" min="5" max="120"></div>
+                <div class="setting-row"><label>Gecikme (Max sn)</label><input type="number" id="set-delay-max" min="10" max="180"></div>
+                <div class="setting-row"><label>İnsan Onayı</label><label class="toggle"><input type="checkbox" id="set-human-review"><span class="toggle-slider"></span></label></div>
+                <div class="setting-row"><label>Min QC Skor</label><input type="number" id="set-qc-min" min="50" max="100"></div>
+            </div>
+        </div>
+
+        <!-- API -->
+        <div class="card">
+            <div class="card-header"><h3>🔑 API Bağlantıları</h3></div>
+            <div class="settings-form">
+                <div class="setting-row"><label>Anthropic (Claude)</label><span class="status-badge" id="set-anthropic-status">—</span></div>
+                <small>.env dosyasında ANTHROPIC_API_KEY ile ayarlanır</small>
+                <div class="setting-row"><label>Brevo (Email)</label><span class="status-badge" id="set-brevo-status">—</span></div>
+                <small>.env dosyasında BREVO_API_KEY ile ayarlanır</small>
+            </div>
+        </div>
+
+        <!-- Lead Keşif -->
+        <div class="card">
+            <div class="card-header"><h3>🔍 Lead Keşif Ayarları</h3></div>
+            <div class="settings-form">
+                <div class="setting-row"><label>Hedef Konum</label><input type="text" id="set-target-location"></div>
+                <div class="setting-row"><label>Sektörler</label><div id="set-sectors-tags" class="sector-tags-container"></div></div>
+                <div class="setting-row"><label>Telefoonboek</label><label class="toggle"><input type="checkbox" id="set-telefoonboek"><span class="toggle-slider"></span></label></div>
+                <div class="setting-row"><label>OpenStreetMap</label><label class="toggle"><input type="checkbox" id="set-openstreetmap"><span class="toggle-slider"></span></label></div>
+                <div class="setting-row"><label>MX Doğrulama</label><label class="toggle"><input type="checkbox" id="set-mx-verify"><span class="toggle-slider"></span></label></div>
+            </div>
+        </div>
+
+        <!-- Otomasyon -->
+        <div class="card">
+            <div class="card-header"><h3>⚙️ Otomasyon Ayarları</h3></div>
+            <div class="settings-form">
+                <div class="setting-row"><label>Oto-Başlat</label><label class="toggle"><input type="checkbox" id="set-auto-start"><span class="toggle-slider"></span></label></div>
+                <div class="setting-row"><label>Cycle Aralığı (dk)</label><input type="number" id="set-auto-interval" min="5" max="120"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header"><h3>📋 Sistem Logları</h3></div>
+        <div class="log-container" id="logs-container">Log yükleniyor...</div>
+    </div>
+</div>
+
+</main>
+
+<!-- ═══ MODAL ═══ -->
+<div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this)closeModal()">
+    <div class="modal">
+        <div class="modal-header"><h3 id="modal-title"></h3><button class="modal-close" onclick="closeModal()">✕</button></div>
+        <div class="modal-body" id="modal-body"></div>
+    </div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div class="toast-container" id="toast-container"></div>
+
+<script src="/app.js?v=3"></script>
+</body>
+</html>
