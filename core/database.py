@@ -1244,10 +1244,11 @@ class Database:
             log.error(f"[DB] Sent log hatası: {email} — {e}")
 
     def get_recent_sent(self, limit: int = 20) -> list[dict]:
-        """Son gönderilen emailleri listele."""
+        """Son gönderilen emailleri listele (body_html HARİÇ — sadece özet)."""
         with self._conn() as conn:
             rows = conn.execute("""
-                SELECT s.*, d.body_html, d.qc_score
+                SELECT s.email, s.company, s.sector, s.subject, s.method,
+                       s.ab_variant, s.sent_at, d.qc_score
                 FROM sent_log s
                 LEFT JOIN drafts d ON s.email = d.email
                 ORDER BY s.sent_at DESC LIMIT ?
