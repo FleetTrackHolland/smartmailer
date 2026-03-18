@@ -1477,64 +1477,122 @@ def _automation_loop():
                     today_sent = db.get_today_sent_count()
                     remaining = max(0, config.DAILY_SEND_LIMIT - today_sent)
                     batch_size = min(10, remaining)
+                    _auto_log(f"📊 Bugün gönderilen: {today_sent}/{config.DAILY_SEND_LIMIT}, kalan kota: {remaining}")
 
                     if batch_size > 0:
                         unsent = db.get_unsent_leads(limit=batch_size)
                         if unsent:
                             sent_count = 0
+                            _auto_log(f"📋 {len(unsent)} gönderilmemiş lead bulundu")
                             for lead_data in unsent:
                                 if not _automation_state["running"]:
                                     break
                                 try:
                                     email_addr = lead_data.get("email", "")
                                     company = lead_data.get("company", "")
+                                    sector = lead_data.get("sector", "")
                                     if not email_addr:
                                         continue
 
                                     _automation_state["last_action"] = f"Phase 3: {company or email_addr} — email yazılıyor..."
+                                    _auto_log(f"✍️ Email yazılıyor: {company or email_addr}")
 
-                                    draft = copywriter.write_email(lead_data)
+                                    # 1. Copywriter — EmailDraft dataclass döner
+                                    draft = copywriter.write(lead_data)
                                     if not draft:
+                                        _auto_log(f"⚠️ Draft boş: {company}")
                                         continue
 
-                                    subject = draft.get("subject", "")
-                                    body_html = draft.get("body_html", draft.get("body", ""))
+                                    subject = draft.chosen_subject
+                                    body_html = draft.body_html
+                                    body_text = draft.body_text
                                     if not subject or not body_html:
+                                        _auto_log(f"⚠️ Subject/body boş: {company}")
                                         continue
 
+                                    # 2. QC — QCResult dataclass döner
                                     qc_score = 50
+                                    qc_passed = True
                                     try:
-                                        qc_result = quality.check(body_html)
-                                        qc_score = qc_result.get("score", 50) if isinstance(qc_result, dict) else 50
-                                    except Exception:
-                                        pass
+                                        qc_result = quality.check(
+                                            subject=subject,
+                                            body_text=body_text,
+                                            company_name=company,
+                                            body_html=body_html
+                                        )
+                                        qc_score = qc_result.score
+                                        qc_passed = qc_result.passed
+                                        _auto_log(f"📊 QC skor: {qc_score}/100 ({'GEÇTI' if qc_passed else 'KALMA'})")
+                                        if not qc_passed and qc_score < 40:
+                                            _auto_log(f"⚠️ QC çok düşük ({qc_score}), atlanıyor: {company}")
+                                            continue
+                                    except Exception as qc_err:
+                                        _auto_log(f"⚠️ QC hatası (devam): {qc_err}")
 
+                                    # 3. Draft kaydet
+                                    try:
+                                        draft_dict = {
+                                            "subject_a": draft.subject_a,
+                                            "subject_b": draft.subject_b,
+                                            "subject_c": draft.subject_c,
+                                            "chosen_subject": subject,
+                                            "body_html": body_html,
+                                            "body_text": body_text,
+                                            "qc_score": qc_score,
+                                        }
+                                        db.save_draft(email_addr, draft_dict)
+                                    except Exception as draft_err:
+                                        _auto_log(f"⚠️ Draft kayıt hatası: {draft_err}")
+
+                                    # 4. Gönder
                                     if send_engine:
-                                        from core.send_engine import EmailMessage
-                                        msg = EmailMessage(to_email=email_addr, subject=subject, body_html=body_html)
-                                        result = send_engine.send(msg)
-                                        if result.get("success"):
-                                            variant = ab_test.get_variant() if ab_test else "A"
-                                            db.save_draft(
-                                                email=email_addr, company=company,
-                                                subject=subject, body_html=body_html,
-                                                variant=variant, qc_score=qc_score,
-                                                sector=lead_data.get("sector", ""),
-                                                method=result.get("method", "smtp")
+                                        try:
+                                            from core.send_engine import EmailMessage
+                                            msg = EmailMessage(
+                                                to_email=email_addr,
+                                                subject=subject,
+                                                body_html=body_html
                                             )
-                                            sent_count += 1
-                                            _auto_log(f"✅ Email gönderildi: {email_addr}")
+                                            result = send_engine.send(msg)
+                                            success = result.get("success") if isinstance(result, dict) else getattr(result, "success", False)
+                                            if success:
+                                                method = result.get("method", "smtp") if isinstance(result, dict) else getattr(result, "method", "smtp")
+                                                msg_id = result.get("message_id", "") if isinstance(result, dict) else getattr(result, "message_id", "")
+                                                variant = "A"
+                                                try:
+                                                    variant = ab_test.get_variant() if ab_test else "A"
+                                                except Exception:
+                                                    pass
+                                                db.log_sent(
+                                                    email=email_addr,
+                                                    company=company,
+                                                    sector=sector,
+                                                    subject=subject,
+                                                    method=method,
+                                                    message_id=msg_id,
+                                                    ab_variant=variant
+                                                )
+                                                sent_count += 1
+                                                _auto_log(f"✅ Email gönderildi: {company} ({email_addr})")
+                                            else:
+                                                err_msg = result.get("error", "bilinmiyor") if isinstance(result, dict) else getattr(result, "error", "bilinmiyor")
+                                                _auto_log(f"❌ Gönderim başarısız: {email_addr} — {err_msg}")
+                                        except Exception as send_err:
+                                            _auto_log(f"❌ Gönderim hatası: {email_addr} — {send_err}", "error")
+                                    else:
+                                        _auto_log(f"⚠️ SendEngine yok — {email_addr} bekletiliyor")
+
                                 except Exception as e:
-                                    _auto_log(f"❌ Email hatası: {e}", "error")
+                                    _auto_log(f"❌ Email işleme hatası: {e}", "error")
                                 time.sleep(2)
 
-                            _auto_log(f"📧 Phase 3: {sent_count} email gönderildi")
+                            _auto_log(f"📧 Phase 3 TAMAM: {sent_count} email gönderildi")
                             _automation_state["last_action"] = f"Phase 3: {sent_count} email gönderildi"
                             emit_event("email_sent", {"count": sent_count})
                         else:
-                            _auto_log("ℹ️ Gönderilecek lead yok")
+                            _auto_log("ℹ️ Gönderilecek yeni lead yok (tümü gönderilmiş)")
                     else:
-                        _auto_log(f"⚠️ Günlük limit doldu: {today_sent}/{config.DAILY_SEND_LIMIT}")
+                        _auto_log(f"⚠️ Günlük limit doldu: {today_sent}/{config.DAILY_SEND_LIMIT} — yarına bekletiliyor")
                 except Exception as e:
                     _auto_log(f"❌ Phase 3 HATA: {e}", "error")
 
