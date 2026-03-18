@@ -902,55 +902,9 @@ def get_sent_content(email):
         return jsonify({"error": str(e)}), 500
 
 
-# ─── SENT MAILS (Giden Mailler) ───────────────────────────────
-@app.route("/api/sent", methods=["GET"])
-def get_sent_mails():
-    """Tüm gönderilen emailleri getir."""
-    try:
-        sent = db.get_all_sent()
-        emails = []
-        for s in (sent or []):
-            row = dict(s) if hasattr(s, 'keys') else s
-            emails.append(row)
-        return jsonify({"emails": emails, "count": len(emails)})
-    except Exception as e:
-        log.error(f"[SENT] Hata: {e}")
-        return jsonify({"emails": [], "count": 0})
-
-
-# ─── AGENT STATUS ─────────────────────────────────────────────
-@app.route("/api/agents/status", methods=["GET"])
-def get_agent_status():
-    """Tüm agentların durumunu döner."""
-    agents = {}
-    agent_modules = {
-        "AI Copywriter": copywriter,
-        "AI Quality Control": quality,
-        "Compliance (AVG)": compliance,
-        "Lead Scorer": lead_scorer,
-        "Watchdog": watchdog,
-        "A/B Test Engine": ab_test,
-        "Follow-Up Engine": follow_up,
-        "Response Tracker": response_tracker,
-        "Lead Finder": lead_finder,
-    }
-    for name, mod in agent_modules.items():
-        try:
-            healthy = hasattr(mod, 'ping') and mod.ping()
-            agents[name] = {
-                "status": "ok" if healthy else "warning",
-                "healthy": healthy,
-                "processed": getattr(mod, '_processed', 0) if hasattr(mod, '_processed') else 0,
-                "errors": getattr(mod, '_errors', 0) if hasattr(mod, '_errors') else 0,
-            }
-        except Exception as e:
-            agents[name] = {"status": "error", "healthy": False, "error": str(e)}
-
-    return jsonify({"agents": agents})
-
-
-@app.route("/api/agents/watchdog", methods=["GET"])
-def get_watchdog_report():
+# ─── AGENTS WATCHDOG (ayrı endpoint) ──────────────────────────
+@app.route("/api/agents/watchdog-report", methods=["GET"])
+def get_watchdog_health_report():
     """Watchdog sağlık raporu."""
     try:
         report = watchdog.run_healthcheck() if hasattr(watchdog, 'run_healthcheck') else {}
@@ -958,22 +912,6 @@ def get_watchdog_report():
     except Exception as e:
         log.error(f"[WATCHDOG] Rapor hatası: {e}")
         return jsonify({"error": str(e)}), 500
-
-
-# ─── RESPONSES (Yanıtlar) ─────────────────────────────────────
-@app.route("/api/responses", methods=["GET"])
-def get_responses():
-    """Alınan yanıtları getir."""
-    try:
-        responses = db.get_all_responses() if hasattr(db, 'get_all_responses') else []
-        items = []
-        for r in (responses or []):
-            row = dict(r) if hasattr(r, 'keys') else r
-            items.append(row)
-        return jsonify({"responses": items, "count": len(items)})
-    except Exception as e:
-        log.error(f"[RESPONSES] Hata: {e}")
-        return jsonify({"responses": [], "count": 0})
 
 
 # ─── SEND TO SELECTED LEADS ───────────────────────────────────
@@ -1046,22 +984,6 @@ def skip_leads():
             pass
     return jsonify({"success": True, "skipped": skipped})
 
-
-# ─── AGENT LEARNINGS ──────────────────────────────────────────
-@app.route("/api/agents/learnings", methods=["GET"])
-def get_agent_learnings():
-    """Agent öğrenme istatistiklerini döner."""
-    try:
-        learnings = {
-            "total_emails_sent": db.count_sent() if hasattr(db, 'count_sent') else 0,
-            "avg_qc_score": db.avg_qc_score() if hasattr(db, 'avg_qc_score') else 0,
-            "top_performing_subject_type": ab_test.get_winner() if hasattr(ab_test, 'get_winner') else "—",
-            "response_rate": "—",
-            "improvement_notes": "Agent'lar her gönderimden sonra QC puanlarını ve yanıt oranlarını analiz ederek kendini geliştirir.",
-        }
-        return jsonify(learnings)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
 
 
 # ─── FOLLOWUPS STATS ──────────────────────────────────────────

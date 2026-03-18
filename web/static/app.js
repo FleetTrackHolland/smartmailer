@@ -750,7 +750,7 @@ async function stopAutomation() {
 
 // ─── SENT MAILS (Giden Mailler) ───
 async function loadSentMails() {
-    const data = await api('/api/sent');
+    const data = await api('/api/sent/all');
     if (!data) return;
     const rows = data.emails || data || [];
     setText('sent-total', rows.length);
@@ -790,11 +790,18 @@ async function loadAgentStatus() {
     }
 
     const agentNames = Object.keys(AGENT_DESC);
-    const agentList = data.agents || data || {};
+    const agentList = data.agents || data || [];
+    // Support both list format [{name, status}] and dict format {name: {status}}
+    const isArray = Array.isArray(agentList);
 
     grid.innerHTML = agentNames.map(name => {
-        const agent = agentList[name] || {};
-        const ok = agent.status === 'ok' || agent.healthy;
+        let agent = {};
+        if (isArray) {
+            agent = agentList.find(a => a.name === name) || {};
+        } else {
+            agent = agentList[name] || {};
+        }
+        const ok = agent.status === 'OK' || agent.status === 'ok' || agent.healthy;
         return `
         <div class="agent-card ${ok ? '' : 'agent-error'}">
             <div class="agent-header">
@@ -812,7 +819,7 @@ async function loadAgentStatus() {
     // Watchdog raporu
     const wdEl = document.getElementById('watchdog-report');
     if (wdEl) {
-        const wd = await api('/api/agents/watchdog');
+        const wd = await api('/api/watchdog/status');
         if (wd) {
             wdEl.innerHTML = `<pre style="white-space:pre-wrap;font-size:0.85rem;color:var(--text-secondary)">${esc(JSON.stringify(wd, null, 2))}</pre>`;
         } else {
@@ -825,7 +832,7 @@ async function loadAgentStatus() {
 async function loadResponses() {
     const data = await api('/api/responses');
     if (!data) return;
-    const items = data.responses || data || [];
+    const items = data.hot_leads || data.responses || [];
 
     // Stats grid
     const statsGrid = document.getElementById('response-stats-grid');
@@ -909,7 +916,7 @@ async function skipSelectedLeads() {
 
 // ─── AGENT LEARNINGS ───
 async function loadAgentLearnings() {
-    const data = await api('/api/agents/learnings');
+    const data = await api('/api/agents/learning');
     const container = document.getElementById('agent-learning-stats');
     if (!container) return;
     if (!data) { openModal('📈 Öğrenme Raporu', '<p>Henüz öğrenme verisi yok.</p>'); return; }
