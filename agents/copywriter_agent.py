@@ -114,15 +114,17 @@ FLEETTRACK HOLLAND — KERNINFO:
 
 HTML E-MAIL DESIGN — STRIKT:
 1. Professionele HTML met inline CSS, max-width 600px, witte achtergrond
-2. HEADER: donkerblauw (#1e3a5f), logo KLEIN:
+2. HEADER: lichtgrijs (#f0f0f0) achtergrond met 4px oranje bovenlijn (#e8600a), logo KLEIN:
    <img src="https://www.fleettrackholland.nl/logo512.png" alt="FleetTrack Holland" style="height:36px;width:auto;">
-3. GEEN hero-afbeelding, GEEN dashboard screenshot — alleen tekst
-4. Witte body met donkergrijze tekst (#333), Arial 14px
-5. CTA-knop onderaan (oranje #e8600a, wit tekst, afgeronde hoeken 6px):
+3. ONDER DE HEADER: een kleine tracking-afbeelding, gecentreerd:
+   <img src="https://www.fleettrackholland.nl/images/features/tracking.png" alt="GPS Tracking" style="width:100%;max-width:400px;height:auto;display:block;margin:0 auto;border-radius:4px;">
+4. Body: witte achtergrond (#fff), donkergrijze tekst (#333), Arial 14px, padding 24px
+5. CTA-knop centraal (oranje #e8600a, wit tekst, 6px radius):
    <a href="https://www.fleettrackholland.nl/prijzen" style="display:inline-block;padding:14px 32px;background:#e8600a;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:15px;">Bekijk tarieven en mogelijkheden</a>
-6. Subtiele scheidslijn (1px #eee) tussen secties
-7. Footer: lichtgrijze achtergrond (#f8f8f8), bedrijfsgegevens, afmeldlink
+6. Subtiel: 1px #eee scheidslijn tussen secties
+7. Footer: lichtgrijze (#f8f8f8) achtergrond, bedrijfsgegevens, afmeldlink
 8. GEEN emojis, GEEN icoontjes — nergens in de hele e-mail
+9. GEEN markdown of tekst VOOR de HTML — de HTML begint direct met <!DOCTYPE html>
 
 SCHRIJFREGELS:
 1. 200 tot 350 woorden voor de tekst (exclusief HTML)
@@ -140,7 +142,8 @@ SUBJECT_A: [zakelijk, kort, max 55 tekens]
 SUBJECT_B: [pijnpunt-gebaseerd, max 55 tekens]
 SUBJECT_C: [resultaat-gebaseerd, max 55 tekens]
 ---HTML---
-[volledige HTML e-mail — clean, professioneel, ZONDER emojis]
+<!DOCTYPE html>
+[de rest van de HTML e-mail — geen markdown, geen comments, geen asterisks voor de doctype]
 ---TEXT---
 [platte tekst versie — ook ZONDER emojis]""".replace("UNSUB_URL", config.UNSUBSCRIBE_URL)
 
@@ -290,6 +293,14 @@ SUBJECT_C: [onderwerp]
 
         body_html = "\n".join(html_lines).strip()
         body_text = "\n".join(text_lines).strip()
+
+        # Strip non-HTML content before actual HTML (e.g. markdown headers, comments)
+        import re
+        if body_html:
+            # Find the first HTML tag and strip everything before it
+            html_start = re.search(r'<(!DOCTYPE|html|head|body|div|table)', body_html, re.IGNORECASE)
+            if html_start:
+                body_html = body_html[html_start.start():]
 
         # Fallback: if no HTML section, use plain text and convert
         if not body_html and body_text:

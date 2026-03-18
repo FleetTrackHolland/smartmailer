@@ -1123,6 +1123,23 @@ class Database:
             ).fetchall()
             return [dict(r) for r in rows]
 
+    def get_sent_email_content(self, email: str) -> dict:
+        """Gönderilmiş email içeriğini sent_log + drafts birleştirerek döndür."""
+        with self._conn() as conn:
+            row = conn.execute("""
+                SELECT s.email, s.company, s.subject, s.method, s.sent_at, s.ab_variant,
+                       d.body_html, d.body_text, d.subject_a, d.subject_b, d.subject_c,
+                       d.chosen_subject, d.qc_score
+                FROM sent_log s
+                LEFT JOIN drafts d ON s.email = d.email
+                WHERE s.email = ?
+                ORDER BY s.sent_at DESC
+                LIMIT 1
+            """, (email.lower(),)).fetchone()
+            if row:
+                return dict(row)
+            return {}
+
 
 # Singleton instance
 db = Database()

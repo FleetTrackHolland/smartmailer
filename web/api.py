@@ -934,12 +934,23 @@ def api_sent_content(email):
                        d.subject_a, d.subject_b, d.subject_c,
                        s.subject, s.company, s.sector, s.method, s.sent_at
                 FROM sent_log s
-                LEFT JOIN drafts d ON s.email = d.email
-                WHERE s.email = ?
+                LEFT JOIN drafts d ON LOWER(s.email) = LOWER(d.email)
+                WHERE LOWER(s.email) = LOWER(?)
                 ORDER BY s.sent_at DESC LIMIT 1
             """, (email,)).fetchone()
             if row:
                 return jsonify(dict(row))
+            # Sadece drafts tablosundan da deneyebiliriz
+            row2 = conn.execute("""
+                SELECT body_html, body_text, qc_score, chosen_subject,
+                       subject_a, subject_b, subject_c,
+                       '' as method, '' as company, '' as sector,
+                       created_at as sent_at
+                FROM drafts WHERE LOWER(email) = LOWER(?)
+                ORDER BY created_at DESC LIMIT 1
+            """, (email,)).fetchone()
+            if row2:
+                return jsonify(dict(row2))
             return jsonify({"error": "Email bulunamadı"}), 404
     except Exception as e:
         log.error(f"[SENT CONTENT] {email} hatası: {e}")
