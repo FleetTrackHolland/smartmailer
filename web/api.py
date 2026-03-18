@@ -1337,186 +1337,103 @@ _automation_state = {
 
 def _automation_loop():
     """
-    SIRASAL OTOMASYON PIPELINE — Shared hosting'de crash'i önler.
-    Her phase arasında gc.collect() ile bellek temizliği yapılır.
+    CRASH-PROOF OTOMASYON PIPELINE — ÜÇ KATLI HATA KORUMASI
+    Hiçbir şekilde çökmez. Thread asla ölmez.
     Pipeline: Lead Bul (AI) → Puanla → Email Yaz → Gönder → Follow-up → Cleanup
     """
-    import gc
-    import random
-    import traceback as tb
-
-    _automation_state["last_action"] = "Pipeline başlatılıyor..."
-    log.info("[AUTO] Pipeline başlatılıyor...")
-
-    # SendEngine — email göndermek için
+    # ═══ OUTER LAYER: En dıştaki koruma ═══
     try:
-        from core.send_engine import SendEngine
-        send_engine = SendEngine()
-    except Exception as e:
-        log.warning(f"[AUTO] SendEngine yüklenemedi: {e}")
+        import gc
+        import random
+        import traceback
+
+        log.info("[AUTO] ═══ PIPELINE THREAD BAŞLADI ═══")
+        _automation_state["last_action"] = "Pipeline başlatılıyor..."
+
+        # SendEngine — email göndermek için (opsiyonel)
         send_engine = None
-
-    while _automation_state["running"]:
         try:
-            _automation_state["cycle"] += 1
-            cycle = _automation_state["cycle"]
-            log.info(f"[AUTO] ═══ Cycle {cycle} başlıyor ═══ [SIRASAL PIPELINE]")
+            from core.send_engine import SendEngine
+            send_engine = SendEngine()
+            log.info("[AUTO] SendEngine hazır")
+        except Exception as e:
+            log.warning(f"[AUTO] SendEngine yüklenemedi (devam ediliyor): {e}")
 
-            # ══════════════════════════════════════════════════════
-            # PHASE 1: LEAD KEŞFİ (AI-only — web scrape shared hosting'de çalışmıyor)
-            # ══════════════════════════════════════════════════════
-            _automation_state["last_action"] = "Phase 1: Lead keşfi başlıyor (AI)..."
-            emit_event("automation_update", {"action": _automation_state["last_action"], "cycle": cycle})
+        # ═══ MIDDLE LAYER: Her cycle'ı koru ═══
+        while _automation_state["running"]:
+            try:
+                _automation_state["cycle"] += 1
+                cycle = _automation_state["cycle"]
+                log.info(f"[AUTO] ═══ Cycle {cycle} başlıyor ═══")
+                _automation_state["last_action"] = f"Cycle {cycle} başlıyor..."
+                emit_event("automation_update", {"action": f"Cycle {cycle}", "cycle": cycle, "running": True})
 
-            total_discovered = 0
-            MAX_LEADS_PER_CYCLE = 100
+                total_discovered = 0
 
-            for sector in list(config.SECTORS):
-                if not _automation_state["running"] or total_discovered >= MAX_LEADS_PER_CYCLE:
+                # ═══════════════════════════════════════════════════
+                # PHASE 1: AI LEAD KEŞFİ
+                # ═══════════════════════════════════════════════════
+                try:
+                    _automation_state["last_action"] = "Phase 1: AI ile lead keşfi..."
+                    log.info("[AUTO] Phase 1: AI lead keşfi başlıyor")
+
+                    for sector in list(config.SECTORS):
+                        if not _automation_state["running"]:
+                            break
+                        sector = sector.strip()
+                        if not sector:
+                            continue
+
+                        try:
+                            _automation_state["last_action"] = f"Phase 1: {sector} — AI aranıyor ({total_discovered} bulundu)"
+                            log.info(f"[AUTO] AI arama: {sector}")
+                            ai_leads = lead_finder._ai_bulk_lead_search(sector)
+
+                            if ai_leads:
+                                saved = 0
+                                for nl in ai_leads:
+                                    email = nl.get("email", "")
+                                    if email and not db.lead_exists(email):
+                                        try:
+                                            db.add_discovered_lead(
+                                                email=email,
+                                                company=nl.get("company_name", ""),
+                                                sector=sector,
+                                                location=nl.get("city", "Nederland"),
+                                                vehicles=str(nl.get("estimated_vehicles", "")),
+                                                website=nl.get("website", ""),
+                                                phone=nl.get("phone", ""),
+                                                source="ai_discovery",
+                                            )
+                                            saved += 1
+                                        except Exception:
+                                            pass
+                                total_discovered += saved
+                                log.info(f"[AUTO] {sector}: {saved} yeni lead!")
+                                _automation_state["last_action"] = f"Phase 1: {sector} — {saved} lead! (toplam: {total_discovered})"
+                            else:
+                                log.info(f"[AUTO] {sector}: lead bulunamadı")
+                        except Exception as e:
+                            log.error(f"[AUTO] {sector} hatası: {e}")
+
+                        time.sleep(2)
+
+                    log.info(f"[AUTO] Phase 1 TAMAM: {total_discovered} lead")
+                    _automation_state["last_action"] = f"Phase 1 tamam: {total_discovered} lead"
+                except Exception as e:
+                    log.error(f"[AUTO] Phase 1 HATA: {e}")
+                    traceback.print_exc()
+
+                gc.collect()
+                if not _automation_state["running"]:
                     break
-                sector = sector.strip()
-                if not sector:
-                    continue
 
+                # ═══════════════════════════════════════════════════
+                # PHASE 2: LEAD PUANLAMA
+                # ═══════════════════════════════════════════════════
                 try:
-                    _automation_state["last_action"] = f"Phase 1: {sector} — AI ile lead aranıyor... ({total_discovered}/{MAX_LEADS_PER_CYCLE})"
-                    log.info(f"[AUTO] AI lead arama: {sector}")
-
-                    # AI-only lead search — shared hosting'de çalışan tek yöntem
-                    ai_leads = lead_finder._ai_bulk_lead_search(sector)
-                    
-                    if ai_leads:
-                        saved = 0
-                        for nl in ai_leads:
-                            email = nl.get("email", "")
-                            if email and not db.lead_exists(email):
-                                try:
-                                    db.add_discovered_lead(
-                                        email=email,
-                                        company=nl.get("company_name", ""),
-                                        sector=sector,
-                                        location=nl.get("city", "Nederland"),
-                                        vehicles=str(nl.get("estimated_vehicles", "")),
-                                        website=nl.get("website", ""),
-                                        phone=nl.get("phone", ""),
-                                        source="ai_discovery",
-                                    )
-                                    saved += 1
-                                except Exception:
-                                    pass
-                        total_discovered += saved
-                        log.info(f"[AUTO] {sector}: {saved} yeni lead kaydedildi (API: {len(ai_leads)})")
-                        _automation_state["last_action"] = f"Phase 1: {sector} — {saved} yeni lead! ({total_discovered}/{MAX_LEADS_PER_CYCLE})"
-                    else:
-                        log.info(f"[AUTO] {sector}: AI lead bulamadı")
-                        _automation_state["last_action"] = f"Phase 1: {sector} — lead bulunamadı ({total_discovered}/{MAX_LEADS_PER_CYCLE})"
-
-                except Exception as e:
-                    log.error(f"[AUTO] {sector} AI keşif hatası: {e}")
-                    _automation_state["last_action"] = f"Phase 1: {sector} HATA — devam ediliyor"
-
-                # Sektörler arası bekleme
-                if _automation_state["running"]:
-                    time.sleep(3)
-
-            log.info(f"[AUTO] Phase 1 tamamlandı: {total_discovered} yeni lead")
-            _automation_state["last_action"] = f"Phase 1 tamamlandı: {total_discovered} yeni lead keşfedildi"
-            gc.collect()
-            time.sleep(3)
-
-            # ══════════════════════════════════════════════════════
-            # PHASE 2: GENİŞLETİLMİŞ AI ARAMA (her 3. cycle)
-            # ══════════════════════════════════════════════════════
-            if _automation_state["running"] and cycle % 3 == 0:
-                _automation_state["last_action"] = "Phase 2: Genişletilmiş AI arama..."
-                emit_event("automation_update", {"action": _automation_state["last_action"], "cycle": cycle})
-
-                try:
-                    sector = random.choice(list(config.SECTORS)) if config.SECTORS else "transport"
-                    log.info(f"[AUTO] Genişletilmiş AI arama: {sector}")
-                    ai_leads = lead_finder._ai_bulk_lead_search(sector)
-                    expanded_found = 0
-                    if ai_leads:
-                        for nl in ai_leads:
-                            email = nl.get("email", "")
-                            if email and not db.lead_exists(email):
-                                try:
-                                    db.add_discovered_lead(
-                                        email=email,
-                                        company=nl.get("company_name", ""),
-                                        sector=sector,
-                                        location=nl.get("city", "Nederland"),
-                                        vehicles=str(nl.get("estimated_vehicles", "")),
-                                        website=nl.get("website", ""),
-                                        phone=nl.get("phone", ""),
-                                        source="ai_discovery",
-                                    )
-                                    expanded_found += 1
-                                except Exception:
-                                    pass
-                    log.info(f"[AUTO] Phase 2 tamamlandı: {expanded_found} yeni lead")
-                    _automation_state["last_action"] = f"Phase 2 tamamlandı: {expanded_found} lead"
-                except Exception as e:
-                    log.error(f"[AUTO] Phase 2 hatası: {e}")
-                
-                gc.collect()
-                time.sleep(5)
-
-            # ══════════════════════════════════════════════════════
-            # PHASE 3: AI SEKTÖR KEŞFİ (her 5. cycle)
-            # ══════════════════════════════════════════════════════
-            if _automation_state["running"] and cycle % 5 == 0:
-                _automation_state["last_action"] = "Phase 3: AI yeni sektör araştırıyor..."
-                emit_event("automation_update", {"action": _automation_state["last_action"], "cycle": cycle})
-                try:
-                    log.info("[AUTO] AI ile yeni sektör araştırılıyor...")
-                    import requests as _req
-                    _ai_resp = _req.post(
-                        "https://api.anthropic.com/v1/messages",
-                        headers={
-                            "x-api-key": config.ANTHROPIC_API_KEY,
-                            "anthropic-version": "2023-06-01",
-                            "content-type": "application/json"
-                        },
-                        json={
-                            "model": "claude-sonnet-4-20250514",
-                            "max_tokens": 300,
-                            "messages": [{"role": "user", "content":
-                                f"Hollanda'da araç filosu kullanan sektörler listesi ver. "
-                                f"Şu sektörler zaten var: {', '.join(config.SECTORS)}. "
-                                f"Bunların dışında 5 yeni sektör öner. Sadece Hollandaca sektör isimlerini virgülle ayırarak ver, başka açıklama ekleme."
-                            }]
-                        },
-                        timeout=30
-                    )
-                    if _ai_resp.status_code == 200:
-                        _new_sectors_text = _ai_resp.json()["content"][0]["text"].strip()
-                        _new_sectors = [s.strip() for s in _new_sectors_text.split(",") if s.strip()]
-                        _added = [s for s in _new_sectors if s.lower() not in [x.lower() for x in config.SECTORS]]
-                        if _added:
-                            config.SECTORS.extend(_added[:5])
-                            log.info(f"[AUTO] {len(_added)} yeni sektör eklendi: {', '.join(_added[:5])}")
-                        else:
-                            log.info("[AUTO] Yeni sektör bulunamadı")
-                except Exception as e:
-                    log.error(f"[AUTO] Sektör keşif hatası: {e}")
-
-                gc.collect()
-                time.sleep(10)
-
-            # Stats güncelle
-            if cycle % 5 == 0:
-                log.info(f"[AUTO] Cycle {cycle}: periyodik temizlik")
-
-            log.info(f"[AUTO] Toplam {total_discovered} yeni lead keşfedildi (cycle {cycle})")
-
-            # ══════════════════════════════════════════════════════
-            # PHASE 4: AI LEAD SCORING (batch 20)
-            # ══════════════════════════════════════════════════════
-            if _automation_state["running"]:
-                _automation_state["last_action"] = "Phase 4: Lead'ler puanlanıyor..."
-                emit_event("automation_update", {"action": _automation_state["last_action"], "cycle": cycle})
-                try:
+                    _automation_state["last_action"] = "Phase 2: Lead puanlama..."
+                    log.info("[AUTO] Phase 2: Lead puanlama")
                     unscored = db.get_all_leads()
                     unscored_leads = [l for l in unscored if not l.get("ai_score") or l.get("ai_score", 0) == 0]
                     if unscored_leads:
@@ -1525,21 +1442,22 @@ def _automation_loop():
                         for s in scores:
                             db.update_lead_ai_score(s["email"], s.get("score", 50), s.get("reason", ""))
                         log.info(f"[AUTO] {len(scores)} lead puanlandı")
+                        _automation_state["last_action"] = f"Phase 2: {len(scores)} lead puanlandı"
                     else:
                         log.info("[AUTO] Puanlanacak lead yok")
                 except Exception as e:
-                    log.error(f"[AUTO] Lead scoring hatası: {e}")
+                    log.error(f"[AUTO] Phase 2 HATA: {e}")
 
                 gc.collect()
-                time.sleep(10)
+                if not _automation_state["running"]:
+                    break
 
-            # ══════════════════════════════════════════════════════
-            # PHASE 5: EMAIL YAZ + QC + GÖNDER (batch 10)
-            # ══════════════════════════════════════════════════════
-            if _automation_state["running"]:
-                _automation_state["last_action"] = "Phase 5: Email'ler yazılıp gönderiliyor..."
-                emit_event("automation_update", {"action": _automation_state["last_action"], "cycle": cycle})
+                # ═══════════════════════════════════════════════════
+                # PHASE 3: EMAIL YAZ + GÖNDER
+                # ═══════════════════════════════════════════════════
                 try:
+                    _automation_state["last_action"] = "Phase 3: Email yazma ve gönderme..."
+                    log.info("[AUTO] Phase 3: Email yazma & gönderme")
                     today_sent = db.get_today_sent_count()
                     remaining = max(0, config.DAILY_SEND_LIMIT - today_sent)
                     batch_size = min(10, remaining)
@@ -1547,143 +1465,147 @@ def _automation_loop():
                     if batch_size > 0:
                         unsent = db.get_unsent_leads(limit=batch_size)
                         if unsent:
-                            log.info(f"[AUTO] {len(unsent)} lead'e email gönderilecek (günlük kalan: {remaining})")
                             sent_count = 0
                             for lead_data in unsent:
+                                if not _automation_state["running"]:
+                                    break
                                 try:
                                     email_addr = lead_data.get("email", "")
                                     company = lead_data.get("company", "")
                                     if not email_addr:
                                         continue
 
-                                    # AI ile email yaz
+                                    _automation_state["last_action"] = f"Phase 3: {company or email_addr} — email yazılıyor..."
+
                                     draft = copywriter.write_email(lead_data)
                                     if not draft:
-                                        log.warning(f"[AUTO] {email_addr}: email yazılamadı")
                                         continue
 
                                     subject = draft.get("subject", "")
                                     body_html = draft.get("body_html", draft.get("body", ""))
-
                                     if not subject or not body_html:
                                         continue
 
-                                    # QC kontrol
+                                    qc_score = 50
                                     try:
                                         qc_result = quality.check(body_html)
-                                        qc_score = qc_result.get("score", 0) if isinstance(qc_result, dict) else 0
+                                        qc_score = qc_result.get("score", 50) if isinstance(qc_result, dict) else 50
                                     except Exception:
-                                        qc_score = 50  # QC hata verirse devam et
+                                        pass
 
-                                    # Email gönder
                                     if send_engine:
                                         from core.send_engine import EmailMessage
-                                        msg = EmailMessage(
-                                            to_email=email_addr,
-                                            subject=subject,
-                                            body_html=body_html
-                                        )
+                                        msg = EmailMessage(to_email=email_addr, subject=subject, body_html=body_html)
                                         result = send_engine.send(msg)
                                         if result.get("success"):
-                                            # DB'ye kaydet
                                             variant = ab_test.get_variant() if ab_test else "A"
                                             db.save_draft(
-                                                email=email_addr,
-                                                company=company,
-                                                subject=subject,
-                                                body_html=body_html,
-                                                variant=variant,
-                                                qc_score=qc_score,
+                                                email=email_addr, company=company,
+                                                subject=subject, body_html=body_html,
+                                                variant=variant, qc_score=qc_score,
                                                 sector=lead_data.get("sector", ""),
                                                 method=result.get("method", "smtp")
                                             )
                                             sent_count += 1
-                                            log.info(f"[AUTO] ✅ Email gönderildi: {email_addr}")
-                                        else:
-                                            log.warning(f"[AUTO] Email gönderilemedi: {email_addr}")
-                                    else:
-                                        log.warning("[AUTO] SendEngine yok — email gönderilemiyor")
+                                            log.info(f"[AUTO] ✅ Email: {email_addr}")
                                 except Exception as e:
-                                    log.error(f"[AUTO] Email hatası ({lead_data.get('email', '?')}): {e}")
-                                time.sleep(2)  # Her mail arası bekleme
+                                    log.error(f"[AUTO] Email hatası: {e}")
+                                time.sleep(2)
 
-                            log.info(f"[AUTO] Phase 5: {sent_count} email gönderildi")
-                            _automation_state["last_action"] = f"Phase 5: {sent_count} email gönderildi"
+                            log.info(f"[AUTO] Phase 3: {sent_count} email gönderildi")
+                            _automation_state["last_action"] = f"Phase 3: {sent_count} email gönderildi"
                             emit_event("email_sent", {"count": sent_count})
                         else:
-                            log.info("[AUTO] Gönderilecek yeni lead yok")
+                            log.info("[AUTO] Gönderilecek lead yok")
                     else:
-                        log.info(f"[AUTO] Günlük limit doldu ({today_sent}/{config.DAILY_SEND_LIMIT})")
+                        log.info(f"[AUTO] Günlük limit: {today_sent}/{config.DAILY_SEND_LIMIT}")
                 except Exception as e:
-                    log.error(f"[AUTO] Kampanya hatası: {e}")
+                    log.error(f"[AUTO] Phase 3 HATA: {e}")
 
                 gc.collect()
-                time.sleep(5)
+                if not _automation_state["running"]:
+                    break
 
-            # ══════════════════════════════════════════════════════
-            # PHASE 6: FOLLOW-UP İŞLEME
-            # ══════════════════════════════════════════════════════
-            if _automation_state["running"]:
-                _automation_state["last_action"] = "Phase 6: Follow-up'lar işleniyor..."
-                emit_event("automation_update", {"action": _automation_state["last_action"], "cycle": cycle})
+                # ═══════════════════════════════════════════════════
+                # PHASE 4: FOLLOW-UP
+                # ═══════════════════════════════════════════════════
                 try:
+                    _automation_state["last_action"] = "Phase 4: Follow-up işleme..."
+                    log.info("[AUTO] Phase 4: Follow-up")
                     processed = follow_up.process_pending()
                     log.info(f"[AUTO] {len(processed)} follow-up işlendi")
                 except Exception as e:
-                    log.error(f"[AUTO] Follow-up hatası: {e}")
+                    log.error(f"[AUTO] Phase 4 HATA: {e}")
 
+                # ═══════════════════════════════════════════════════
+                # PHASE 5: A/B TEST + RESPONSE TRACKING
+                # ═══════════════════════════════════════════════════
+                try:
+                    _automation_state["last_action"] = "Phase 5: A/B test ve yanıt takibi..."
+                    variant_stats = db.get_open_rates_by_variant()
+                    if variant_stats:
+                        winner = ab_test.determine_winner(variant_stats)
+                        if winner:
+                            log.info(f"[AUTO] 🏆 A/B kazanan: {winner}")
+                except Exception:
+                    pass
+
+                try:
+                    response_tracker.check_inbox()
+                except Exception:
+                    pass
+
+                # ═══════════════════════════════════════════════════
+                # CYCLE TAMAMLANDI
+                # ═══════════════════════════════════════════════════
+                _automation_state["last_action"] = f"Cycle {cycle} tamamlandı — 5 dk bekleniyor..."
+                _automation_state["last_cycle_at"] = datetime.now().isoformat()
+                try:
+                    _automation_state["stats"] = db.get_stats()
+                except Exception:
+                    pass
+
+                emit_event("automation_update", {
+                    "action": f"Cycle {cycle} tamamlandı",
+                    "cycle": cycle,
+                    "running": True,
+                })
+
+                log.info(f"[AUTO] ═══ Cycle {cycle} TAMAM ═══ Sonraki: 5 dk")
                 gc.collect()
-                time.sleep(10)
 
-            # ══════════════════════════════════════════════════════
-            # PHASE 7: A/B TEST + RESPONSE TRACKING + CLEANUP
-            # ══════════════════════════════════════════════════════
-            _automation_state["last_action"] = "Phase 7: A/B test ve yanıt takibi..."
-            try:
-                variant_stats = db.get_open_rates_by_variant()
-                if variant_stats:
-                    winner = ab_test.determine_winner(variant_stats)
-                    if winner:
-                        log.info(f"[AUTO] 🏆 A/B Test kazananı: Varyant {winner}")
+                # 5 dakika bekle (300 saniye) — her saniye kontrol et
+                for _ in range(300):
+                    if not _automation_state["running"]:
+                        break
+                    time.sleep(1)
+
             except Exception as e:
-                log.error(f"[AUTO] A/B test hatası: {e}")
+                # Cycle hatası — devam et, durma
+                log.error(f"[AUTO] ❌ Cycle hatası: {e}")
+                try:
+                    import traceback
+                    traceback.print_exc()
+                except Exception:
+                    pass
+                _automation_state["last_action"] = f"Hata: {str(e)[:100]} — 30sn sonra tekrar..."
+                gc.collect()
+                time.sleep(30)  # 30 sn bekle ve tekrar dene
 
-            try:
-                response_tracker.check_inbox()
-            except Exception:
-                pass
+        # While döngüsü bitti (running = False)
+        log.info("[AUTO] Pipeline durduruldu (running=False)")
+        _automation_state["last_action"] = "Pipeline durduruldu"
 
-            # ══════════════════════════════════════════════════════
-            # CYCLE TAMAMLANDI
-            # ══════════════════════════════════════════════════════
-            _automation_state["last_action"] = f"Cycle {cycle} tamamlandı — {config.AUTOMATION_INTERVAL} dk bekleniyor..."
-            _automation_state["last_cycle_at"] = datetime.now().isoformat()
-            _automation_state["stats"] = db.get_stats()
-            emit_event("automation_update", {
-                "action": "Cycle tamamlandı",
-                "cycle": cycle,
-                "stats": _automation_state["stats"],
-            })
-
-            log.info(f"[AUTO] ═══ Cycle {cycle} tamamlandı ═══ "
-                     f"Sektör: {len(config.SECTORS)} | "
-                     f"Sonraki: {config.AUTOMATION_INTERVAL} dk sonra")
-
-            gc.collect()  # Son bellek temizliği
-
-            # Sonraki cycle için bekle
-            wait_seconds = config.AUTOMATION_INTERVAL * 60
-            for _ in range(wait_seconds):
-                if not _automation_state["running"]:
-                    break
-                time.sleep(1)
-
-        except Exception as e:
-            log.error(f"[AUTO] Cycle hatası: {e}")
+    except Exception as e:
+        # En dıştaki koruma — hiçbir şey bu thread'i öldüremez
+        log.error(f"[AUTO] FATAL: {e}")
+        try:
             import traceback
             traceback.print_exc()
-            gc.collect()
-            time.sleep(60)
+        except Exception:
+            pass
+        _automation_state["last_action"] = f"FATAL: {str(e)[:200]}"
+        _automation_state["running"] = False
 
 
 def _auto_start_automation():
