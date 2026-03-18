@@ -251,7 +251,6 @@
         <div class="card-header"><h3>Kampanya Başlat</h3></div>
         <div class="form-row">
             <div class="form-group"><label>Günlük Limit</label><input type="number" id="campaign-limit" value="80" min="1" max="300"></div>
-            <div class="form-group"><label>Test Modu</label><label class="toggle"><input type="checkbox" id="campaign-test-mode" checked onchange="toggleCampaignTestMode()"><span class="toggle-slider"></span></label><span class="toggle-hint">Test: Gerçek gönderim yapmaz</span></div>
             <button class="btn btn-primary" id="btn-start-campaign" onclick="startCampaign()">🚀 Başlat</button>
             <button class="btn btn-danger" id="btn-stop-campaign" onclick="stopCampaign()" style="display:none">⏹ Durdur</button>
         </div>
@@ -386,8 +385,7 @@
         <div class="card">
             <div class="card-header"><h3>⚡ Genel Ayarlar</h3></div>
             <div class="settings-form">
-                <div class="setting-row"><label>Test Modu</label><label class="toggle"><input type="checkbox" id="set-test-mode"><span class="toggle-slider"></span></label></div>
-                <small>Açık: Gerçek email gönderilmez. Kapalı: CANLI gönderim</small>
+
                 <div class="setting-row"><label>Günlük Limit</label><input type="number" id="set-daily-limit" min="1" max="300"></div>
                 <small>Brevo Free: max 300. Spam-safe: 80-100</small>
                 <div class="setting-row"><label>Gecikme (Min sn)</label><input type="number" id="set-delay-min" min="5" max="120"></div>
@@ -450,6 +448,6 @@
 <div class="toast-container" id="toast-container"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
-<script src="/app.js?v=9"></script>
+<script src="/app.js?v=10"></script>
 </body>
 </html>

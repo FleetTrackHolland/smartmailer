@@ -118,15 +118,15 @@ async function refreshAll() {
         if (fill) fill.style.width = `${Math.min(daily.percentage || 0, 100)}%`;
     }
     if (dupStats) { setText('stat-dup-prevented', dupStats.duplicates_prevented || 0); }
-    if (config) updateModeBadge(config);
+    if (config) updateModeBadge();
     setText('last-update', `Son: ${new Date().toLocaleTimeString('tr-TR')}`);
 }
 
-function updateModeBadge(config) {
+function updateModeBadge() {
     const badge = document.getElementById('mode-badge');
     const text = document.getElementById('mode-text');
-    if (config.TEST_MODE) { badge.className = 'mode-badge'; text.textContent = 'TEST MODU'; }
-    else { badge.className = 'mode-badge live'; text.textContent = 'CANLI — AKTİF'; }
+    if (badge) badge.className = 'mode-badge live';
+    if (text) text.textContent = 'CANLI — AKTİF';
 }
 
 function renderSourceStats(dist) {
@@ -139,22 +139,7 @@ function renderSourceStats(dist) {
     `).join('');
 }
 
-async function viewSentEmail(email) {
-    const data = await api(`/api/sent/${encodeURIComponent(email)}/content`);
-    if (!data) return;
-    const d = data.draft_content || {};
-    const s = data.sent_info || {};
-    openModal(`📧 ${email}`, `
-        <div class="detail-grid">
-            <span class="detail-label">Alıcı</span><span class="detail-value">${esc(email)}</span>
-            <span class="detail-label">Gönderim</span><span class="detail-value">${fmtDate(s.sent_at)}</span>
-            <span class="detail-label">QC Skor</span><span class="detail-value">${d.qc_score || '—'}</span>
-            <span class="detail-label">A/B Varyant</span><span class="detail-value">${d.ab_variant || '—'}</span>
-        </div>
-        <div class="detail-section"><h4>Konu: ${esc(d.chosen_subject || s.subject || '—')}</h4>
-        <div class="email-content">${esc(d.body_text || 'İçerik bulunamadı')}</div></div>
-    `);
-}
+// viewSentEmail — tek tanım aşağıda (L930+ civarı)
 
 // ═══════════════════════════════════════════════════════════
 // LEADS
@@ -217,8 +202,7 @@ function updateSelectionButtons() {
     if (s) { s.disabled = c === 0; s.textContent = c > 0 ? `📬 Seçilenlere Gönder (${c})` : '📬 Seçilenlere Gönder'; }
     if (k) k.disabled = c === 0;
 }
-async function sendSelectedLeads() { if (!selectedLeads.size) return; showToast(`${selectedLeads.size} lead kampanyası başlatılıyor...`, 'info'); await api('/api/campaign/start', 'POST', { limit: selectedLeads.size, test_mode: true }); showToast('Kampanya başlatıldı', 'success'); }
-function skipSelectedLeads() { showToast(`${selectedLeads.size} lead atlandı`, 'info'); selectedLeads.clear(); renderLeads(); }
+// sendSelectedLeads + skipSelectedLeads — tek tanım aşağıda (L888+ civarı)
 
 async function viewLeadDetail(email) {
     const lead = leadsData.find(l => (l.email || l.Email || '') === email);
@@ -389,9 +373,8 @@ async function processFollowups() {
 // ═══════════════════════════════════════════════════════════
 async function startCampaign() {
     const limit = parseInt(document.getElementById('campaign-limit').value) || 80;
-    const testMode = document.getElementById('campaign-test-mode').checked;
-    showToast(`Kampanya: ${testMode ? 'TEST' : 'CANLI'}, limit: ${limit}`, 'info');
-    const data = await api('/api/campaign/start', 'POST', { limit, test_mode: testMode });
+    showToast(`Kampanya başlatılıyor, limit: ${limit}`, 'info');
+    const data = await api('/api/campaign/start', 'POST', { limit });
     if (data?.success) {
         showToast('Kampanya başladı', 'success');
         document.getElementById('btn-start-campaign').style.display = 'none';
@@ -401,29 +384,12 @@ async function startCampaign() {
     }
 }
 
-// Test mode toggle — persist via API
-async function toggleCampaignTestMode() {
-    const el = document.getElementById('campaign-test-mode');
-    const newMode = el.checked;
-    await api('/api/config', 'PUT', { TEST_MODE: newMode });
-    updateModeBadge({ TEST_MODE: newMode });
-    const hint = el.closest('.form-group')?.querySelector('.toggle-hint');
-    if (hint) hint.textContent = newMode ? 'Test: Gerçek gönderim yapmaz' : '⚠️ CANLI: Gerçek email gönderir!';
-    showToast(newMode ? 'Test modu açıldı' : '⚠️ CANLI moda geçildi!', newMode ? 'info' : 'error');
-}
+// toggleCampaignTestMode kaldırıldı (TEST_MODE artık yok)
 async function stopCampaign() { await api('/api/campaign/stop', 'POST'); showToast('Kampanya durduruluyor...', 'info'); document.getElementById('btn-start-campaign').style.display = 'inline-flex'; document.getElementById('btn-stop-campaign').style.display = 'none'; }
 
 async function loadCampaignStatus() {
     const [data, daily, cfg] = await Promise.all([api('/api/campaign/status'), api('/api/stats/daily'), api('/api/config')]);
-    // Sync test mode toggle from saved config
-    if (cfg) {
-        const el = document.getElementById('campaign-test-mode');
-        if (el) {
-            el.checked = cfg.TEST_MODE;
-            const hint = el.closest('.form-group')?.querySelector('.toggle-hint');
-            if (hint) hint.textContent = cfg.TEST_MODE ? 'Test: Gerçek gönderim yapmaz' : '⚠️ CANLI: Gerçek email gönderir!';
-        }
-    }
+    // Config yükle (test mode sync kaldırıldı)
     if (data?.running) { document.getElementById('btn-start-campaign').style.display = 'none'; document.getElementById('btn-stop-campaign').style.display = 'inline-flex'; document.getElementById('campaign-status-card').style.display = 'block'; }
     if (data?.stats) {
         const s = data.stats;
@@ -627,7 +593,6 @@ async function loadResponses() {
 async function loadSettings() {
     const data = await api('/api/config');
     if (!data) return;
-    setVal('set-test-mode', data.TEST_MODE, 'checked');
     setVal('set-daily-limit', data.DAILY_SEND_LIMIT);
     setVal('set-delay-min', data.DELAY_MIN);
     setVal('set-delay-max', data.DELAY_MAX);
@@ -658,7 +623,6 @@ function renderSectorTags(sectors) {
 
 async function saveSettings() {
     const data = {
-        TEST_MODE: getVal('set-test-mode', 'checked'),
         DAILY_SEND_LIMIT: parseInt(getVal('set-daily-limit')) || 80,
         DELAY_MIN: parseInt(getVal('set-delay-min')) || 25,
         DELAY_MAX: parseInt(getVal('set-delay-max')) || 55,
@@ -670,10 +634,7 @@ async function saveSettings() {
     const result = await api('/api/config', 'PUT', data);
     if (result?.success) {
         showToast('Ayarlar kaydedildi ✅', 'success');
-        // Sync campaign test mode toggle
-        const campToggle = document.getElementById('campaign-test-mode');
-        if (campToggle) campToggle.checked = data.TEST_MODE;
-        updateModeBadge({ TEST_MODE: data.TEST_MODE });
+        updateModeBadge();
     }
     else showToast('Ayarlar kaydedilemedi', 'error');
 }
@@ -687,201 +648,15 @@ async function loadLogs(containerId = 'logs-container') {
     if (container && data?.logs) { container.textContent = data.logs.join(''); container.scrollTop = container.scrollHeight; }
 }
 
-async function toggleSystemMode() {
-    const data = await api('/api/config/test-mode', 'POST');
-    if (data) { updateModeBadge(data); showToast(data.TEST_MODE ? 'Test modu açıldı' : '⚠️ CANLI moda geçildi!', data.TEST_MODE ? 'info' : 'error'); }
-}
+// toggleSystemMode kaldırıldı (TEST_MODE artık yok)
 
-// ─── AUTOMATION STATUS ───
-async function loadAutomationStatus() {
-    const data = await api('/api/automation/status');
-    if (!data) return;
 
-    const running = data.running;
-    const cycle = data.cycle || 0;
-    const lastAction = data.last_action || '—';
-    const lastCycleAt = data.last_cycle_at || '';
 
-    // Status indicator (dot + text)
-    const indicator = document.getElementById('auto-indicator');
-    if (indicator) {
-        indicator.className = running ? 'auto-indicator running' : 'auto-indicator stopped';
-    }
-    const statusText = document.getElementById('auto-status-text');
-    if (statusText) {
-        statusText.textContent = running ? 'Çalışıyor' : 'Durdurulmuş';
-        statusText.style.color = running ? 'var(--green)' : 'var(--red)';
-    }
 
-    // Cycle badge
-    const cycleBadge = document.getElementById('cycle-badge');
-    if (cycleBadge) cycleBadge.textContent = `Cycle ${cycle}`;
 
-    // Last cycle time
-    const lastCycleEl = document.getElementById('auto-last-cycle');
-    if (lastCycleEl) lastCycleEl.textContent = lastCycleAt ? `Son: ${fmtDate(lastCycleAt)}` : 'Son: —';
 
-    // Action text
-    const actionEl = document.getElementById('auto-action-text');
-    if (actionEl) actionEl.textContent = lastAction;
 
-    // Start/Stop buttons (show/hide)
-    const startBtn = document.getElementById('btn-start-auto');
-    const stopBtn = document.getElementById('btn-stop-auto');
-    if (startBtn) startBtn.style.display = running ? 'none' : '';
-    if (stopBtn) stopBtn.style.display = running ? '' : 'none';
-}
 
-async function startAutomation() {
-    const data = await api('/api/automation/start', 'POST');
-    if (data) {
-        showToast('✅ Otomasyon başlatıldı!', 'success');
-        loadAutomationStatus();
-    }
-}
-
-async function stopAutomation() {
-    const data = await api('/api/automation/stop', 'POST');
-    if (data) {
-        showToast('⏹ Otomasyon durduruldu', 'info');
-        loadAutomationStatus();
-    }
-}
-
-// ─── SENT MAILS (Giden Mailler) ───
-async function loadSentMails() {
-    const data = await api('/api/sent/all');
-    if (!data) return;
-    const rows = data.emails || data || [];
-    setText('sent-total', rows.length);
-    setText('sent-opened', rows.filter(e => e.opened).length);
-    setText('sent-replied', rows.filter(e => e.replied).length);
-    setText('sent-dup-blocked', rows.filter(e => e.duplicate_blocked).length || 0);
-
-    const tbody = document.getElementById('sentmails-body');
-    if (!tbody) return;
-    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;opacity:.5">Henüz gönderim yok</td></tr>'; return; }
-
-    tbody.innerHTML = rows.slice(0, 100).map(e => {
-        const bodyPreview = esc((e.body_text || e.body_html || 'İçerik yok').replace(/'/g, "\\'").replace(/\n/g, ' ').substring(0, 500));
-        return `
-        <tr style="cursor:pointer" onclick="viewSentEmail('${esc(e.email || '')}')">
-            <td>${fmtDate(e.sent_at || e.date || '')}</td>
-            <td>${esc(e.email || '')}</td>
-            <td>${esc(e.company || '')}</td>
-            <td title="${esc(e.subject || '')}">${esc((e.subject || '').substring(0, 40))}</td>
-            <td>${e.qc_score ? `<span class="badge ${e.qc_score >= 90 ? 'badge-green' : 'badge-yellow'}">${e.qc_score}</span>` : '—'}</td>
-            <td>${e.opened ? '✅' : '—'}</td>
-            <td>${e.replied ? '💬' : '—'}</td>
-            <td><button class="btn-sm btn-ghost" onclick="event.stopPropagation(); openModal('📧 Email Detay', '<div style=\'padding:8px\'><p><strong>Kime:</strong> ${esc(e.email || '')}</p><p><strong>Konu:</strong> ${esc(e.subject || '')}</p><p><strong>QC Skor:</strong> ${e.qc_score || '—'}</p><hr><div style=\'white-space:pre-wrap;font-size:0.9rem\'>${bodyPreview}</div></div>')">👁</button></td>
-        </tr>`;
-    }).join('');
-}
-
-// ─── AGENT STATUS ───
-async function loadAgentStatus() {
-    const data = await api('/api/agents/status');
-    const grid = document.getElementById('agents-grid');
-    if (!grid) return;
-
-    if (!data) {
-        grid.innerHTML = '<p style="opacity:.5">Agent durumları yüklenemedi</p>';
-        return;
-    }
-
-    const agentNames = Object.keys(AGENT_DESC);
-    const agentList = data.agents || data || [];
-    // Support both list format [{name, status}] and dict format {name: {status}}
-    const isArray = Array.isArray(agentList);
-
-    grid.innerHTML = agentNames.map(name => {
-        let agent = {};
-        if (isArray) {
-            agent = agentList.find(a => a.name === name) || {};
-        } else {
-            agent = agentList[name] || {};
-        }
-        const ok = agent.status === 'OK' || agent.status === 'ok' || agent.healthy;
-        return `
-        <div class="agent-card ${ok ? '' : 'agent-error'}">
-            <div class="agent-header">
-                <span class="agent-dot ${ok ? 'dot-green' : 'dot-red'}"></span>
-                <strong>${esc(name)}</strong>
-            </div>
-            <p class="agent-desc">${esc(AGENT_DESC[name] || '')}</p>
-            <div class="agent-stats">
-                ${agent.processed ? `<span>İşlenen: ${agent.processed}</span>` : ''}
-                ${agent.errors ? `<span style="color:var(--red)">Hata: ${agent.errors}</span>` : ''}
-            </div>
-        </div>`;
-    }).join('');
-
-    // Watchdog raporu
-    const wdEl = document.getElementById('watchdog-report');
-    if (wdEl) {
-        const wd = await api('/api/watchdog/status');
-        if (wd) {
-            wdEl.innerHTML = `<pre style="white-space:pre-wrap;font-size:0.85rem;color:var(--text-secondary)">${esc(JSON.stringify(wd, null, 2))}</pre>`;
-        } else {
-            wdEl.innerHTML = '<p style="opacity:.5">Watchdog raporu alınamadı</p>';
-        }
-    }
-}
-
-// ─── RESPONSES (Yanıtlar) ───
-async function loadResponses() {
-    const data = await api('/api/responses');
-    if (!data) return;
-    const items = data.hot_leads || data.responses || [];
-
-    // Stats grid
-    const statsGrid = document.getElementById('response-stats-grid');
-    if (statsGrid) {
-        const interested = items.filter(r => r.classification === 'interested').length;
-        const questions = items.filter(r => r.classification === 'question').length;
-        const notInterested = items.filter(r => r.classification === 'not_interested').length;
-        const ooo = items.filter(r => r.classification === 'out_of_office').length;
-        statsGrid.innerHTML = `
-            <div class="stat-card gradient-3"><div class="stat-icon">🔥</div><div class="stat-info"><span class="stat-value">${interested}</span><span class="stat-label">İlgili</span></div></div>
-            <div class="stat-card gradient-4"><div class="stat-icon">❓</div><div class="stat-info"><span class="stat-value">${questions}</span><span class="stat-label">Soru</span></div></div>
-            <div class="stat-card gradient-6"><div class="stat-icon">🚫</div><div class="stat-info"><span class="stat-value">${notInterested}</span><span class="stat-label">İlgisiz</span></div></div>
-            <div class="stat-card gradient-5"><div class="stat-icon">🏖</div><div class="stat-info"><span class="stat-value">${ooo}</span><span class="stat-label">Ofis Dışı</span></div></div>
-        `;
-    }
-
-    // Hot Leads table
-    const hotBody = document.getElementById('hot-leads-body');
-    if (hotBody) {
-        const hotLeads = items.filter(r => r.classification === 'interested');
-        if (hotLeads.length) {
-            hotBody.innerHTML = hotLeads.map(r => `
-                <tr>
-                    <td>${esc(r.company || '—')}</td>
-                    <td>${esc(r.from_email || r.email || '')}</td>
-                    <td>${esc((r.body || r.snippet || '').substring(0, 60))}</td>
-                    <td><span class="badge badge-green">${esc(r.classification || '')}</span></td>
-                    <td>${fmtDate(r.received_at || r.date || '')}</td>
-                    <td><button class="btn-sm btn-ghost" onclick="openModal('Yanıt Detay', '<pre style=\'white-space:pre-wrap\'>${esc((r.body || 'İçerik yok').replace(/'/g, "\\'"))}</pre>')">👁</button></td>
-                </tr>
-            `).join('');
-        } else {
-            hotBody.innerHTML = '<tr><td colspan="6" class="empty-state">Henüz hot lead yok</td></tr>';
-        }
-    }
-
-    // Follow-up stats
-    const fuStats = document.getElementById('followup-stats');
-    if (fuStats) {
-        const fuData = await api('/api/followups/stats');
-        if (fuData) {
-            fuStats.innerHTML = `<div class="info-grid">
-                <div class="info-item"><span class="info-label">Bekleyen</span><span class="info-value">${fuData.pending || 0}</span></div>
-                <div class="info-item"><span class="info-label">Gönderilen</span><span class="info-value">${fuData.sent || 0}</span></div>
-                <div class="info-item"><span class="info-label">İptal</span><span class="info-value">${fuData.cancelled || 0}</span></div>
-            </div>`;
-        }
-    }
-}
 
 // ─── SEND TO SELECTED LEADS ───
 // HTML onclick uses sendSelectedLeads — wrapper function

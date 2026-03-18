@@ -507,7 +507,6 @@ def campaign_status():
 @app.route("/api/config", methods=["GET"])
 def get_config():
     return jsonify({
-        "TEST_MODE": config.TEST_MODE,
         "HUMAN_REVIEW": config.HUMAN_REVIEW,
         "DAILY_SEND_LIMIT": config.DAILY_SEND_LIMIT,
         "DELAY_MIN": config.DELAY_MIN,
@@ -539,7 +538,7 @@ def update_config():
     data = request.json or {}
     updated = []
     allowed_keys = [
-        "TEST_MODE", "HUMAN_REVIEW", "DAILY_SEND_LIMIT",
+        "HUMAN_REVIEW", "DAILY_SEND_LIMIT",
         "DELAY_MIN", "DELAY_MAX", "QC_MIN_SCORE",
         "AUTOMATION_INTERVAL", "AUTO_START",
     ]
@@ -974,7 +973,6 @@ def send_to_selected():
                     subject=chosen_subject,
                     method=result.method,
                     message_id=result.message_id,
-                    test_mode=False,
                     ab_variant="A",
                 )
                 emit_event("email_sent", {"email": email, "company": lead_dict.get("company", "")})
@@ -1089,22 +1087,18 @@ _automation_state = {
 
 def _automation_loop():
     """
-    SONSUZ OTONOM PIPELINE — Hiç durmaz, sürekli lead toplar.
-    Sektör → Genişletilmiş Arama → Yeni Sektör Keşfi → Tekrar döngü.
-    Her cycle:
-      1. Tüm sektörlerde lead keşfi (sırayla)
-      2. Genişletilmiş arama (farklı şehirler, alt-sektörler)
-      3. AI ile yeni sektör keşfi
-      4. AI lead scoring
-      5. Email yaz + QC + gönder
-      6. Follow-up işleme
-      7. A/B test + Response tracking
+    SIRASAL OTOMASYON PIPELINE — Shared hosting'de crash'i önler.
+    Her phase arasında gc.collect() ile bellek temizliği yapılır.
+    Pipeline: Lead Bul (max 100) → Puanla → Email Yaz → Gönder → Follow-up → Cleanup
     """
+    import gc
+    import random
+
     try:
         _automation_state["last_action"] = "Orchestrator yükleniyor..."
         from agents.orchestrator import Orchestrator
         orch = Orchestrator()
-        _automation_state["last_action"] = "Orchestrator hazır — başlıyor..."
+        _automation_state["last_action"] = "Orchestrator hazır — pipeline başlıyor..."
     except Exception as e:
         _automation_state["running"] = False
         _automation_state["last_action"] = f"HATA: Orchestrator yüklenemedi — {e}"
@@ -1114,96 +1108,98 @@ def _automation_loop():
         emit_event("automation_update", {"action": _automation_state["last_action"], "running": False, "error": str(e)})
         return
 
-    # Genişletilmiş arama havuzu — sektörler bitince bunlar denenir
     _dutch_cities = [
         "Amsterdam", "Rotterdam", "Den Haag", "Utrecht", "Eindhoven",
         "Tilburg", "Groningen", "Almere", "Breda", "Nijmegen",
         "Arnhem", "Haarlem", "Enschede", "Apeldoorn", "Amersfoort",
         "Zaanstad", "Zwolle", "Leiden", "Zoetermeer", "Maastricht"
     ]
-    _exhausted_combos = set()  # (sector, location) zaten tarandı ve 0 buldu
+    _exhausted_combos = set()
 
     while _automation_state["running"]:
         try:
             _automation_state["cycle"] += 1
             cycle = _automation_state["cycle"]
-            log.info(f"[AUTO] ═══ Cycle {cycle} başlıyor ═══ [SONSUZ MOD — Durdurana kadar devam eder]")
+            log.info(f"[AUTO] ═══ Cycle {cycle} başlıyor ═══ [SIRASAL PIPELINE]")
 
-            # ──── STEP 1: Tüm sektörlerde lead keşfi ────────────────
-            _automation_state["last_action"] = "Lead keşfi — ana sektörler taranıyor..."
+            # ══════════════════════════════════════════════════════
+            # PHASE 1: LEAD KEŞFİ (max 100 lead bulana kadar)
+            # ══════════════════════════════════════════════════════
+            _automation_state["last_action"] = "Phase 1: Lead keşfi başlıyor..."
             emit_event("automation_update", {"action": _automation_state["last_action"], "cycle": cycle})
 
             total_discovered = 0
+            MAX_LEADS_PER_CYCLE = 100
+
             for sector in list(config.SECTORS):
-                if not _automation_state["running"]:
+                if not _automation_state["running"] or total_discovered >= MAX_LEADS_PER_CYCLE:
                     break
                 sector = sector.strip()
                 if not sector:
                     continue
 
                 combo_key = (sector.lower(), config.TARGET_LOCATION.lower())
+                if combo_key in _exhausted_combos:
+                    continue
+
                 try:
+                    _automation_state["last_action"] = f"Phase 1: {sector} taranıyor... ({total_discovered}/{MAX_LEADS_PER_CYCLE})"
                     log.info(f"[AUTO] Sektör taranıyor: {sector} / {config.TARGET_LOCATION}")
                     new_leads = lead_finder.discover_leads(sector, config.TARGET_LOCATION)
                     count = len(new_leads) if new_leads else 0
                     total_discovered += count
-                    log.info(f"[AUTO] {sector}: {count} lead bulundu")
+                    log.info(f"[AUTO] {sector}: {count} lead bulundu (toplam: {total_discovered})")
 
                     if count == 0:
                         _exhausted_combos.add(combo_key)
                     elif combo_key in _exhausted_combos:
                         _exhausted_combos.discard(combo_key)
-
                 except Exception as e:
                     log.error(f"[AUTO] {sector} keşif hatası: {e}")
 
-                # Sektörler arası bekleme (sunucu koruması - shared hosting)
+                # Sektörler arası bekleme — sunucu koruması
                 if _automation_state["running"]:
-                    _automation_state["last_action"] = f"Sektör tamamlandı: {sector} ({count} lead) — 30s bekleniyor..."
                     time.sleep(30)
 
-            log.info(f"[AUTO] Ana sektör taraması tamamlandı: {total_discovered} yeni lead")
+            log.info(f"[AUTO] Phase 1 tamamlandı: {total_discovered} yeni lead")
+            gc.collect()  # Bellek temizliği
+            time.sleep(10)
 
-            # ──── STEP 2: Genişletilmiş arama (şehir bazlı) ─────────
-            if _automation_state["running"]:
-                _automation_state["last_action"] = "Genişletilmiş arama — şehir bazlı tarama..."
+            # ══════════════════════════════════════════════════════
+            # PHASE 2: GENİŞLETİLMİŞ ARAMA (her 3. cycle)
+            # ══════════════════════════════════════════════════════
+            if _automation_state["running"] and cycle % 3 == 0:
+                _automation_state["last_action"] = "Phase 2: Şehir bazlı genişletilmiş arama..."
                 emit_event("automation_update", {"action": _automation_state["last_action"], "cycle": cycle})
 
                 expanded_found = 0
-                # Her cycle'da 1 rastgele şehir + 1 rastgele sektör (sunucu koruması)
-                import random
-                cities_to_try = random.sample(_dutch_cities, min(1, len(_dutch_cities)))
-                sectors_to_try = random.sample(list(config.SECTORS), min(1, len(config.SECTORS)))
+                city = random.choice(_dutch_cities)
+                sector = random.choice(list(config.SECTORS)) if config.SECTORS else "transport"
 
-                for city in cities_to_try:
-                    if not _automation_state["running"]:
-                        break
-                    for sector in sectors_to_try:
-                        if not _automation_state["running"]:
-                            break
-                        combo_key = (sector.lower(), city.lower())
-                        if combo_key in _exhausted_combos:
-                            continue  # Bu kombinasyon zaten denendi ve boş geldi
-                        try:
-                            log.info(f"[AUTO] Genişletilmiş arama: {sector} / {city}")
-                            new_leads = lead_finder.discover_leads(sector, city)
-                            count = len(new_leads) if new_leads else 0
-                            expanded_found += count
-                            if count > 0:
-                                log.info(f"[AUTO] ✅ {sector}/{city}: {count} yeni lead!")
-                            else:
-                                _exhausted_combos.add(combo_key)
-                        except Exception as e:
-                            log.error(f"[AUTO] Genişletilmiş arama hatası ({sector}/{city}): {e}")
-                        time.sleep(45)
+                combo_key = (sector.lower(), city.lower())
+                if combo_key not in _exhausted_combos:
+                    try:
+                        log.info(f"[AUTO] Genişletilmiş arama: {sector} / {city}")
+                        new_leads = lead_finder.discover_leads(sector, city)
+                        count = len(new_leads) if new_leads else 0
+                        expanded_found = count
+                        if count > 0:
+                            log.info(f"[AUTO] ✅ {sector}/{city}: {count} yeni lead!")
+                            total_discovered += count
+                        else:
+                            _exhausted_combos.add(combo_key)
+                    except Exception as e:
+                        log.error(f"[AUTO] Genişletilmiş arama hatası ({sector}/{city}): {e}")
 
-                if expanded_found > 0:
-                    log.info(f"[AUTO] Genişletilmiş aramadan {expanded_found} lead bulundu")
-                    total_discovered += expanded_found
+                log.info(f"[AUTO] Phase 2 tamamlandı: {expanded_found} lead")
+                gc.collect()
+                time.sleep(30)
 
-            # ──── STEP 3: AI ile yeni sektör keşfi ───────────────────
-            if _automation_state["running"] and cycle % 3 == 0:
-                _automation_state["last_action"] = "AI yeni sektör araştırıyor..."
+            # ══════════════════════════════════════════════════════
+            # PHASE 3: AI SEKTÖR KEŞFİ (her 5. cycle)
+            # ══════════════════════════════════════════════════════
+            if _automation_state["running"] and cycle % 5 == 0:
+                _automation_state["last_action"] = "Phase 3: AI yeni sektör araştırıyor..."
                 emit_event("automation_update", {"action": _automation_state["last_action"], "cycle": cycle})
                 try:
                     log.info("[AUTO] AI ile yeni sektör araştırılıyor...")
@@ -1234,53 +1230,79 @@ def _automation_loop():
                             config.SECTORS.extend(_added[:5])
                             log.info(f"[AUTO] {len(_added)} yeni sektör eklendi: {', '.join(_added[:5])}")
                         else:
-                            log.info("[AUTO] Yeni sektör bulunamadı — mevcut sektörler yeterli")
+                            log.info("[AUTO] Yeni sektör bulunamadı")
                 except Exception as e:
                     log.error(f"[AUTO] Sektör keşif hatası: {e}")
 
-            # Her 5 cycle'da tükenmiş kombinasyonları temizle (yeni sonuçlar olabilir)
+                gc.collect()
+                time.sleep(10)
+
+            # Tükenmiş kombinasyonları periyodik temizle
             if cycle % 5 == 0:
                 cleared = len(_exhausted_combos)
                 _exhausted_combos.clear()
-                log.info(f"[AUTO] {cleared} tükenmiş kombinasyon sıfırlandı — yeniden taranacak")
+                log.info(f"[AUTO] {cleared} tükenmiş kombinasyon sıfırlandı")
 
             log.info(f"[AUTO] Toplam {total_discovered} yeni lead keşfedildi (cycle {cycle})")
 
-            # ──── STEP 4: AI Lead Scoring ────────────────────────
+            # ══════════════════════════════════════════════════════
+            # PHASE 4: AI LEAD SCORING (batch 20)
+            # ══════════════════════════════════════════════════════
             if _automation_state["running"]:
-                _automation_state["last_action"] = "Lead'ler puanlanıyor..."
+                _automation_state["last_action"] = "Phase 4: Lead'ler puanlanıyor..."
                 emit_event("automation_update", {"action": _automation_state["last_action"], "cycle": cycle})
                 try:
                     unscored = db.get_all_leads()
                     unscored_leads = [l for l in unscored if not l.get("ai_score") or l.get("ai_score", 0) == 0]
                     if unscored_leads:
-                        scores = lead_scorer.score_batch(unscored_leads[:20])
+                        batch = unscored_leads[:20]
+                        scores = lead_scorer.score_batch(batch)
                         for s in scores:
                             db.update_lead_ai_score(s["email"], s.get("score", 50), s.get("reason", ""))
                         log.info(f"[AUTO] {len(scores)} lead puanlandı")
+                    else:
+                        log.info("[AUTO] Puanlanacak lead yok")
                 except Exception as e:
                     log.error(f"[AUTO] Lead scoring hatası: {e}")
 
-            # ──── STEP 5: Email yaz + QC + Gönder ────────────────
+                gc.collect()
+                time.sleep(10)
+
+            # ══════════════════════════════════════════════════════
+            # PHASE 5: EMAIL YAZ + QC + GÖNDER (batch 10)
+            # ══════════════════════════════════════════════════════
             if _automation_state["running"]:
-                _automation_state["last_action"] = "Email'ler yazılıp gönderiliyor..."
+                _automation_state["last_action"] = "Phase 5: Email'ler yazılıp gönderiliyor..."
                 emit_event("automation_update", {"action": _automation_state["last_action"], "cycle": cycle})
                 try:
-                    unsent = db.get_unsent_leads(limit=config.DAILY_SEND_LIMIT)
-                    if unsent:
-                        log.info(f"[AUTO] {len(unsent)} gönderilmemiş lead — kampanya başlatılıyor")
-                        stats_result = orch.run_campaign(max_send=min(len(unsent), config.DAILY_SEND_LIMIT))
-                        log.info(f"[AUTO] Kampanya tamamlandı: {stats_result.sent} gönderildi, "
-                                 f"{stats_result.skipped_quality} QC başarısız, "
-                                 f"{stats_result.skipped_compliance} compliance atlandı")
+                    today_sent = db.get_today_sent_count()
+                    remaining = max(0, config.DAILY_SEND_LIMIT - today_sent)
+                    batch_size = min(10, remaining)  # Bir seferde max 10
+
+                    if batch_size > 0:
+                        unsent = db.get_unsent_leads(limit=batch_size)
+                        if unsent:
+                            log.info(f"[AUTO] {len(unsent)} lead'e email gönderilecek (günlük kalan: {remaining})")
+                            stats_result = orch.run_campaign(max_send=len(unsent))
+                            log.info(f"[AUTO] Kampanya: {stats_result.sent} gönderildi, "
+                                     f"{stats_result.skipped_quality} QC fail, "
+                                     f"{stats_result.skipped_compliance} compliance atlandı")
+                            emit_event("email_sent", {"count": stats_result.sent})
+                        else:
+                            log.info("[AUTO] Gönderilecek yeni lead yok")
                     else:
-                        log.info("[AUTO] Gönderilecek yeni lead yok")
+                        log.info(f"[AUTO] Günlük limit doldu ({today_sent}/{config.DAILY_SEND_LIMIT})")
                 except Exception as e:
                     log.error(f"[AUTO] Kampanya hatası: {e}")
 
-            # ──── STEP 6: Follow-up işleme ───────────────────────
+                gc.collect()
+                time.sleep(30)
+
+            # ══════════════════════════════════════════════════════
+            # PHASE 6: FOLLOW-UP İŞLEME
+            # ══════════════════════════════════════════════════════
             if _automation_state["running"]:
-                _automation_state["last_action"] = "Follow-up'lar işleniyor..."
+                _automation_state["last_action"] = "Phase 6: Follow-up'lar işleniyor..."
                 emit_event("automation_update", {"action": _automation_state["last_action"], "cycle": cycle})
                 try:
                     processed = follow_up.process_pending()
@@ -1288,7 +1310,13 @@ def _automation_loop():
                 except Exception as e:
                     log.error(f"[AUTO] Follow-up hatası: {e}")
 
-            # ──── STEP 7: A/B Test + Response Tracking ───────────
+                gc.collect()
+                time.sleep(10)
+
+            # ══════════════════════════════════════════════════════
+            # PHASE 7: A/B TEST + RESPONSE TRACKING + CLEANUP
+            # ══════════════════════════════════════════════════════
+            _automation_state["last_action"] = "Phase 7: A/B test ve yanıt takibi..."
             try:
                 variant_stats = db.get_open_rates_by_variant()
                 if variant_stats:
@@ -1303,8 +1331,10 @@ def _automation_loop():
             except Exception:
                 pass
 
-            # ──── Cycle tamamlandı ───────────────────────────────
-            _automation_state["last_action"] = f"Cycle {cycle} tamamlandı — sonraki cycle hazırlanıyor..."
+            # ══════════════════════════════════════════════════════
+            # CYCLE TAMAMLANDI
+            # ══════════════════════════════════════════════════════
+            _automation_state["last_action"] = f"Cycle {cycle} tamamlandı — {config.AUTOMATION_INTERVAL} dk bekleniyor..."
             _automation_state["last_cycle_at"] = datetime.now().isoformat()
             _automation_state["stats"] = db.get_stats()
             emit_event("automation_update", {
@@ -1314,9 +1344,10 @@ def _automation_loop():
             })
 
             log.info(f"[AUTO] ═══ Cycle {cycle} tamamlandı ═══ "
-                     f"Toplam sektör: {len(config.SECTORS)} | "
-                     f"Sonraki cycle: {config.AUTOMATION_INTERVAL} dk sonra | "
-                     f"SONSUZ MOD — Durdurana kadar devam eder")
+                     f"Sektör: {len(config.SECTORS)} | "
+                     f"Sonraki: {config.AUTOMATION_INTERVAL} dk sonra")
+
+            gc.collect()  # Son bellek temizliği
 
             # Sonraki cycle için bekle
             wait_seconds = config.AUTOMATION_INTERVAL * 60
@@ -1329,6 +1360,7 @@ def _automation_loop():
             log.error(f"[AUTO] Cycle hatası: {e}")
             import traceback
             traceback.print_exc()
+            gc.collect()
             time.sleep(60)
 
 

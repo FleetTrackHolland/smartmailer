@@ -31,7 +31,6 @@ class Config:
     BCC_EMAIL          = os.getenv("BCC_EMAIL", "sales@fleettrackholland.nl")
 
     # ─── ÇALIŞMA MODU ────────────────────────────────────────────
-    TEST_MODE          = False  # Daima CANLI mod
     HUMAN_REVIEW       = os.getenv("HUMAN_REVIEW", "false").lower() == "true"
     DELAY_MIN          = int(os.getenv("DELAY_MIN", "15"))
     DELAY_MAX          = int(os.getenv("DELAY_MAX", "35"))
