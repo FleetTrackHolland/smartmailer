@@ -356,6 +356,64 @@ class Database:
                                (email.strip().lower(),)).fetchone()
             return dict(row) if row else None
 
+    def lead_exists(self, email: str) -> bool:
+        """Lead veritabanında var mı kontrol et."""
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT 1 FROM leads WHERE email = ? LIMIT 1",
+                (email.strip().lower(),)
+            ).fetchone()
+            return row is not None
+
+    def get_unsent_leads(self, limit: int = 20) -> list[dict]:
+        """Henüz email gönderilmemiş lead'leri getir."""
+        with self._conn() as conn:
+            rows = conn.execute("""
+                SELECT l.* FROM leads l
+                LEFT JOIN sent_log s ON l.email = s.email
+                LEFT JOIN unsubscribes u ON l.email = u.email
+                LEFT JOIN opt_out o ON l.email = o.email
+                WHERE s.email IS NULL
+                  AND u.email IS NULL
+                  AND o.email IS NULL
+                  AND l.email != ''
+                ORDER BY l.ai_score DESC, l.score DESC
+                LIMIT ?
+            """, (limit,)).fetchall()
+            return [dict(r) for r in rows]
+
+    def is_unsubscribed(self, email: str) -> bool:
+        """Email unsubscribe veya opt-out listesinde mi?"""
+        email = email.strip().lower()
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT 1 FROM unsubscribes WHERE email = ? LIMIT 1",
+                (email,)
+            ).fetchone()
+            if row:
+                return True
+            row = conn.execute(
+                "SELECT 1 FROM opt_out WHERE email = ? LIMIT 1",
+                (email,)
+            ).fetchone()
+            return row is not None
+
+    def get_leads_for_scoring(self, limit: int = 30) -> list[dict]:
+        """AI puanlaması yapılmamış lead'leri getir."""
+        with self._conn() as conn:
+            rows = conn.execute("""
+                SELECT * FROM leads
+                WHERE (ai_score = 0 OR ai_score IS NULL)
+                  AND email != ''
+                ORDER BY score DESC, created_at ASC
+                LIMIT ?
+            """, (limit,)).fetchall()
+            return [dict(r) for r in rows]
+
+    def is_duplicate_email(self, email: str) -> bool:
+        """Alias for lead_exists."""
+        return self.lead_exists(email)
+
     def update_lead_ai_score(self, email: str, score: int, reason: str = ""):
         with self._conn() as conn:
             conn.execute("""
