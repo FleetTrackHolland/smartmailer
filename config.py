@@ -27,7 +27,8 @@ class Config:
     COMPANY_ADDRESS    = os.getenv("COMPANY_ADDRESS", "")
     COMPANY_PHONE      = os.getenv("COMPANY_PHONE", "")
     COMPANY_WEBSITE    = os.getenv("COMPANY_WEBSITE", "https://www.fleettrackholland.nl")
-    UNSUBSCRIBE_URL    = os.getenv("UNSUBSCRIBE_URL", "https://www.fleettrackholland.nl/afmelden")
+    UNSUBSCRIBE_URL    = os.getenv("UNSUBSCRIBE_URL", "https://app.fleettrackholland.nl/unsubscribe")
+    BCC_EMAIL          = os.getenv("BCC_EMAIL", "sales@fleettrackholland.nl")
 
     # ─── ÇALIŞMA MODU ────────────────────────────────────────────
     TEST_MODE          = os.getenv("TEST_MODE", "true").lower() == "true"

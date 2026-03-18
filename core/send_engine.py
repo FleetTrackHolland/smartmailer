@@ -21,9 +21,10 @@ BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 # ─── WARM-UP SCHEDULE ─────────────────────────────────────────
 # Hafta numarasına göre günlük max gönderim limiti
+# Domain doğrulanmış (SPF/DKIM/DMARC) → daha agresif başlangıç
 WARMUP_SCHEDULE = {
-    1: 15, 2: 25, 3: 40, 4: 60,
-    5: 80, 6: 100, 7: 120, 8: 150,
+    1: 40, 2: 60, 3: 80, 4: 100,
+    5: 120, 6: 150, 7: 200, 8: 300,
 }
 
 
@@ -204,6 +205,10 @@ class SendEngine:
             },
             "tags": [msg.campaign_id] if msg.campaign_id else [],
         }
+        # BCC — gönderilen her mailin kopyasını sales@ adresine gönder
+        bcc_email = getattr(config, 'BCC_EMAIL', 'sales@fleettrackholland.nl')
+        if bcc_email:
+            payload["bcc"] = [{"email": bcc_email}]
         try:
             resp = requests.post(BREVO_API_URL, json=payload,
                                  headers=headers, timeout=15)
@@ -238,6 +243,12 @@ class SendEngine:
             mime["Reply-To"] = f"{config.SENDER_NAME} <{reply_to}>"
             mime["List-Unsubscribe"] = f"<{unsub_url}>"
             mime["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click"
+            # BCC
+            bcc_email = getattr(config, 'BCC_EMAIL', 'sales@fleettrackholland.nl')
+            recipients = [msg.to_email]
+            if bcc_email:
+                mime["Bcc"] = bcc_email
+                recipients.append(bcc_email)
             mime.attach(MIMEText(msg.text_body, "plain", "utf-8"))
             mime.attach(MIMEText(msg.html_body, "html", "utf-8"))
 
@@ -247,7 +258,7 @@ class SendEngine:
                 srv.ehlo()
                 srv.starttls(context=ctx)
                 srv.login(config.BREVO_SMTP_USER, config.BREVO_SMTP_PASS)
-                srv.sendmail(config.SENDER_EMAIL, [msg.to_email],
+                srv.sendmail(config.SENDER_EMAIL, recipients,
                              mime.as_string())
 
             log.info(f"[SMTP ✅] → {msg.to_email}")
