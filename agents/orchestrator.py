@@ -102,14 +102,13 @@ class Orchestrator:
         stats.total_leads = len(leads)
 
         # Kampanya kaydı
-        db.create_campaign(campaign_id, stats.total_leads, config.TEST_MODE)
+        db.create_campaign(campaign_id, stats.total_leads, False)
 
         log.info(f"Kampanya başladı: {stats.total_leads} lead | "
-                 f"Limit: {limit} | Test: {config.TEST_MODE} | "
+                 f"Limit: {limit} | CANLI GÖNDERİM | "
                  f"ID: {campaign_id}")
 
-        if config.TEST_MODE:
-            log.info("[TEST MODU] Gerçek mail gönderilmeyecek.")
+
 
         for lead in leads:
             if stats.sent >= limit:
@@ -131,7 +130,7 @@ class Orchestrator:
                 failed=stats.failed)
 
             # Gönderimler arası bekleme
-            if stats.sent > 0 and not config.TEST_MODE:
+            if stats.sent > 0:
                 wait = random.randint(config.DELAY_MIN, config.DELAY_MAX)
                 log.debug(f"Bekleniyor: {wait} saniye...")
                 time.sleep(wait)
@@ -280,7 +279,6 @@ class Orchestrator:
                 sector=sector,
                 subject=chosen_subject, method=result.method,
                 message_id=result.message_id,
-                test_mode=config.TEST_MODE,
                 campaign_id=campaign_id,
                 ab_variant=variant,
             )

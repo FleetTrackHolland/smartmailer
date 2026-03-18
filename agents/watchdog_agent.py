@@ -169,10 +169,10 @@ class WatchdogAgent:
         if not key or len(key) < 10:
             return HealthStatus("api_keys", "CRITICAL",
                                 "ANTHROPIC_API_KEY eksik — mail üretilemez!")
-        if not self._config.TEST_MODE:
-            if not self._config.BREVO_API_KEY and not self._config.BREVO_SMTP_PASS:
-                return HealthStatus("api_keys", "CRITICAL",
-                                    "Brevo kimlik bilgisi eksik — gönderim yapılamaz!")
+        # Her zaman Brevo API anahtarlarını kontrol et (CANLI MOD)
+        if not self._config.BREVO_API_KEY and not self._config.BREVO_SMTP_PASS:
+            return HealthStatus("api_keys", "CRITICAL",
+                                "Brevo kimlik bilgisi eksik — gönderim yapılamaz!")
         return HealthStatus("api_keys", "OK", "API anahtarları mevcut")
 
     # ─────────────────────────────────────────────────────────────
