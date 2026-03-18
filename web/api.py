@@ -1373,9 +1373,9 @@ def _automation_loop():
             log.info(f"[AUTO] ═══ Cycle {cycle} başlıyor ═══ [SIRASAL PIPELINE]")
 
             # ══════════════════════════════════════════════════════
-            # PHASE 1: LEAD KEŞFİ (max 100 lead bulana kadar)
+            # PHASE 1: LEAD KEŞFİ (AI-only — web scrape shared hosting'de çalışmıyor)
             # ══════════════════════════════════════════════════════
-            _automation_state["last_action"] = "Phase 1: Lead keşfi başlıyor..."
+            _automation_state["last_action"] = "Phase 1: Lead keşfi başlıyor (AI)..."
             emit_event("automation_update", {"action": _automation_state["last_action"], "cycle": cycle})
 
             total_discovered = 0
@@ -1388,87 +1388,89 @@ def _automation_loop():
                 if not sector:
                     continue
 
-                combo_key = (sector.lower(), config.TARGET_LOCATION.lower())
-                if combo_key in _exhausted_combos:
-                    continue
-
                 try:
-                    _automation_state["last_action"] = f"Phase 1: {sector} taranıyor... ({total_discovered}/{MAX_LEADS_PER_CYCLE})"
-                    log.info(f"[AUTO] Sektör taranıyor: {sector} / {config.TARGET_LOCATION}")
+                    _automation_state["last_action"] = f"Phase 1: {sector} — AI ile lead aranıyor... ({total_discovered}/{MAX_LEADS_PER_CYCLE})"
+                    log.info(f"[AUTO] AI lead arama: {sector}")
 
-                    # Timeout wrapper — discover_leads max 60 saniye
-                    _discover_result = [None]
-                    _discover_error = [None]
-                    def _discover_worker():
-                        try:
-                            _discover_result[0] = lead_finder.discover_leads(sector, config.TARGET_LOCATION)
-                        except Exception as ex:
-                            _discover_error[0] = ex
-
-                    discover_thread = threading.Thread(target=_discover_worker, daemon=True)
-                    discover_thread.start()
-                    discover_thread.join(timeout=60)  # Max 60 saniye bekle
-
-                    if discover_thread.is_alive():
-                        log.warning(f"[AUTO] {sector}: discover_leads 60s timeout — atlanıyor")
-                        _automation_state["last_action"] = f"Phase 1: {sector} timeout — sonraki sektöre geçiliyor"
-                        new_leads = []
-                    elif _discover_error[0]:
-                        raise _discover_error[0]
+                    # AI-only lead search — shared hosting'de çalışan tek yöntem
+                    ai_leads = lead_finder._ai_bulk_lead_search(sector)
+                    
+                    if ai_leads:
+                        saved = 0
+                        for nl in ai_leads:
+                            email = nl.get("email", "")
+                            if email and not db.lead_exists(email):
+                                try:
+                                    db.add_discovered_lead(
+                                        email=email,
+                                        company=nl.get("company_name", ""),
+                                        sector=sector,
+                                        location=nl.get("city", "Nederland"),
+                                        vehicles=str(nl.get("estimated_vehicles", "")),
+                                        website=nl.get("website", ""),
+                                        phone=nl.get("phone", ""),
+                                        source="ai_discovery",
+                                    )
+                                    saved += 1
+                                except Exception:
+                                    pass
+                        total_discovered += saved
+                        log.info(f"[AUTO] {sector}: {saved} yeni lead kaydedildi (API: {len(ai_leads)})")
+                        _automation_state["last_action"] = f"Phase 1: {sector} — {saved} yeni lead! ({total_discovered}/{MAX_LEADS_PER_CYCLE})"
                     else:
-                        new_leads = _discover_result[0] or []
+                        log.info(f"[AUTO] {sector}: AI lead bulamadı")
+                        _automation_state["last_action"] = f"Phase 1: {sector} — lead bulunamadı ({total_discovered}/{MAX_LEADS_PER_CYCLE})"
 
-                    count = len(new_leads) if new_leads else 0
-                    total_discovered += count
-                    log.info(f"[AUTO] {sector}: {count} lead bulundu (toplam: {total_discovered})")
-                    _automation_state["last_action"] = f"Phase 1: {sector} — {count} lead bulundu ({total_discovered}/{MAX_LEADS_PER_CYCLE})"
-
-                    if count == 0:
-                        _exhausted_combos.add(combo_key)
-                    elif combo_key in _exhausted_combos:
-                        _exhausted_combos.discard(combo_key)
                 except Exception as e:
-                    log.error(f"[AUTO] {sector} keşif hatası: {e}")
+                    log.error(f"[AUTO] {sector} AI keşif hatası: {e}")
                     _automation_state["last_action"] = f"Phase 1: {sector} HATA — devam ediliyor"
 
-                # Sektörler arası bekleme — sunucu koruması
+                # Sektörler arası bekleme
                 if _automation_state["running"]:
-                    time.sleep(5)  # 30s → 5s (daha hızlı geçiş)
+                    time.sleep(3)
 
             log.info(f"[AUTO] Phase 1 tamamlandı: {total_discovered} yeni lead")
-            _automation_state["last_action"] = f"Phase 1 tamamlandı: {total_discovered} lead"
-            gc.collect()  # Bellek temizliği
-            time.sleep(5)
+            _automation_state["last_action"] = f"Phase 1 tamamlandı: {total_discovered} yeni lead keşfedildi"
+            gc.collect()
+            time.sleep(3)
 
             # ══════════════════════════════════════════════════════
-            # PHASE 2: GENİŞLETİLMİŞ ARAMA (her 3. cycle)
+            # PHASE 2: GENİŞLETİLMİŞ AI ARAMA (her 3. cycle)
             # ══════════════════════════════════════════════════════
             if _automation_state["running"] and cycle % 3 == 0:
-                _automation_state["last_action"] = "Phase 2: Şehir bazlı genişletilmiş arama..."
+                _automation_state["last_action"] = "Phase 2: Genişletilmiş AI arama..."
                 emit_event("automation_update", {"action": _automation_state["last_action"], "cycle": cycle})
 
-                expanded_found = 0
-                city = random.choice(_dutch_cities)
-                sector = random.choice(list(config.SECTORS)) if config.SECTORS else "transport"
-
-                combo_key = (sector.lower(), city.lower())
-                if combo_key not in _exhausted_combos:
-                    try:
-                        log.info(f"[AUTO] Genişletilmiş arama: {sector} / {city}")
-                        new_leads = lead_finder.discover_leads(sector, city)
-                        count = len(new_leads) if new_leads else 0
-                        expanded_found = count
-                        if count > 0:
-                            log.info(f"[AUTO] ✅ {sector}/{city}: {count} yeni lead!")
-                            total_discovered += count
-                        else:
-                            _exhausted_combos.add(combo_key)
-                    except Exception as e:
-                        log.error(f"[AUTO] Genişletilmiş arama hatası ({sector}/{city}): {e}")
-
-                log.info(f"[AUTO] Phase 2 tamamlandı: {expanded_found} lead")
+                try:
+                    sector = random.choice(list(config.SECTORS)) if config.SECTORS else "transport"
+                    log.info(f"[AUTO] Genişletilmiş AI arama: {sector}")
+                    ai_leads = lead_finder._ai_bulk_lead_search(sector)
+                    expanded_found = 0
+                    if ai_leads:
+                        for nl in ai_leads:
+                            email = nl.get("email", "")
+                            if email and not db.lead_exists(email):
+                                try:
+                                    db.add_discovered_lead(
+                                        email=email,
+                                        company=nl.get("company_name", ""),
+                                        sector=sector,
+                                        location=nl.get("city", "Nederland"),
+                                        vehicles=str(nl.get("estimated_vehicles", "")),
+                                        website=nl.get("website", ""),
+                                        phone=nl.get("phone", ""),
+                                        source="ai_discovery",
+                                    )
+                                    expanded_found += 1
+                                except Exception:
+                                    pass
+                    log.info(f"[AUTO] Phase 2 tamamlandı: {expanded_found} yeni lead")
+                    _automation_state["last_action"] = f"Phase 2 tamamlandı: {expanded_found} lead"
+                except Exception as e:
+                    log.error(f"[AUTO] Phase 2 hatası: {e}")
+                
                 gc.collect()
-                time.sleep(30)
+                time.sleep(5)
 
             # ══════════════════════════════════════════════════════
             # PHASE 3: AI SEKTÖR KEŞFİ (her 5. cycle)
