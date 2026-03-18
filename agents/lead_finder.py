@@ -22,15 +22,27 @@ CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
 
 # ─── HOLLANDA ŞEHİRLERİ ──────────────────────────────────────────
 DUTCH_CITIES = [
+    # TOP 20 — Büyük şehirler
     "Amsterdam", "Rotterdam", "Den Haag", "Utrecht", "Eindhoven",
     "Groningen", "Tilburg", "Almere", "Breda", "Nijmegen",
     "Apeldoorn", "Haarlem", "Arnhem", "Enschede", "Amersfoort",
     "Zaanstad", "Den Bosch", "Haarlemmermeer", "Zoetermeer", "Zwolle",
+    # TOP 40 — Orta şehirler
     "Maastricht", "Dordrecht", "Leiden", "Deventer", "Delft",
     "Venlo", "Alkmaar", "Leeuwarden", "Hilversum", "Heerlen",
     "Oss", "Roosendaal", "Alphen aan den Rijn", "Gouda", "Vlaardingen",
     "Lelystad", "Emmen", "Helmond", "Purmerend", "Schiedam",
-    "Spijkenisse", "Vlaardingen", "Capelle aan den IJssel", "Kampen", "Hoogeveen",
+    # 40-60 — Bölgesel merkezler
+    "Spijkenisse", "Capelle aan den IJssel", "Kampen", "Hoogeveen",
+    "Hoorn", "Veenendaal", "Zeist", "Barneveld", "Uden",
+    "Amstelveen", "Rijswijk", "Nieuwegein", "Roermond", "Weert",
+    "Harderwijk", "Doetinchem", "Tiel", "Middelburg", "Goes",
+    # 60-85 — Kleinere steden
+    "Terneuzen", "Vlissingen", "Bergen op Zoom", "Waalwijk", "Veghel",
+    "Boxtel", "Elst", "Cuijk", "Wageningen", "Ede",
+    "Meppel", "Steenwijk", "Assen", "Drachten", "Sneek",
+    "Heerenveen", "Gorinchem", "Woerden", "IJmuiden", "Beverwijk",
+    "Heerhugowaard", "Schagen", "Den Helder", "Bussum", "Naarden",
 ]
 
 # ─── SEKTÖR ARAMA STRATEJİLERİ ───────────────────────────────────
@@ -236,7 +248,7 @@ class LeadFinder:
 
         # ── PHASE 5: Şehir bazlı paralel web araması ──
         log.info("[DISCOVER] PHASE 5: Şehir bazlı web araması...")
-        cities = DUTCH_CITIES[:25]
+        cities = DUTCH_CITIES  # Tüm şehirleri tara
         self._stats["cities_searched"] = len(cities)
 
         with ThreadPoolExecutor(max_workers=config.PARALLEL_CITY_WORKERS) as executor:

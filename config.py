@@ -32,18 +32,18 @@ class Config:
     # ─── ÇALIŞMA MODU ────────────────────────────────────────────
     TEST_MODE          = os.getenv("TEST_MODE", "true").lower() == "true"
     HUMAN_REVIEW       = os.getenv("HUMAN_REVIEW", "false").lower() == "true"
-    DELAY_MIN          = int(os.getenv("DELAY_MIN", "25"))
-    DELAY_MAX          = int(os.getenv("DELAY_MAX", "55"))
-    DAILY_SEND_LIMIT   = int(os.getenv("DAILY_SEND_LIMIT", "80"))
+    DELAY_MIN          = int(os.getenv("DELAY_MIN", "15"))
+    DELAY_MAX          = int(os.getenv("DELAY_MAX", "35"))
+    DAILY_SEND_LIMIT   = int(os.getenv("DAILY_SEND_LIMIT", "250"))
 
     # ─── PERFORMANCE ─────────────────────────────────────────────
     QC_MIN_SCORE       = int(os.getenv("QC_MIN_SCORE", "90"))
     QC_MAX_RETRIES     = int(os.getenv("QC_MAX_RETRIES", "5"))
-    PARALLEL_WORKERS   = int(os.getenv("PARALLEL_WORKERS", "3"))
+    PARALLEL_WORKERS   = int(os.getenv("PARALLEL_WORKERS", "5"))
     FOLLOWUP_ENABLED   = os.getenv("FOLLOWUP_ENABLED", "true").lower() == "true"
-    FOLLOWUP_DAY_1     = int(os.getenv("FOLLOWUP_DAY_1", "3"))
-    FOLLOWUP_DAY_2     = int(os.getenv("FOLLOWUP_DAY_2", "7"))
-    FOLLOWUP_DAY_3     = int(os.getenv("FOLLOWUP_DAY_3", "14"))
+    FOLLOWUP_DAY_1     = int(os.getenv("FOLLOWUP_DAY_1", "2"))
+    FOLLOWUP_DAY_2     = int(os.getenv("FOLLOWUP_DAY_2", "5"))
+    FOLLOWUP_DAY_3     = int(os.getenv("FOLLOWUP_DAY_3", "10"))
 
     # ─── OTOMASYON ───────────────────────────────────────────────
     SECTORS            = os.getenv("SECTORS",
@@ -51,15 +51,17 @@ class Config:
         "verhuisbedrijf,taxi,ambulance,bezorgdienst,"
         "groenvoorziening,installatiebedrijf,catering,"
         "afvalverwerking,beveiliging,thuiszorg,"
-        "loodgieter,elektricien,dakdekker,schildersbedrijf"
+        "loodgieter,elektricien,dakdekker,schildersbedrijf,"
+        "vuilophaal,autorijschool,garage,autoverhuur,"
+        "glas,stukadoor,timmerman,metselaar"
     ).split(",")
     TARGET_LOCATION    = os.getenv("TARGET_LOCATION", "Nederland")
     AUTO_START         = os.getenv("AUTO_START", "true").lower() == "true"
-    AUTOMATION_INTERVAL = int(os.getenv("AUTOMATION_INTERVAL", "30"))
+    AUTOMATION_INTERVAL = int(os.getenv("AUTOMATION_INTERVAL", "15"))
 
     # ─── LEAD DISCOVERY (ULTIMATE) ───────────────────────────────
-    MAX_LEADS_PER_SEARCH    = int(os.getenv("MAX_LEADS_PER_SEARCH", "300"))
-    PARALLEL_CITY_WORKERS   = int(os.getenv("PARALLEL_CITY_WORKERS", "5"))
+    MAX_LEADS_PER_SEARCH    = int(os.getenv("MAX_LEADS_PER_SEARCH", "500"))
+    PARALLEL_CITY_WORKERS   = int(os.getenv("PARALLEL_CITY_WORKERS", "8"))
     TELEFOONBOEK_ENABLED    = os.getenv("TELEFOONBOEK_ENABLED", "true").lower() == "true"
     OPENSTREETMAP_ENABLED   = os.getenv("OPENSTREETMAP_ENABLED", "true").lower() == "true"
     EMAIL_VERIFY_MX         = os.getenv("EMAIL_VERIFY_MX", "true").lower() == "true"
