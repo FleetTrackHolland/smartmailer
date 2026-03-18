@@ -1042,9 +1042,10 @@ def _automation_loop():
                 except Exception as e:
                     log.error(f"[AUTO] {sector} keşif hatası: {e}")
 
-                # Sektörler arası kısa bekleme (rate-limit koruması)
+                # Sektörler arası bekleme (sunucu koruması - shared hosting)
                 if _automation_state["running"]:
-                    time.sleep(5)
+                    _automation_state["last_action"] = f"Sektör tamamlandı: {sector} ({count} lead) — 30s bekleniyor..."
+                    time.sleep(30)
 
             log.info(f"[AUTO] Ana sektör taraması tamamlandı: {total_discovered} yeni lead")
 
@@ -1054,10 +1055,10 @@ def _automation_loop():
                 emit_event("automation_update", {"action": _automation_state["last_action"], "cycle": cycle})
 
                 expanded_found = 0
-                # Her cycle'da 3 rastgele şehir + 2 rastgele sektör kombinasyonu dene
+                # Her cycle'da 1 rastgele şehir + 1 rastgele sektör (sunucu koruması)
                 import random
-                cities_to_try = random.sample(_dutch_cities, min(3, len(_dutch_cities)))
-                sectors_to_try = random.sample(list(config.SECTORS), min(2, len(config.SECTORS)))
+                cities_to_try = random.sample(_dutch_cities, min(1, len(_dutch_cities)))
+                sectors_to_try = random.sample(list(config.SECTORS), min(1, len(config.SECTORS)))
 
                 for city in cities_to_try:
                     if not _automation_state["running"]:
@@ -1079,7 +1080,7 @@ def _automation_loop():
                                 _exhausted_combos.add(combo_key)
                         except Exception as e:
                             log.error(f"[AUTO] Genişletilmiş arama hatası ({sector}/{city}): {e}")
-                        time.sleep(5)
+                        time.sleep(45)
 
                 if expanded_found > 0:
                     log.info(f"[AUTO] Genişletilmiş aramadan {expanded_found} lead bulundu")
