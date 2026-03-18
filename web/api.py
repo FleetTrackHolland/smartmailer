@@ -1868,8 +1868,7 @@ def _auto_log(msg):
 
 def _run_automation_cycle():
     """Tek bir otomasyon döngüsü — 6 aşama."""
-    from dataclasses import asdict
-    from core.send_engine import SendEngine, EmailMessage
+    import traceback
 
     automation_state["cycle"] += 1
     cycle = automation_state["cycle"]
@@ -1948,6 +1947,8 @@ def _run_automation_cycle():
     automation_state["current_step"] = "3. Email Yazma + Gönderim"
     _auto_log("Aşama 3: Email yazma ve gönderim...")
     try:
+        from dataclasses import asdict
+        from core.send_engine import SendEngine, EmailMessage
         send_eng = SendEngine()
         leads_to_send = db.get_unsent_leads(limit=config.DAILY_SEND_LIMIT)
         sent_this_cycle = 0
@@ -2049,7 +2050,9 @@ def _auto_start_automation():
         try:
             _run_automation_cycle()
         except Exception as e:
+            import traceback
             _auto_log(f"DÖNGÜ HATASI: {e}")
+            _auto_log(f"Traceback: {traceback.format_exc()[:300]}")
         if not automation_state["running"]:
             break
         automation_state["current_step"] = "Bekleniyor..."
