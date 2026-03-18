@@ -905,6 +905,52 @@ def get_watchdog_health_report():
         return jsonify({"error": str(e)}), 500
 
 
+# ─── SENT EMAILS (Giden Mailler) ──────────────────────────────
+@app.route("/api/sent/all")
+def api_sent_all():
+    """Tüm gönderilen emailleri döndür (Giden Mailler sayfası için)."""
+    try:
+        emails = db.get_all_sent_with_content()
+        return jsonify(emails)
+    except Exception as e:
+        log.error(f"[SENT ALL] Hata: {e}")
+        return jsonify([])
+
+
+@app.route("/api/sent/<path:email>/content")
+def api_sent_content(email):
+    """Belirli bir gönderilen emailin içeriğini döndür."""
+    try:
+        # Drafts tablosundan email içeriğini al
+        with db._conn() as conn:
+            row = conn.execute("""
+                SELECT d.body_html, d.body_text, d.qc_score, d.chosen_subject,
+                       d.subject_a, d.subject_b, d.subject_c,
+                       s.subject, s.company, s.sector, s.method, s.sent_at
+                FROM sent_log s
+                LEFT JOIN drafts d ON s.email = d.email
+                WHERE s.email = ?
+                ORDER BY s.sent_at DESC LIMIT 1
+            """, (email,)).fetchone()
+            if row:
+                return jsonify(dict(row))
+            return jsonify({"error": "Email bulunamadı"}), 404
+    except Exception as e:
+        log.error(f"[SENT CONTENT] {email} hatası: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/duplicate/stats")
+def api_duplicate_stats():
+    """Duplicate engelleme istatistiklerini döndür."""
+    try:
+        stats = db.get_duplicate_stats()
+        return jsonify(stats)
+    except Exception as e:
+        log.error(f"[DUPLICATE STATS] Hata: {e}")
+        return jsonify({"total_sent": 0, "unique_emails": 0, "duplicates_blocked": 0})
+
+
 # ─── SEND TO SELECTED LEADS ───────────────────────────────────
 @app.route("/api/campaign/send-selected", methods=["POST"])
 def send_to_selected():
