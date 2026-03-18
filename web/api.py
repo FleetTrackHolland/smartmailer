@@ -902,6 +902,45 @@ def get_sent_content(email):
         return jsonify({"error": str(e)}), 500
 
 
+# ─── HEALTH CHECK (tüm modülleri test eder) ──────────────────
+@app.route("/api/health/check", methods=["GET"])
+def health_check():
+    """Tüm modüllerin import edilebilirliğini test eder."""
+    results = {}
+    modules = [
+        "agents.orchestrator",
+        "agents.lead_finder",
+        "agents.copywriter_agent",
+        "agents.quality_agent",
+        "agents.compliance_agent",
+        "agents.lead_scorer",
+        "agents.response_tracker",
+        "agents.watchdog_agent",
+        "core.database",
+        "core.send_engine",
+        "core.template_engine",
+        "core.followup_engine",
+        "core.ab_test_engine",
+    ]
+    for mod in modules:
+        try:
+            __import__(mod)
+            results[mod] = "OK"
+        except Exception as e:
+            results[mod] = f"HATA: {e}"
+
+    # Orchestrator init test
+    try:
+        from agents.orchestrator import Orchestrator
+        orch = Orchestrator()
+        results["orchestrator_init"] = "OK"
+    except Exception as e:
+        results["orchestrator_init"] = f"HATA: {e}"
+
+    all_ok = all(v == "OK" for v in results.values())
+    return jsonify({"healthy": all_ok, "modules": results})
+
+
 # ─── LEAD DISCOVERY (v4.5 — SINIRSIZ) ────────────────────────
 @app.route("/api/leads/discover", methods=["POST"])
 def discover_leads():
@@ -946,8 +985,19 @@ def _automation_loop():
       6. Follow-up işleme
       7. A/B test + Response tracking
     """
-    from agents.orchestrator import Orchestrator
-    orch = Orchestrator()
+    try:
+        _automation_state["last_action"] = "Orchestrator yükleniyor..."
+        from agents.orchestrator import Orchestrator
+        orch = Orchestrator()
+        _automation_state["last_action"] = "Orchestrator hazır — başlıyor..."
+    except Exception as e:
+        _automation_state["running"] = False
+        _automation_state["last_action"] = f"HATA: Orchestrator yüklenemedi — {e}"
+        log.error(f"[AUTO] FATAL: Orchestrator import/init hatası: {e}")
+        import traceback
+        traceback.print_exc()
+        emit_event("automation_update", {"action": _automation_state["last_action"], "running": False, "error": str(e)})
+        return
 
     # Genişletilmiş arama havuzu — sektörler bitince bunlar denenir
     _dutch_cities = [
