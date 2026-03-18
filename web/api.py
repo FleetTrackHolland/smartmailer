@@ -1332,7 +1332,24 @@ _automation_state = {
     "last_action": "",
     "last_cycle_at": "",
     "stats": {},
+    "logs": [],
 }
+
+
+def _auto_log(msg, level="info"):
+    """Log'u hem Python logger'a hem de UI'daki Canlı Log'a yaz."""
+    from datetime import datetime as _dt
+    ts = _dt.now().strftime("%H:%M:%S")
+    line = f"[{ts}] {msg}"
+    if level == "error":
+        log.error(msg)
+    elif level == "warning":
+        log.warning(msg)
+    else:
+        log.info(msg)
+    _automation_state["logs"].append(line)
+    if len(_automation_state["logs"]) > 200:
+        _automation_state["logs"] = _automation_state["logs"][-200:]
 
 
 def _automation_loop():
@@ -1347,7 +1364,7 @@ def _automation_loop():
         import random
         import traceback
 
-        log.info("[AUTO] ═══ PIPELINE THREAD BAŞLADI ═══")
+        _auto_log("═══ PIPELINE THREAD BAŞLADI ═══")
         _automation_state["last_action"] = "Pipeline başlatılıyor..."
 
         # SendEngine — email göndermek için (opsiyonel)
@@ -1355,16 +1372,16 @@ def _automation_loop():
         try:
             from core.send_engine import SendEngine
             send_engine = SendEngine()
-            log.info("[AUTO] SendEngine hazır")
+            _auto_log("✅ SendEngine hazır")
         except Exception as e:
-            log.warning(f"[AUTO] SendEngine yüklenemedi (devam ediliyor): {e}")
+            _auto_log(f"⚠️ SendEngine yüklenemedi (devam ediliyor): {e}", "warning")
 
         # ═══ MIDDLE LAYER: Her cycle'ı koru ═══
         while _automation_state["running"]:
             try:
                 _automation_state["cycle"] += 1
                 cycle = _automation_state["cycle"]
-                log.info(f"[AUTO] ═══ Cycle {cycle} başlıyor ═══")
+                _auto_log(f"═══ Cycle {cycle} başlıyor ═══")
                 _automation_state["last_action"] = f"Cycle {cycle} başlıyor..."
                 emit_event("automation_update", {"action": f"Cycle {cycle}", "cycle": cycle, "running": True})
 
@@ -1375,7 +1392,7 @@ def _automation_loop():
                 # ═══════════════════════════════════════════════════
                 try:
                     _automation_state["last_action"] = "Phase 1: AI ile lead keşfi..."
-                    log.info("[AUTO] Phase 1: AI lead keşfi başlıyor")
+                    _auto_log("🔍 Phase 1: AI lead keşfi başlıyor")
 
                     for sector in list(config.SECTORS):
                         if not _automation_state["running"]:
@@ -1386,7 +1403,7 @@ def _automation_loop():
 
                         try:
                             _automation_state["last_action"] = f"Phase 1: {sector} — AI aranıyor ({total_discovered} bulundu)"
-                            log.info(f"[AUTO] AI arama: {sector}")
+                            _auto_log(f"🔍 AI arama: {sector}")
                             ai_leads = lead_finder._ai_bulk_lead_search(sector)
 
                             if ai_leads:
@@ -1409,20 +1426,19 @@ def _automation_loop():
                                         except Exception:
                                             pass
                                 total_discovered += saved
-                                log.info(f"[AUTO] {sector}: {saved} yeni lead!")
+                                _auto_log(f"✅ {sector}: {saved} yeni lead bulundu! (toplam: {total_discovered})")
                                 _automation_state["last_action"] = f"Phase 1: {sector} — {saved} lead! (toplam: {total_discovered})"
                             else:
-                                log.info(f"[AUTO] {sector}: lead bulunamadı")
+                                _auto_log(f"⚠️ {sector}: lead bulunamadı (API yanıt boş)")
                         except Exception as e:
-                            log.error(f"[AUTO] {sector} hatası: {e}")
+                            _auto_log(f"❌ {sector} hatası: {e}", "error")
 
                         time.sleep(2)
 
-                    log.info(f"[AUTO] Phase 1 TAMAM: {total_discovered} lead")
+                    _auto_log(f"📊 Phase 1 TAMAM: {total_discovered} lead keşfedildi")
                     _automation_state["last_action"] = f"Phase 1 tamam: {total_discovered} lead"
                 except Exception as e:
-                    log.error(f"[AUTO] Phase 1 HATA: {e}")
-                    traceback.print_exc()
+                    _auto_log(f"❌ Phase 1 HATA: {e}", "error")
 
                 gc.collect()
                 if not _automation_state["running"]:
@@ -1433,7 +1449,7 @@ def _automation_loop():
                 # ═══════════════════════════════════════════════════
                 try:
                     _automation_state["last_action"] = "Phase 2: Lead puanlama..."
-                    log.info("[AUTO] Phase 2: Lead puanlama")
+                    _auto_log("📊 Phase 2: Lead puanlama başlıyor")
                     unscored = db.get_all_leads()
                     unscored_leads = [l for l in unscored if not l.get("ai_score") or l.get("ai_score", 0) == 0]
                     if unscored_leads:
@@ -1441,12 +1457,12 @@ def _automation_loop():
                         scores = lead_scorer.score_batch(batch)
                         for s in scores:
                             db.update_lead_ai_score(s["email"], s.get("score", 50), s.get("reason", ""))
-                        log.info(f"[AUTO] {len(scores)} lead puanlandı")
+                        _auto_log(f"✅ {len(scores)} lead puanlandı")
                         _automation_state["last_action"] = f"Phase 2: {len(scores)} lead puanlandı"
                     else:
-                        log.info("[AUTO] Puanlanacak lead yok")
+                        _auto_log("ℹ️ Puanlanacak lead yok")
                 except Exception as e:
-                    log.error(f"[AUTO] Phase 2 HATA: {e}")
+                    _auto_log(f"❌ Phase 2 HATA: {e}", "error")
 
                 gc.collect()
                 if not _automation_state["running"]:
@@ -1457,7 +1473,7 @@ def _automation_loop():
                 # ═══════════════════════════════════════════════════
                 try:
                     _automation_state["last_action"] = "Phase 3: Email yazma ve gönderme..."
-                    log.info("[AUTO] Phase 3: Email yazma & gönderme")
+                    _auto_log("✉️ Phase 3: Email yazma & gönderme")
                     today_sent = db.get_today_sent_count()
                     remaining = max(0, config.DAILY_SEND_LIMIT - today_sent)
                     batch_size = min(10, remaining)
@@ -1507,20 +1523,20 @@ def _automation_loop():
                                                 method=result.get("method", "smtp")
                                             )
                                             sent_count += 1
-                                            log.info(f"[AUTO] ✅ Email: {email_addr}")
+                                            _auto_log(f"✅ Email gönderildi: {email_addr}")
                                 except Exception as e:
-                                    log.error(f"[AUTO] Email hatası: {e}")
+                                    _auto_log(f"❌ Email hatası: {e}", "error")
                                 time.sleep(2)
 
-                            log.info(f"[AUTO] Phase 3: {sent_count} email gönderildi")
+                            _auto_log(f"📧 Phase 3: {sent_count} email gönderildi")
                             _automation_state["last_action"] = f"Phase 3: {sent_count} email gönderildi"
                             emit_event("email_sent", {"count": sent_count})
                         else:
-                            log.info("[AUTO] Gönderilecek lead yok")
+                            _auto_log("ℹ️ Gönderilecek lead yok")
                     else:
-                        log.info(f"[AUTO] Günlük limit: {today_sent}/{config.DAILY_SEND_LIMIT}")
+                        _auto_log(f"⚠️ Günlük limit doldu: {today_sent}/{config.DAILY_SEND_LIMIT}")
                 except Exception as e:
-                    log.error(f"[AUTO] Phase 3 HATA: {e}")
+                    _auto_log(f"❌ Phase 3 HATA: {e}", "error")
 
                 gc.collect()
                 if not _automation_state["running"]:
@@ -1531,11 +1547,11 @@ def _automation_loop():
                 # ═══════════════════════════════════════════════════
                 try:
                     _automation_state["last_action"] = "Phase 4: Follow-up işleme..."
-                    log.info("[AUTO] Phase 4: Follow-up")
+                    _auto_log("📬 Phase 4: Follow-up işleniyor")
                     processed = follow_up.process_pending()
-                    log.info(f"[AUTO] {len(processed)} follow-up işlendi")
+                    _auto_log(f"✅ {len(processed)} follow-up işlendi")
                 except Exception as e:
-                    log.error(f"[AUTO] Phase 4 HATA: {e}")
+                    _auto_log(f"❌ Phase 4 HATA: {e}", "error")
 
                 # ═══════════════════════════════════════════════════
                 # PHASE 5: A/B TEST + RESPONSE TRACKING
@@ -1546,7 +1562,7 @@ def _automation_loop():
                     if variant_stats:
                         winner = ab_test.determine_winner(variant_stats)
                         if winner:
-                            log.info(f"[AUTO] 🏆 A/B kazanan: {winner}")
+                            _auto_log(f"🏆 A/B kazanan: {winner}")
                 except Exception:
                     pass
 
@@ -1571,7 +1587,7 @@ def _automation_loop():
                     "running": True,
                 })
 
-                log.info(f"[AUTO] ═══ Cycle {cycle} TAMAM ═══ Sonraki: 5 dk")
+                _auto_log(f"✅ ═══ Cycle {cycle} TAMAMLANDI ═══ Sonraki: 5 dk")
                 gc.collect()
 
                 # 5 dakika bekle (300 saniye) — her saniye kontrol et
@@ -1582,7 +1598,7 @@ def _automation_loop():
 
             except Exception as e:
                 # Cycle hatası — devam et, durma
-                log.error(f"[AUTO] ❌ Cycle hatası: {e}")
+                _auto_log(f"❌ Cycle hatası: {e}", "error")
                 try:
                     import traceback
                     traceback.print_exc()
@@ -1593,12 +1609,12 @@ def _automation_loop():
                 time.sleep(30)  # 30 sn bekle ve tekrar dene
 
         # While döngüsü bitti (running = False)
-        log.info("[AUTO] Pipeline durduruldu (running=False)")
+        _auto_log("Pipeline durduruldu (running=False)")
         _automation_state["last_action"] = "Pipeline durduruldu"
 
     except Exception as e:
         # En dıştaki koruma — hiçbir şey bu thread'i öldüremez
-        log.error(f"[AUTO] FATAL: {e}")
+        _auto_log(f"FATAL: {e}", "error")
         try:
             import traceback
             traceback.print_exc()
@@ -1666,7 +1682,34 @@ def get_automation_status():
         "last_action": _automation_state["last_action"],
         "last_cycle_at": _automation_state["last_cycle_at"],
         "stats": _automation_state["stats"],
+        "logs": _automation_state.get("logs", [])[-50:],
     })
+
+
+@app.route("/api/automation/test", methods=["GET"])
+def test_automation():
+    """Diagnostik: API key ve sistem testi."""
+    results = {"api_key_set": bool(config.ANTHROPIC_API_KEY), "api_key_prefix": config.ANTHROPIC_API_KEY[:20] + "..." if config.ANTHROPIC_API_KEY else "YOK"}
+    # Claude API test
+    try:
+        import requests as _r
+        resp = _r.post(
+            "https://api.anthropic.com/v1/messages",
+            headers={"x-api-key": config.ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"},
+            json={"model": config.CLAUDE_MODEL, "max_tokens": 50, "messages": [{"role": "user", "content": "Say hello in 3 words"}]},
+            timeout=15
+        )
+        results["api_status"] = resp.status_code
+        if resp.ok:
+            results["api_response"] = resp.json().get("content", [{}])[0].get("text", "")
+        else:
+            results["api_error"] = resp.text[:200]
+    except Exception as e:
+        results["api_error"] = str(e)
+    results["sectors"] = list(config.SECTORS)
+    results["model"] = config.CLAUDE_MODEL
+    results["state"] = {"running": _automation_state["running"], "cycle": _automation_state["cycle"], "last_action": _automation_state["last_action"]}
+    return jsonify(results)
 
 
 # ─── TEMPLATES (Phase 3) ─────────────────────────────────────
@@ -1880,287 +1923,6 @@ def deploy_status():
     return jsonify(_deploy_state)
 
 
-# ─── AUTOMATION STATE ─────────────────────────────────────────
-automation_state = {
-    "running": False,
-    "thread": None,
-    "cycle": 0,
-    "current_step": "",
-    "last_cycle": None,
-    "logs": [],
-    "stats": {"leads_found": 0, "scored": 0, "sent": 0, "followups": 0, "errors": 0},
-}
-
-
-def _auto_log(msg):
-    """Otomasyon loguna mesaj ekle (son 100 satır tut)."""
-    ts = datetime.now().strftime("%H:%M:%S")
-    line = f"[{ts}] {msg}"
-    automation_state["logs"].append(line)
-    if len(automation_state["logs"]) > 100:
-        automation_state["logs"] = automation_state["logs"][-100:]
-    log.info(f"[AUTOMATION] {msg}")
-
-
-def _run_automation_cycle():
-    """Tek bir otomasyon döngüsü — 6 aşama."""
-    import traceback
-
-    automation_state["cycle"] += 1
-    cycle = automation_state["cycle"]
-    _auto_log(f"=== Döngü {cycle} başladı ===")
-    stats = automation_state["stats"]
-
-    # 1. LEAD KEŞFİ (AI-only — shared hosting'de hızlı)
-    automation_state["current_step"] = "1. Lead Keşfi (AI)"
-    _auto_log("Aşama 1: AI ile lead keşfi...")
-    try:
-        sectors_to_search = config.SECTORS[:3] if hasattr(config, 'SECTORS') else ["transport"]
-        for sector in sectors_to_search:
-            if not automation_state["running"]:
-                break
-            try:
-                _auto_log(f"  Sektör: {sector}...")
-                ai_leads = lead_finder._ai_bulk_lead_search(sector)
-                if ai_leads:
-                    saved = 0
-                    for nl in ai_leads:
-                        email = nl.get("email", "")
-                        if email and not db.lead_exists(email):
-                            try:
-                                db.add_discovered_lead(
-                                    email=email,
-                                    company=nl.get("company_name", ""),
-                                    sector=sector,
-                                    location=nl.get("city", "Nederland"),
-                                    vehicles=str(nl.get("estimated_vehicles", "")),
-                                    website=nl.get("website", ""),
-                                    phone=nl.get("phone", ""),
-                                    source="ai_discovery",
-                                    discovery_score=65,
-                                )
-                                saved += 1
-                            except Exception:
-                                pass
-                    stats["leads_found"] += saved
-                    _auto_log(f"  {sector}: {saved} yeni lead kaydedildi")
-                else:
-                    _auto_log(f"  {sector}: lead bulunamadı")
-            except Exception as e:
-                _auto_log(f"  {sector} HATA: {str(e)[:80]}")
-            time.sleep(2)
-    except Exception as e:
-        _auto_log(f"  Lead keşfi HATA: {str(e)[:80]}")
-        stats["errors"] += 1
-
-    if not automation_state["running"]:
-        return
-
-    # 2. AI PUANLAMA
-    automation_state["current_step"] = "2. AI Puanlama"
-    _auto_log("Aşama 2: AI puanlama...")
-    try:
-        unsent = db.get_unsent_leads(limit=20)
-        unscored = [l for l in unsent if not l.get("ai_score")]
-        if unscored:
-            scores = lead_scorer.score_batch(unscored[:10])
-            for sd in scores:
-                db.update_lead_ai_score(
-                    email=sd["email"], score=sd.get("score", 50),
-                    reason=sd.get("reason", ""))
-            stats["scored"] += len(scores)
-            _auto_log(f"  {len(scores)} lead puanlandı")
-        else:
-            _auto_log("  Puanlanacak yeni lead yok")
-    except Exception as e:
-        _auto_log(f"  Puanlama HATA: {e}")
-        stats["errors"] += 1
-
-    if not automation_state["running"]:
-        return
-
-    # 3. EMAIL YAZMA + KALİTE KONTROL + GÖNDERİM
-    automation_state["current_step"] = "3. Email Yazma + Gönderim"
-    _auto_log("Aşama 3: Email yazma ve gönderim...")
-    try:
-        from dataclasses import asdict
-        from core.send_engine import SendEngine, EmailMessage
-        send_eng = SendEngine()
-        leads_to_send = db.get_unsent_leads(limit=config.DAILY_SEND_LIMIT)
-        sent_this_cycle = 0
-        for lead in leads_to_send:
-            if not automation_state["running"]:
-                break
-            if sent_this_cycle >= 10:  # Max 10 per cycle
-                break
-
-            email = (lead.get("email") or "").strip()
-            company = lead.get("company") or "?"
-            if not email or db.is_unsubscribed(email) or db.is_duplicate_email(email):
-                continue
-
-            try:
-                draft = copywriter.write(lead)
-                if not draft:
-                    continue
-
-                # QC check
-                qc = quality.check(
-                    subject=draft.chosen_subject,
-                    body_text=draft.body_text,
-                    company_name=company,
-                    body_html=draft.body_html)
-
-                if qc.score < 70:
-                    _auto_log(f"  QC düşük ({qc.score}): {company} — atlandı")
-                    continue
-
-                # Save draft
-                draft_dict = asdict(draft) if hasattr(draft, '__dataclass_fields__') else {}
-                draft_dict["qc_score"] = qc.score
-                db.save_draft(email, draft_dict)
-
-                # Send
-                msg = EmailMessage(
-                    to_email=email, to_name=company,
-                    subject=draft.chosen_subject,
-                    html_body=draft.body_html, text_body=draft.body_text,
-                    lead_id=email)
-                result = send_eng.send(msg)
-                if result.success:
-                    sent_this_cycle += 1
-                    stats["sent"] += 1
-                    db.log_sent(email=email, company=company,
-                                sector=lead.get("sector", ""),
-                                subject=draft.chosen_subject,
-                                method=result.method,
-                                message_id=result.message_id)
-                    _auto_log(f"  SENT: {company} ({email})")
-                    # Delay between sends
-                    import random
-                    time.sleep(random.randint(15, 45))
-                else:
-                    _auto_log(f"  FAIL: {company} — {result.error}")
-                    stats["errors"] += 1
-            except Exception as e:
-                _auto_log(f"  Hata ({company}): {e}")
-                stats["errors"] += 1
-
-        _auto_log(f"  Bu döngüde {sent_this_cycle} email gönderildi")
-    except Exception as e:
-        _auto_log(f"  Gönderim HATA: {e}")
-        stats["errors"] += 1
-
-    if not automation_state["running"]:
-        return
-
-    # 4. FOLLOW-UP
-    automation_state["current_step"] = "4. Follow-Up"
-    _auto_log("Aşama 4: Follow-up kontrolü...")
-    try:
-        from agents.orchestrator import Orchestrator
-        orch = Orchestrator()
-        followups_sent = orch.process_followups()
-        stats["followups"] += len(followups_sent)
-        _auto_log(f"  {len(followups_sent)} follow-up gönderildi")
-    except Exception as e:
-        _auto_log(f"  Follow-up HATA: {e}")
-
-    # 5. YANIT TAKİP
-    automation_state["current_step"] = "5. Yanıt Takip"
-    _auto_log("Aşama 5: Yanıt takibi...")
-    _auto_log("  (Yanıt takip BCC üzerinden pasif çalışıyor)")
-
-    # 6. TAMAMLANDI
-    automation_state["current_step"] = "6. Döngü tamamlandı"
-    automation_state["last_cycle"] = datetime.now().isoformat()
-    _auto_log(f"=== Döngü {cycle} tamamlandı ===")
-
-
-def _auto_start_automation():
-    """Otomasyon döngüsünü başlat — crash-proof."""
-    import traceback as tb
-    try:
-        automation_state["running"] = True
-        interval = getattr(config, "AUTOMATION_INTERVAL", 10) * 60  # dakika -> saniye
-        _auto_log("Otomasyon pipeline başlatıldı")
-        
-        while automation_state["running"]:
-            try:
-                _auto_log(f"Döngü başlıyor...")
-                _run_automation_cycle()
-                _auto_log(f"Döngü tamamlandı")
-            except Exception as e:
-                _auto_log(f"DÖNGÜ HATASI: {e}")
-                try:
-                    _auto_log(f"Traceback: {tb.format_exc()[:500]}")
-                except Exception:
-                    pass
-                automation_state["stats"]["errors"] = automation_state["stats"].get("errors", 0) + 1
-            
-            # Durdurma kontrolü
-            if not automation_state["running"]:
-                break
-            
-            # Bekleme
-            automation_state["current_step"] = "Bekleniyor..."
-            wait_min = max(interval // 60, 1)
-            _auto_log(f"Sonraki döngü {wait_min} dakika sonra...")
-            
-            # 30 sn'lik parçalarda bekle (durdurma için duyarlı)
-            wait_chunks = max(interval // 30, 1)
-            for _ in range(wait_chunks):
-                if not automation_state["running"]:
-                    break
-                time.sleep(30)
-    
-    except Exception as e:
-        _auto_log(f"FATAL: Otomasyon thread hatası: {e}")
-        try:
-            _auto_log(f"Fatal traceback: {tb.format_exc()[:500]}")
-        except Exception:
-            pass
-    finally:
-        automation_state["running"] = False
-        automation_state["current_step"] = "Durdu"
-        _auto_log("Otomasyon durduruldu")
-
-
-@app.route("/api/automation/start", methods=["POST"])
-def api_automation_start():
-    """Otomasyon pipeline'ı başlat."""
-    if automation_state["running"]:
-        return jsonify({"ok": True, "message": "Zaten çalışıyor"})
-    automation_state["running"] = True
-    automation_state["stats"] = {"leads_found": 0, "scored": 0, "sent": 0, "followups": 0, "errors": 0}
-    t = threading.Thread(target=_auto_start_automation, daemon=True)
-    automation_state["thread"] = t
-    t.start()
-    return jsonify({"ok": True, "message": "Otomasyon başlatıldı"})
-
-
-@app.route("/api/automation/stop", methods=["POST"])
-def api_automation_stop():
-    """Otomasyon pipeline'ı durdur."""
-    automation_state["running"] = False
-    automation_state["current_step"] = "Durduruluyor..."
-    _auto_log("Durdurma isteği alındı")
-    return jsonify({"ok": True, "message": "Otomasyon durduruluyor..."})
-
-
-@app.route("/api/automation/status")
-def api_automation_status():
-    """Otomasyon durumunu döndür."""
-    return jsonify({
-        "running": automation_state["running"],
-        "cycle": automation_state["cycle"],
-        "current_step": automation_state["current_step"],
-        "last_cycle": automation_state["last_cycle"],
-        "stats": automation_state["stats"],
-        "logs": automation_state["logs"][-30:],  # Son 30 log satırı
-    })
-
-
 # ─── MAIN ──────────────────────────────────────────────────────
 if __name__ == "__main__":
     print("=" * 60)
@@ -2176,10 +1938,6 @@ if __name__ == "__main__":
     else:
         print("  WebSocket: [X] (pip install flask-socketio)")
     print("=" * 60)
-
-    # Otomasyonu otomatik baslat
-    auto_thread = threading.Thread(target=_auto_start_automation, daemon=True)
-    auto_thread.start()
 
     if HAS_SOCKETIO:
         socketio.run(app, host="0.0.0.0", port=5000, debug=True,
