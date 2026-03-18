@@ -915,13 +915,15 @@ def send_to_selected():
         return jsonify({"error": "Email listesi boş"}), 400
 
     from core.send_engine import SendEngine, EmailMessage
+    from dataclasses import asdict
     send_eng = SendEngine()
 
     sent_count = 0
     errors = 0
+    error_details = []
     for email in emails:
         try:
-            lead = db.get_lead_by_email(email) if hasattr(db, 'get_lead_by_email') else None
+            lead = db.get_lead_by_email(email)
             if not lead:
                 lead = {"email": email, "company": "", "sector": ""}
 
@@ -932,35 +934,37 @@ def send_to_selected():
                 log.info(f"[SEND-SELECTED] Duplicate: {email} — atlandı")
                 continue
 
-            # Draft oluştur
+            # Draft oluştur (Claude API çağrısı)
+            log.info(f"[SEND-SELECTED] Draft oluşturuluyor: {email}")
             draft = copywriter.write(lead_dict)
             if not draft:
+                log.warning(f"[SEND-SELECTED] Draft oluşturulamadı: {email}")
                 errors += 1
+                error_details.append(f"{email}: Draft oluşturulamadı")
                 continue
-
-            # QC kontrolü
-            qc = quality.check(draft)
-            score = qc.get("score", 0) if qc else 0
-            if score < config.QC_MIN_SCORE:
-                draft = copywriter.revise(draft, qc.get("feedback", ""))
-                qc = quality.check(draft)
-                score = qc.get("score", 0) if qc else 0
 
             # A/B test ile konu seç
             chosen_subject = getattr(draft, 'chosen_subject', None) or getattr(draft, 'subject_a', email)
+            body_html = getattr(draft, 'body_html', '')
+            body_text = getattr(draft, 'body_text', '')
 
-            # Draft'ı DB'ye kaydet
-            db.save_draft(email, draft)
+            # Draft'ı DB'ye kaydet (dataclass → dict)
+            try:
+                draft_dict = asdict(draft) if hasattr(draft, '__dataclass_fields__') else dict(draft)
+                db.save_draft(email, draft_dict)
+            except Exception as save_err:
+                log.warning(f"[SEND-SELECTED] Draft kayıt hatası (görmezden geliniyor): {save_err}")
 
             # EmailMessage oluştur ve gönder
             msg = EmailMessage(
                 to_email=email,
                 to_name=lead_dict.get("company", ""),
                 subject=chosen_subject,
-                html_body=getattr(draft, 'body_html', ''),
-                text_body=getattr(draft, 'body_text', ''),
+                html_body=body_html,
+                text_body=body_text,
                 lead_id=email,
             )
+            log.info(f"[SEND-SELECTED] Gönderiliyor: {email} — Konu: {chosen_subject[:50]}")
             result = send_eng.send(msg)
 
             if result.success:
@@ -975,16 +979,30 @@ def send_to_selected():
                     message_id=result.message_id,
                     ab_variant="A",
                 )
+                # Lead durumunu güncelle
+                try:
+                    db.update_lead_status(email, "sent")
+                except Exception:
+                    pass
                 emit_event("email_sent", {"email": email, "company": lead_dict.get("company", "")})
-                log.info(f"[SEND-SELECTED] ✅ {email} — {result.method}")
+                log.info(f"[SEND-SELECTED] ✅ {email} — {result.method} — ID: {result.message_id}")
             else:
                 errors += 1
+                error_details.append(f"{email}: {result.error}")
                 log.warning(f"[SEND-SELECTED] ❌ {email} — {result.error}")
         except Exception as e:
-            log.error(f"[SEND-SELECTED] {email} hatası: {e}")
+            import traceback
+            log.error(f"[SEND-SELECTED] {email} HATA: {e}\n{traceback.format_exc()}")
             errors += 1
+            error_details.append(f"{email}: {str(e)}")
 
-    return jsonify({"success": True, "sent": sent_count, "errors": errors})
+    log.info(f"[SEND-SELECTED] Sonuç: {sent_count} gönderildi, {errors} hata")
+    return jsonify({
+        "success": True,
+        "sent": sent_count,
+        "errors": errors,
+        "error_details": error_details[:5],  # İlk 5 hata detayı
+    })
 
 
 # ─── SKIP LEADS ───────────────────────────────────────────────

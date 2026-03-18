@@ -657,7 +657,6 @@ class Database:
                     COUNT(DISTINCT e.email) as total_opened
                 FROM sent_log s
                 LEFT JOIN events e ON s.email = e.email AND e.event_type = 'open'
-                WHERE s.test_mode = 0
                 GROUP BY s.ab_variant
             """).fetchall()
 
@@ -1063,27 +1062,6 @@ class Database:
             return {r["agent_name"]: {"learnings": r["total_learnings"],
                     "avg_improvement": round(r["avg_improvement"] or 0, 2)} for r in agents}
 
-    # ─── ALL SENT EMAILS WITH CONTENT ──────────────────────────────
-
-    def get_all_sent_with_content(self, limit: int = 100) -> list[dict]:
-        """Tüm gönderilen emailleri draft içerikleriyle birlikte döndür."""
-        with self._conn() as conn:
-            rows = conn.execute("""
-                SELECT s.email, s.company, s.sector, s.subject, s.ab_variant,
-                       s.method, s.test_mode, s.sent_at, s.campaign_id,
-                       d.body_text, d.body_html, d.qc_score, d.qc_passed,
-                       d.subject_a, d.subject_b, d.subject_c, d.chosen_subject,
-                       CASE WHEN e.id IS NOT NULL THEN 1 ELSE 0 END as was_opened,
-                       CASE WHEN r.id IS NOT NULL THEN r.classification ELSE '' END as response
-                FROM sent_log s
-                LEFT JOIN drafts d ON s.email = d.email
-                LEFT JOIN events e ON s.email = e.email AND e.event_type = 'open'
-                LEFT JOIN responses r ON s.email = r.email
-                GROUP BY s.email
-                ORDER BY s.sent_at DESC
-                LIMIT ?
-            """, (limit,)).fetchall()
-            return [dict(r) for r in rows]
 
     # ─── ALL FOLLOWUPS WITH DETAIL ─────────────────────────────────
 

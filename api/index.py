@@ -17,8 +17,7 @@ import sys
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, PROJECT_ROOT)
 
-# Config override: Vercel'de test modunda çalış
-os.environ.setdefault("TEST_MODE", "true")
+# Config override kaldırıldı — TEST_MODE artık yok
 
 from web.api import app
 
