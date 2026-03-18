@@ -63,7 +63,7 @@ class Config:
 
     # ─── LEAD DISCOVERY (ULTIMATE) ───────────────────────────────
     MAX_LEADS_PER_SEARCH    = int(os.getenv("MAX_LEADS_PER_SEARCH", "500"))
-    PARALLEL_CITY_WORKERS   = int(os.getenv("PARALLEL_CITY_WORKERS", "8"))
+    PARALLEL_CITY_WORKERS   = int(os.getenv("PARALLEL_CITY_WORKERS", "1"))
     TELEFOONBOEK_ENABLED    = os.getenv("TELEFOONBOEK_ENABLED", "true").lower() == "true"
     OPENSTREETMAP_ENABLED   = os.getenv("OPENSTREETMAP_ENABLED", "true").lower() == "true"
     EMAIL_VERIFY_MX         = os.getenv("EMAIL_VERIFY_MX", "true").lower() == "true"

@@ -902,6 +902,135 @@ def get_sent_content(email):
         return jsonify({"error": str(e)}), 500
 
 
+# ─── SENT MAILS (Giden Mailler) ───────────────────────────────
+@app.route("/api/sent", methods=["GET"])
+def get_sent_mails():
+    """Tüm gönderilen emailleri getir."""
+    try:
+        sent = db.get_all_sent()
+        emails = []
+        for s in (sent or []):
+            row = dict(s) if hasattr(s, 'keys') else s
+            emails.append(row)
+        return jsonify({"emails": emails, "count": len(emails)})
+    except Exception as e:
+        log.error(f"[SENT] Hata: {e}")
+        return jsonify({"emails": [], "count": 0})
+
+
+# ─── AGENT STATUS ─────────────────────────────────────────────
+@app.route("/api/agents/status", methods=["GET"])
+def get_agent_status():
+    """Tüm agentların durumunu döner."""
+    agents = {}
+    agent_modules = {
+        "AI Copywriter": copywriter,
+        "AI Quality Control": quality,
+        "Compliance (AVG)": compliance,
+        "Lead Scorer": lead_scorer,
+        "Watchdog": watchdog,
+        "A/B Test Engine": ab_test,
+        "Follow-Up Engine": follow_up,
+        "Response Tracker": response_tracker,
+        "Lead Finder": lead_finder,
+    }
+    for name, mod in agent_modules.items():
+        try:
+            healthy = hasattr(mod, 'ping') and mod.ping()
+            agents[name] = {
+                "status": "ok" if healthy else "warning",
+                "healthy": healthy,
+                "processed": getattr(mod, '_processed', 0) if hasattr(mod, '_processed') else 0,
+                "errors": getattr(mod, '_errors', 0) if hasattr(mod, '_errors') else 0,
+            }
+        except Exception as e:
+            agents[name] = {"status": "error", "healthy": False, "error": str(e)}
+
+    return jsonify({"agents": agents})
+
+
+@app.route("/api/agents/watchdog", methods=["GET"])
+def get_watchdog_report():
+    """Watchdog sağlık raporu."""
+    try:
+        report = watchdog.run_healthcheck() if hasattr(watchdog, 'run_healthcheck') else {}
+        return jsonify(report)
+    except Exception as e:
+        log.error(f"[WATCHDOG] Rapor hatası: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+# ─── RESPONSES (Yanıtlar) ─────────────────────────────────────
+@app.route("/api/responses", methods=["GET"])
+def get_responses():
+    """Alınan yanıtları getir."""
+    try:
+        responses = db.get_all_responses() if hasattr(db, 'get_all_responses') else []
+        items = []
+        for r in (responses or []):
+            row = dict(r) if hasattr(r, 'keys') else r
+            items.append(row)
+        return jsonify({"responses": items, "count": len(items)})
+    except Exception as e:
+        log.error(f"[RESPONSES] Hata: {e}")
+        return jsonify({"responses": [], "count": 0})
+
+
+# ─── SEND TO SELECTED LEADS ───────────────────────────────────
+@app.route("/api/campaign/send-selected", methods=["POST"])
+def send_to_selected():
+    """Seçili leadlere email gönder."""
+    data = request.json or {}
+    emails = data.get("emails", [])
+    if not emails:
+        return jsonify({"error": "Email listesi boş"}), 400
+
+    sent_count = 0
+    errors = 0
+    for email in emails:
+        try:
+            lead = db.get_lead_by_email(email) if hasattr(db, 'get_lead_by_email') else None
+            if not lead:
+                lead = {"email": email, "company": "", "sector": ""}
+
+            lead_dict = dict(lead) if hasattr(lead, 'keys') else lead
+
+            # Draft oluştur
+            draft = copywriter.write(lead_dict)
+            if not draft:
+                errors += 1
+                continue
+
+            # QC kontrolü
+            qc = quality.check(draft)
+            score = qc.get("score", 0) if qc else 0
+            if score < config.QC_MIN_SCORE:
+                draft = copywriter.revise(draft, qc.get("feedback", ""))
+                qc = quality.check(draft)
+                score = qc.get("score", 0) if qc else 0
+
+            # TEST modunda gönderme
+            if config.TEST_MODE:
+                log.info(f"[SEND-SELECTED] TEST: {email} — QC: {score} (gönderilmedi)")
+                sent_count += 1
+                continue
+
+            # Gönder
+            from core.send_engine import send_engine
+            result = send_engine.send(email, draft)
+            if result:
+                sent_count += 1
+                db.mark_sent(email) if hasattr(db, 'mark_sent') else None
+                emit_event("email_sent", {"email": email, "company": lead_dict.get("company", "")})
+            else:
+                errors += 1
+        except Exception as e:
+            log.error(f"[SEND-SELECTED] {email} hatası: {e}")
+            errors += 1
+
+    return jsonify({"success": True, "sent": sent_count, "errors": errors})
+
+
 # ─── HEALTH CHECK (tüm modülleri test eder) ──────────────────
 @app.route("/api/health/check", methods=["GET"])
 def health_check():

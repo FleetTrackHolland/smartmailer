@@ -313,28 +313,23 @@ class LeadFinder:
         all_results.extend(ai_leads)
         log.info(f"[DISCOVER] Phase 4: {len(ai_leads)} lead (AI)")
 
-        # ── PHASE 5: Şehir bazlı paralel web araması ──
+        # ── PHASE 5: Şehir bazlı web araması (shared hosting koruması) ──
         log.info("[DISCOVER] PHASE 5: Şehir bazlı web araması...")
-        cities = DUTCH_CITIES  # Tüm şehirleri tara
+        cities = random.sample(DUTCH_CITIES, min(5, len(DUTCH_CITIES)))  # Max 5 şehir
         self._stats["cities_searched"] = len(cities)
 
-        with ThreadPoolExecutor(max_workers=config.PARALLEL_CITY_WORKERS) as executor:
-            futures = {}
-            for city in cities:
-                if len(all_results) >= max_leads:
-                    break
-                f = executor.submit(self._search_city, sector, city)
-                futures[f] = city
-
-            for future in as_completed(futures):
-                city = futures[future]
-                try:
-                    city_leads = future.result()
-                    all_results.extend(city_leads)
-                    if city_leads:
-                        log.info(f"[DISCOVER] {city}: {len(city_leads)} lead")
-                except Exception as e:
-                    log.debug(f"[DISCOVER] {city} hatası: {e}")
+        # Shared hosting: sıralı arama, paralel değil
+        for city in cities:
+            if len(all_results) >= max_leads:
+                break
+            try:
+                city_leads = self._search_city(sector, city)
+                all_results.extend(city_leads)
+                if city_leads:
+                    log.info(f"[DISCOVER] {city}: {len(city_leads)} lead")
+            except Exception as e:
+                log.debug(f"[DISCOVER] {city} hatası: {e}")
+            time.sleep(3)  # Şehirler arası bekleme
 
         log.info(f"[DISCOVER] Phase 5: toplam {len(all_results)} lead")
 

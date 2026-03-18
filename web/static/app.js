@@ -748,6 +748,120 @@ async function stopAutomation() {
     }
 }
 
+// ─── SENT MAILS (Giden Mailler) ───
+async function loadSentMails() {
+    const data = await api('/api/sent');
+    if (!data) return;
+    const rows = data.emails || data || [];
+    setText('sent-total', rows.length);
+    setText('sent-opened', rows.filter(e => e.opened).length);
+    setText('sent-replied', rows.filter(e => e.replied).length);
+    setText('sent-duplicate', rows.filter(e => e.duplicate_blocked).length || 0);
+
+    const tbody = document.getElementById('sent-table-body');
+    if (!tbody) return;
+    if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;opacity:.5">Henüz gönderim yok</td></tr>'; return; }
+
+    tbody.innerHTML = rows.slice(0, 100).map(e => `
+        <tr>
+            <td>${fmtDate(e.sent_at || e.date || '')}</td>
+            <td>${esc(e.email || '')}</td>
+            <td>${esc(e.company || '')}</td>
+            <td title="${esc(e.subject || '')}">${esc((e.subject || '').substring(0, 40))}</td>
+            <td>${e.qc_score ? `<span class="badge ${e.qc_score >= 90 ? 'badge-green' : 'badge-yellow'}">${e.qc_score}</span>` : '—'}</td>
+            <td>${e.opened ? '✅' : '—'}</td>
+            <td>${e.replied ? '💬' : '—'}</td>
+            <td><button class="btn-sm" onclick="openModal('Email Detay', '<pre style=\\'white-space:pre-wrap\\'>${esc(e.body_text || e.body_html || 'İçerik yok')}</pre>')">👁</button></td>
+        </tr>
+    `).join('');
+}
+
+// ─── AGENT STATUS ───
+async function loadAgentStatus() {
+    const data = await api('/api/agents/status');
+    const grid = document.getElementById('agents-grid');
+    if (!grid) return;
+
+    if (!data) {
+        grid.innerHTML = '<p style="opacity:.5">Agent durumları yüklenemedi</p>';
+        return;
+    }
+
+    const agentNames = Object.keys(AGENT_DESC);
+    const agentList = data.agents || data || {};
+
+    grid.innerHTML = agentNames.map(name => {
+        const agent = agentList[name] || {};
+        const ok = agent.status === 'ok' || agent.healthy;
+        return `
+        <div class="agent-card ${ok ? '' : 'agent-error'}">
+            <div class="agent-header">
+                <span class="agent-dot ${ok ? 'dot-green' : 'dot-red'}"></span>
+                <strong>${esc(name)}</strong>
+            </div>
+            <p class="agent-desc">${esc(AGENT_DESC[name] || '')}</p>
+            <div class="agent-stats">
+                ${agent.processed ? `<span>İşlenen: ${agent.processed}</span>` : ''}
+                ${agent.errors ? `<span style="color:var(--red)">Hata: ${agent.errors}</span>` : ''}
+            </div>
+        </div>`;
+    }).join('');
+
+    // Watchdog raporu
+    const wdEl = document.getElementById('watchdog-report');
+    if (wdEl) {
+        const wd = await api('/api/agents/watchdog');
+        if (wd) {
+            wdEl.innerHTML = `<pre style="white-space:pre-wrap;font-size:0.85rem;color:var(--text-secondary)">${esc(JSON.stringify(wd, null, 2))}</pre>`;
+        } else {
+            wdEl.innerHTML = '<p style="opacity:.5">Watchdog raporu alınamadı</p>';
+        }
+    }
+}
+
+// ─── RESPONSES (Yanıtlar) ───
+async function loadResponses() {
+    const data = await api('/api/responses');
+    const container = document.getElementById('responses-list');
+    if (!container || !data) return;
+
+    const items = data.responses || data || [];
+    if (!items.length) {
+        container.innerHTML = '<p style="opacity:.5;text-align:center;padding:2rem">Henüz yanıt yok</p>';
+        return;
+    }
+
+    container.innerHTML = items.slice(0, 50).map(r => `
+        <div class="response-item ${r.classification === 'interested' ? 'response-hot' : ''}">
+            <div class="response-header">
+                <strong>${esc(r.from_email || r.email || '')}</strong>
+                <span class="badge badge-${r.classification === 'interested' ? 'green' : r.classification === 'question' ? 'yellow' : 'gray'}">${esc(r.classification || 'bilinmiyor')}</span>
+                <span class="response-date">${fmtDate(r.received_at || r.date || '')}</span>
+            </div>
+            <p class="response-body">${esc((r.body || r.snippet || '').substring(0, 200))}</p>
+        </div>
+    `).join('');
+}
+
+// ─── SEND TO SELECTED LEADS ───
+async function sendToSelected() {
+    if (selectedLeads.size === 0) {
+        showToast('Önce lead seçin!', 'error');
+        return;
+    }
+    const emails = Array.from(selectedLeads);
+    showToast(`${emails.length} lead'e email gönderiliyor...`, 'info');
+
+    const data = await api('/api/campaign/send-selected', 'POST', { emails });
+    if (data?.success) {
+        showToast(`✅ ${data.sent || emails.length} email gönderildi!`, 'success');
+        selectedLeads.clear();
+        loadLeads();
+    } else {
+        showToast(`❌ Gönderim hatası: ${data?.error || 'bilinmiyor'}`, 'error');
+    }
+}
+
 
 // ─── SECTOR DROPDOWN & QUEUE ───
 const SECTOR_COLORS = ['#06d6a0','#118ab2','#ef476f','#ffd166','#073b4c','#8338ec','#ff6b6b','#48bfe3','#4cc9f0','#7209b7','#f72585','#4361ee','#3a0ca3','#560bad','#b5179e','#f15bb5','#fee440','#00bbf9','#00f5d4','#9b5de5','#fb5607','#ff006e','#8ac926','#1982c4','#6a4c93','#f77f00','#0ead69'];
