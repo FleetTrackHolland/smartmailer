@@ -2084,29 +2084,52 @@ def _run_automation_cycle():
 
 
 def _auto_start_automation():
-    """Otomasyon döngüsünü başlat — her 30 dakikada tekrar."""
-    automation_state["running"] = True
-    interval = getattr(config, "AUTOMATION_INTERVAL", 30) * 60  # dakika -> saniye
-    _auto_log("Otomasyon pipeline başlatıldı")
-    while automation_state["running"]:
-        try:
-            _run_automation_cycle()
-        except Exception as e:
-            import traceback
-            _auto_log(f"DÖNGÜ HATASI: {e}")
-            _auto_log(f"Traceback: {traceback.format_exc()[:300]}")
-        if not automation_state["running"]:
-            break
-        automation_state["current_step"] = "Bekleniyor..."
-        _auto_log(f"Sonraki döngü {interval // 60} dakika sonra...")
-        # 30 sn'lik parçalarda bekle (durdurma için duyarlı)
-        for _ in range(interval // 30):
+    """Otomasyon döngüsünü başlat — crash-proof."""
+    import traceback as tb
+    try:
+        automation_state["running"] = True
+        interval = getattr(config, "AUTOMATION_INTERVAL", 10) * 60  # dakika -> saniye
+        _auto_log("Otomasyon pipeline başlatıldı")
+        
+        while automation_state["running"]:
+            try:
+                _auto_log(f"Döngü başlıyor...")
+                _run_automation_cycle()
+                _auto_log(f"Döngü tamamlandı")
+            except Exception as e:
+                _auto_log(f"DÖNGÜ HATASI: {e}")
+                try:
+                    _auto_log(f"Traceback: {tb.format_exc()[:500]}")
+                except Exception:
+                    pass
+                automation_state["stats"]["errors"] = automation_state["stats"].get("errors", 0) + 1
+            
+            # Durdurma kontrolü
             if not automation_state["running"]:
                 break
-            time.sleep(30)
-
-    _auto_log("Otomasyon durduruldu")
-    automation_state["current_step"] = ""
+            
+            # Bekleme
+            automation_state["current_step"] = "Bekleniyor..."
+            wait_min = max(interval // 60, 1)
+            _auto_log(f"Sonraki döngü {wait_min} dakika sonra...")
+            
+            # 30 sn'lik parçalarda bekle (durdurma için duyarlı)
+            wait_chunks = max(interval // 30, 1)
+            for _ in range(wait_chunks):
+                if not automation_state["running"]:
+                    break
+                time.sleep(30)
+    
+    except Exception as e:
+        _auto_log(f"FATAL: Otomasyon thread hatası: {e}")
+        try:
+            _auto_log(f"Fatal traceback: {tb.format_exc()[:500]}")
+        except Exception:
+            pass
+    finally:
+        automation_state["running"] = False
+        automation_state["current_step"] = "Durdu"
+        _auto_log("Otomasyon durduruldu")
 
 
 @app.route("/api/automation/start", methods=["POST"])
