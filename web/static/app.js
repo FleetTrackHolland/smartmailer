@@ -135,11 +135,45 @@ function renderSourceStats(dist) {
     const entries = Object.entries(dist).sort((a, b) => b[1] - a[1]);
     if (entries.length === 0) { container.innerHTML = '<p class="text-muted">Kaynak verisi yok</p>'; return; }
     container.innerHTML = entries.map(([src, cnt]) => `
-        <div class="source-stat"><div class="value">${cnt}</div><div class="label">${esc(src)}</div></div>
+        <div class="source-stat" style="cursor:pointer" onclick="showLeadsBySource('${esc(src)}')">
+            <div class="value">${cnt}</div><div class="label">${esc(src)}</div>
+        </div>
     `).join('');
 }
 
-// viewSentEmail — tek tanım aşağıda (L930+ civarı)
+async function showLeadsBySource(source) {
+    const data = await api(`/api/leads/source?source=${encodeURIComponent(source)}`);
+    if (!data?.leads?.length) { showToast(`${source} kaynağında lead bulunamadı`, 'info'); return; }
+    const rows = data.leads.slice(0, 50).map(l => `
+        <tr><td>${esc(l.email)}</td><td>${esc(l.company||'—')}</td>
+        <td>${esc(l.sector||'—')}</td><td>${esc(l.location||'—')}</td>
+        <td>${l.score||0}</td></tr>
+    `).join('');
+    openModal(`📋 ${source} Kaynağından Leadler (${data.leads.length})`, `
+        <table class="data-table" style="width:100%"><thead><tr>
+            <th>Email</th><th>Şirket</th><th>Sektör</th><th>Lokasyon</th><th>Skor</th>
+        </tr></thead><tbody>${rows}</tbody></table>
+    `);
+}
+
+async function viewSentEmail(email) {
+    const data = await api(`/api/sent/detail?email=${encodeURIComponent(email)}`);
+    if (!data || data.error) {
+        openModal('📧 Email Detay: ' + email, '<p>İçerik bulunamadı</p>');
+        return;
+    }
+    const d = data;
+    openModal('📧 Email Detay: ' + email, `
+        <p><strong>Kime:</strong> ${esc(d.email||email)}</p>
+        <p><strong>Şirket:</strong> ${esc(d.company||'—')}</p>
+        <p><strong>Konu:</strong> ${esc(d.subject||d.chosen_subject||'—')}</p>
+        <p><strong>QC Skor:</strong> ${d.qc_score||'—'}</p>
+        <p><strong>Yöntem:</strong> ${esc(d.method||'—')}</p>
+        <p><strong>Gönderim:</strong> ${fmtDate(d.sent_at)}</p>
+        <hr>
+        ${d.body_html || d.body_text || '<p>İçerik bulunamadı</p>'}
+    `);
+}
 
 // ═══════════════════════════════════════════════════════════
 // LEADS

@@ -694,6 +694,27 @@ def get_all_sent():
 
 
 # ─── DUPLICATE PREVENTION ────────────────────────────────────
+
+@app.route("/api/sent/detail", methods=["GET"])
+def get_sent_detail():
+    """Gönderilen emailin tam detayı (içerik dahil)."""
+    email = request.args.get("email", "")
+    if not email:
+        return jsonify({"error": "email parametresi gerekli"}), 400
+    detail = db.get_sent_email_content(email)
+    if not detail:
+        return jsonify({"error": "Email bulunamadı"}), 404
+    return jsonify(detail)
+
+
+@app.route("/api/leads/source", methods=["GET"])
+def get_leads_by_source():
+    """Belirli bir kaynaktan gelen lead'leri döndür."""
+    source = request.args.get("source", "")
+    if not source:
+        return jsonify({"error": "source parametresi gerekli"}), 400
+    leads = db.get_leads_by_source(source, limit=200)
+    return jsonify({"leads": leads, "source": source, "count": len(leads)})
 @app.route("/api/duplicate/stats", methods=["GET"])
 def get_duplicate_stats():
     """Duplicate önleme istatistikleri."""

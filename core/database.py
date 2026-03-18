@@ -1243,6 +1243,91 @@ class Database:
         except Exception as e:
             log.error(f"[DB] Sent log hatası: {email} — {e}")
 
+    def get_recent_sent(self, limit: int = 20) -> list[dict]:
+        """Son gönderilen emailleri listele."""
+        with self._conn() as conn:
+            rows = conn.execute("""
+                SELECT s.*, d.body_html, d.qc_score
+                FROM sent_log s
+                LEFT JOIN drafts d ON s.email = d.email
+                ORDER BY s.sent_at DESC LIMIT ?
+            """, (limit,)).fetchall()
+            return [dict(r) for r in rows]
+
+    def get_all_sent_with_content(self, limit: int = 200) -> list[dict]:
+        """Tüm gönderilen emailleri draft içerikleriyle birlikte döndür."""
+        with self._conn() as conn:
+            rows = conn.execute("""
+                SELECT s.email, s.company, s.sector, s.subject, s.method,
+                       s.message_id, s.ab_variant, s.sent_at,
+                       d.body_html, d.body_text, d.chosen_subject,
+                       d.qc_score, d.subject_a, d.subject_b, d.subject_c
+                FROM sent_log s
+                LEFT JOIN drafts d ON s.email = d.email
+                ORDER BY s.sent_at DESC
+                LIMIT ?
+            """, (limit,)).fetchall()
+            return [dict(r) for r in rows]
+
+    def get_open_rates_by_variant(self) -> dict:
+        """A/B test varyantına göre açılma oranları."""
+        with self._conn() as conn:
+            variants = {}
+            for variant in ["A", "B", "C"]:
+                sent = conn.execute(
+                    "SELECT COUNT(*) FROM sent_log WHERE ab_variant = ?",
+                    (variant,)
+                ).fetchone()[0]
+                opened = conn.execute("""
+                    SELECT COUNT(DISTINCT e.email) FROM events e
+                    INNER JOIN sent_log s ON e.email = s.email
+                    WHERE s.ab_variant = ? AND e.event_type = 'open'
+                """, (variant,)).fetchone()[0]
+                if sent > 0:
+                    variants[variant] = {
+                        "sent": sent, "opened": opened,
+                        "rate": round(opened / sent * 100, 1)
+                    }
+            return variants
+
+    def get_followup_stats(self) -> dict:
+        """Follow-up istatistikleri."""
+        with self._conn() as conn:
+            total = conn.execute("SELECT COUNT(*) FROM followups").fetchone()[0]
+            sent = conn.execute(
+                "SELECT COUNT(*) FROM followups WHERE status = 'sent'"
+            ).fetchone()[0]
+            pending = conn.execute(
+                "SELECT COUNT(*) FROM followups WHERE status = 'pending'"
+            ).fetchone()[0]
+            scheduled = conn.execute(
+                "SELECT COUNT(*) FROM followups WHERE status = 'scheduled'"
+            ).fetchone()[0]
+            return {
+                "total": total, "sent": sent,
+                "pending": pending, "scheduled": scheduled
+            }
+
+    def get_followup_detail(self, limit: int = 100) -> list[dict]:
+        """Kişi bazlı detaylı follow-up listesi."""
+        with self._conn() as conn:
+            rows = conn.execute("""
+                SELECT f.*, l.company, l.sector
+                FROM followups f
+                LEFT JOIN leads l ON f.email = l.email
+                ORDER BY f.scheduled_at DESC LIMIT ?
+            """, (limit,)).fetchall()
+            return [dict(r) for r in rows]
+
+    def get_leads_by_source(self, source: str, limit: int = 100) -> list[dict]:
+        """Belirli bir kaynaktan bulunan lead'leri döndür."""
+        with self._conn() as conn:
+            rows = conn.execute("""
+                SELECT * FROM leads WHERE source = ?
+                ORDER BY created_at DESC LIMIT ?
+            """, (source, limit)).fetchall()
+            return [dict(r) for r in rows]
+
 
 # Singleton instance
 db = Database()
