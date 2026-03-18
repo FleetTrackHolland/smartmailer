@@ -28,7 +28,7 @@ def main():
     parser.add_argument("--campaign", action="store_true",
                         help="Email kampanyası başlat (CLI)")
     parser.add_argument("--test", action="store_true",
-                        help="Test modunda çalış")
+                        help="(Devre dışı — artık kullanılmıyor)")
     parser.add_argument("--sector", type=str, default="transport",
                         help="Hedef sektör (keşif için)")
     parser.add_argument("--location", type=str, default="Nederland",
@@ -41,8 +41,7 @@ def main():
 
     args = parser.parse_args()
 
-    if args.test:
-        config.TEST_MODE = True
+    # --test flag artık kullanılmıyor (TEST_MODE tamamen kaldırıldı)
 
     print("=" * 60)
     print("  SmartMailer Ultimate v1.0")
@@ -51,14 +50,13 @@ def main():
 
     # Config validation
     errors = config.validate()
-    if errors and not config.TEST_MODE:
+    if errors:
         for e in errors:
             print(f"  ❌ {e}")
         print("\n  .env dosyasını kontrol edin.")
         sys.exit(1)
 
-    mode_str = "TEST MODU" if config.TEST_MODE else "GERÇEK GÖNDERİM"
-    print(f"  Mod: {mode_str}")
+    print(f"  Mod: GERÇEK GÖNDERİM")
     print(f"  Sektörler: {', '.join(config.SECTORS[:5])}...")
     print(f"  Konum: {config.TARGET_LOCATION}")
     print(f"  Anthropic: {'✅' if config.ANTHROPIC_API_KEY else '❌'}")

@@ -454,9 +454,6 @@ def start_campaign():
 
     data = request.json or {}
     limit = data.get("limit", config.DAILY_SEND_LIMIT)
-    test_mode = data.get("test_mode", config.TEST_MODE)
-
-    config.TEST_MODE = test_mode
 
     campaign_state["running"] = True
     campaign_state["stats"] = {
@@ -489,7 +486,7 @@ def start_campaign():
     t.start()
     campaign_state["thread"] = t
 
-    return jsonify({"success": True, "test_mode": test_mode, "limit": limit})
+    return jsonify({"success": True, "limit": limit})
 
 
 @app.route("/api/campaign/stop", methods=["POST"])
@@ -1350,7 +1347,7 @@ def _auto_start_automation():
     log.info("[AUTO] ═══ OTOMASYON OTOMATIK BASLADI ═══")
     log.info(f"[AUTO] Sektorler: {config.SECTORS}")
     log.info(f"[AUTO] Konum: {config.TARGET_LOCATION}")
-    log.info(f"[AUTO] Test modu: {'EVET' if config.TEST_MODE else 'HAYIR — GERCEK GONDERIM'}")
+    log.info(f"[AUTO] Mod: CANLI GÖNDERİM")
     log.info(f"[AUTO] Cycle arasi: {config.AUTOMATION_INTERVAL} dakika")
 
     _automation_state["running"] = True
@@ -1613,7 +1610,7 @@ if __name__ == "__main__":
     print("  SmartMailer Ultimate v1.0")
     print("  SmartMailer Pro + FleetTrack CRM Birleşimi")
     print("  http://localhost:5000")
-    mode_str = "TEST MODU" if config.TEST_MODE else "GERCEK GÖNDERİM"
+    mode_str = "GERÇEK GÖNDERİM"
     print(f"  {mode_str} | Sektorler: {', '.join(config.SECTORS[:5])}...")
     print(f"  Auto-Start: {'EVET' if config.AUTO_START else 'HAYIR'} | "
           f"Cycle: {config.AUTOMATION_INTERVAL} dk")
