@@ -604,23 +604,44 @@ def _persist_to_env(keys: list, data: dict):
 # ─── STATS ─────────────────────────────────────────────────────
 @app.route("/api/stats", methods=["GET"])
 def get_stats():
-    stats = db.get_stats()
-    recent = db.get_recent_sent(20)
-    ab_status = ab_test.get_status()
-    variant_stats = db.get_open_rates_by_variant()
+    try:
+        stats = db.get_stats()
+    except Exception as e:
+        stats = {"total_leads": 0, "total_sent": 0, "opens": 0,
+                 "open_rate": 0, "hot_leads": 0, "followups_sent": 0,
+                 "unsubscribe_count": 0, "error": str(e)}
 
-    # Source distribution — kaynak dağılımı
-    all_leads = db.get_all_leads()
-    source_dist = {}
-    for lead in all_leads:
-        src = lead.get("source", "csv") or "csv"
-        source_dist[src] = source_dist.get(src, 0) + 1
+    try:
+        recent = db.get_recent_sent(20)
+    except Exception:
+        recent = []
+
+    try:
+        ab_status = ab_test.get_status()
+        variant_stats = db.get_open_rates_by_variant()
+    except Exception:
+        ab_status = {}
+        variant_stats = {}
+
+    try:
+        all_leads = db.get_all_leads()
+        source_dist = {}
+        for lead in all_leads:
+            src = lead.get("source", "csv") or "csv"
+            source_dist[src] = source_dist.get(src, 0) + 1
+    except Exception:
+        source_dist = {}
+
+    try:
+        unsub_count = len(compliance._unsubscribe)
+    except Exception:
+        unsub_count = stats.get("unsubscribe_count", 0)
 
     return jsonify({
         **stats,
         "recent_sent": recent,
         "ab_test": {**ab_status, "variant_stats": variant_stats},
-        "unsubscribe_count": len(compliance._unsubscribe),
+        "unsubscribe_count": unsub_count,
         "source_distribution": source_dist,
     })
 
