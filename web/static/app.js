@@ -653,18 +653,23 @@ async function loadLogs(containerId = 'logs-container') {
 let autoRefreshTimer = null;
 
 async function startAutomation() {
-    const res = await api('/api/automation/start', 'POST');
-    if (res?.ok) {
-        showToast('Otomasyon başlatıldı', 'success');
-        document.getElementById('btn-start-auto').style.display = 'none';
-        document.getElementById('btn-stop-auto').style.display = '';
-        updateModeBadge(true);
-        // Auto-refresh every 5s
-        if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-        autoRefreshTimer = setInterval(refreshAutomation, 5000);
-        refreshAutomation();
-    } else {
-        showToast('Başlatılamadı: ' + (res?.error || ''), 'error');
+    try {
+        const res = await api('/api/automation/start', 'POST');
+        if (res?.ok || res?.message) {
+            showToast(res?.message || 'Otomasyon başlatıldı', 'success');
+            document.getElementById('btn-start-auto').style.display = 'none';
+            document.getElementById('btn-stop-auto').style.display = '';
+            updateModeBadge(true);
+            // Auto-refresh every 5s
+            if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+            autoRefreshTimer = setInterval(refreshAutomation, 5000);
+            setTimeout(refreshAutomation, 1000);
+        } else {
+            showToast('Başlatılamadı: ' + (res?.error || JSON.stringify(res)), 'error');
+        }
+    } catch (e) {
+        showToast('Başlatılamadı: bağlantı hatası', 'error');
+        console.error('startAutomation error:', e);
     }
 }
 

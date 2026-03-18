@@ -1876,23 +1876,46 @@ def _run_automation_cycle():
     _auto_log(f"=== Döngü {cycle} başladı ===")
     stats = automation_state["stats"]
 
-    # 1. LEAD KEŞFİ
-    automation_state["current_step"] = "1. Lead Keşfi"
-    _auto_log("Aşama 1: Lead keşfi başlatılıyor...")
+    # 1. LEAD KEŞFİ (AI-only — shared hosting'de hızlı)
+    automation_state["current_step"] = "1. Lead Keşfi (AI)"
+    _auto_log("Aşama 1: AI ile lead keşfi...")
     try:
-        new_leads = lead_finder.find(sectors=config.SECTORS[:3], max_per_sector=5)
-        if new_leads:
-            for nl in new_leads:
-                try:
-                    db.add_lead(nl)
-                except Exception:
-                    pass
-            stats["leads_found"] += len(new_leads)
-            _auto_log(f"  {len(new_leads)} yeni lead bulundu")
-        else:
-            _auto_log("  Yeni lead bulunamadı")
+        sectors_to_search = config.SECTORS[:3] if hasattr(config, 'SECTORS') else ["transport"]
+        for sector in sectors_to_search:
+            if not automation_state["running"]:
+                break
+            try:
+                _auto_log(f"  Sektör: {sector}...")
+                ai_leads = lead_finder._ai_bulk_lead_search(sector)
+                if ai_leads:
+                    saved = 0
+                    for nl in ai_leads:
+                        email = nl.get("email", "")
+                        if email and not db.lead_exists(email):
+                            try:
+                                db.add_discovered_lead(
+                                    email=email,
+                                    company=nl.get("company_name", ""),
+                                    sector=sector,
+                                    location=nl.get("city", "Nederland"),
+                                    vehicles=str(nl.get("estimated_vehicles", "")),
+                                    website=nl.get("website", ""),
+                                    phone=nl.get("phone", ""),
+                                    source="ai_discovery",
+                                    discovery_score=65,
+                                )
+                                saved += 1
+                            except Exception:
+                                pass
+                    stats["leads_found"] += saved
+                    _auto_log(f"  {sector}: {saved} yeni lead kaydedildi")
+                else:
+                    _auto_log(f"  {sector}: lead bulunamadı")
+            except Exception as e:
+                _auto_log(f"  {sector} HATA: {str(e)[:80]}")
+            time.sleep(2)
     except Exception as e:
-        _auto_log(f"  Lead keşfi HATA: {e}")
+        _auto_log(f"  Lead keşfi HATA: {str(e)[:80]}")
         stats["errors"] += 1
 
     if not automation_state["running"]:
