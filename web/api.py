@@ -1395,10 +1395,33 @@ def _automation_loop():
                 try:
                     _automation_state["last_action"] = f"Phase 1: {sector} taranıyor... ({total_discovered}/{MAX_LEADS_PER_CYCLE})"
                     log.info(f"[AUTO] Sektör taranıyor: {sector} / {config.TARGET_LOCATION}")
-                    new_leads = lead_finder.discover_leads(sector, config.TARGET_LOCATION)
+
+                    # Timeout wrapper — discover_leads max 60 saniye
+                    _discover_result = [None]
+                    _discover_error = [None]
+                    def _discover_worker():
+                        try:
+                            _discover_result[0] = lead_finder.discover_leads(sector, config.TARGET_LOCATION)
+                        except Exception as ex:
+                            _discover_error[0] = ex
+
+                    discover_thread = threading.Thread(target=_discover_worker, daemon=True)
+                    discover_thread.start()
+                    discover_thread.join(timeout=60)  # Max 60 saniye bekle
+
+                    if discover_thread.is_alive():
+                        log.warning(f"[AUTO] {sector}: discover_leads 60s timeout — atlanıyor")
+                        _automation_state["last_action"] = f"Phase 1: {sector} timeout — sonraki sektöre geçiliyor"
+                        new_leads = []
+                    elif _discover_error[0]:
+                        raise _discover_error[0]
+                    else:
+                        new_leads = _discover_result[0] or []
+
                     count = len(new_leads) if new_leads else 0
                     total_discovered += count
                     log.info(f"[AUTO] {sector}: {count} lead bulundu (toplam: {total_discovered})")
+                    _automation_state["last_action"] = f"Phase 1: {sector} — {count} lead bulundu ({total_discovered}/{MAX_LEADS_PER_CYCLE})"
 
                     if count == 0:
                         _exhausted_combos.add(combo_key)
@@ -1406,14 +1429,16 @@ def _automation_loop():
                         _exhausted_combos.discard(combo_key)
                 except Exception as e:
                     log.error(f"[AUTO] {sector} keşif hatası: {e}")
+                    _automation_state["last_action"] = f"Phase 1: {sector} HATA — devam ediliyor"
 
                 # Sektörler arası bekleme — sunucu koruması
                 if _automation_state["running"]:
-                    time.sleep(30)
+                    time.sleep(5)  # 30s → 5s (daha hızlı geçiş)
 
             log.info(f"[AUTO] Phase 1 tamamlandı: {total_discovered} yeni lead")
+            _automation_state["last_action"] = f"Phase 1 tamamlandı: {total_discovered} lead"
             gc.collect()  # Bellek temizliği
-            time.sleep(10)
+            time.sleep(5)
 
             # ══════════════════════════════════════════════════════
             # PHASE 2: GENİŞLETİLMİŞ ARAMA (her 3. cycle)
