@@ -290,6 +290,50 @@ class Database:
         log.info(f"{count} lead CSV'den içe aktarıldı: {csv_path}")
         return count
 
+    def add_discovered_lead(self, email: str, company: str = "",
+                            sector: str = "", location: str = "",
+                            vehicles: str = "", website: str = "",
+                            phone: str = "", contact_person: str = "",
+                            discovery_score: int = 60, source: str = "web_discovery",
+                            icebreaker: str = "") -> bool:
+        """
+        Lead keşif motoru tarafından bulunan lead'i veritabanına ekle.
+        Varsa güncelle (upsert), yoksa ekle.
+        """
+        email = email.strip().lower()
+        if not email or "@" not in email:
+            return False
+
+        try:
+            veh = int(vehicles) if vehicles else 0
+        except (ValueError, TypeError):
+            veh = 0
+
+        lead_data = {
+            "email": email,
+            "company": company,
+            "sector": sector,
+            "location": location,
+            "vehicles": veh,
+            "phone": phone,
+            "website": website,
+            "score": discovery_score,
+        }
+        try:
+            self.upsert_lead(lead_data)
+            # Ekstra alanları da güncelle (contact_person, icebreaker, source)
+            with self._conn() as conn:
+                conn.execute("""
+                    UPDATE leads SET
+                        status = CASE WHEN status = 'new' THEN 'discovered' ELSE status END,
+                        updated_at = datetime('now')
+                    WHERE email = ?
+                """, (email,))
+            return True
+        except Exception as e:
+            log.debug(f"Lead kayıt hatası ({email}): {e}")
+            return False
+
     def get_all_leads(self, order_by_ai_score: bool = False) -> list[dict]:
         """Tüm lead'leri getir."""
         order = "ai_score DESC, score DESC" if order_by_ai_score else "id ASC"
