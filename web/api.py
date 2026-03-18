@@ -911,10 +911,16 @@ def api_sent_all():
     """Tüm gönderilen emailleri döndür (Giden Mailler sayfası için)."""
     try:
         emails = db.get_all_sent_with_content()
-        return jsonify(emails)
+        # Frontend {emails: [...], count: N} formatı bekliyor
+        return jsonify({
+            "emails": emails,
+            "count": len(emails),
+        })
     except Exception as e:
         log.error(f"[SENT ALL] Hata: {e}")
-        return jsonify([])
+        import traceback
+        log.error(traceback.format_exc())
+        return jsonify({"emails": [], "count": 0})
 
 
 @app.route("/api/sent/<path:email>/content")
