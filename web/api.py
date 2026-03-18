@@ -957,6 +957,77 @@ def api_duplicate_stats():
         return jsonify({"total_sent": 0, "unique_emails": 0, "duplicates_blocked": 0})
 
 
+# ─── UNSUBSCRIBE (AFMELDEN) ───────────────────────────────────
+@app.route("/unsubscribe")
+def unsubscribe_page():
+    """Email aboneliğinden çıkma sayfası — kullanıcı dostu, Hollandaca."""
+    email = request.args.get("email", "").strip().lower()
+    if not email or "@" not in email:
+        return """<!DOCTYPE html><html><body style="font-family:Arial;text-align:center;padding:50px">
+        <h2>⚠️ Ongeldige link</h2><p>Geen geldig e-mailadres gevonden.</p></body></html>""", 400
+
+    # Unsubscribe işlemi
+    db.add_unsubscribe(email, reason="email_link")
+    log.info(f"[UNSUBSCRIBE] {email} afgemeld")
+
+    return f"""<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Afgemeld — FleetTrack Holland</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+        }}
+        .card {{
+            background: #fff; border-radius: 16px; padding: 48px; max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1); text-align: center;
+        }}
+        .logo {{ height: 40px; margin-bottom: 24px; }}
+        .check {{ font-size: 64px; margin-bottom: 16px; }}
+        h1 {{ font-size: 24px; color: #1a1a2e; margin-bottom: 12px; }}
+        .email {{ color: #0052CC; font-weight: 600; }}
+        p {{ color: #555; line-height: 1.6; margin-bottom: 16px; }}
+        .footer {{ margin-top: 32px; font-size: 12px; color: #999; }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <img src="https://www.fleettrackholland.nl/logo512.png" alt="FleetTrack Holland" class="logo">
+        <div class="check">✅</div>
+        <h1>U bent afgemeld</h1>
+        <p>Het e-mailadres <span class="email">{email}</span> is succesvol verwijderd uit onze mailinglijst.</p>
+        <p>U ontvangt geen verdere e-mails meer van FleetTrack Holland.</p>
+        <p style="font-size:14px;color:#888;">
+            Heeft u dit per ongeluk gedaan? Neem contact op via
+            <a href="mailto:sales@fleettrackholland.nl" style="color:#0052CC">sales@fleettrackholland.nl</a>
+        </p>
+        <div class="footer">
+            FleetTrack Holland — Blokfluit 31, 3068KZ Rotterdam<br>
+            KVK: 88606902 — <a href="https://www.fleettrackholland.nl" style="color:#0052CC">www.fleettrackholland.nl</a>
+        </div>
+    </div>
+</body>
+</html>"""
+
+
+@app.route("/api/unsubscribes")
+def api_unsubscribes():
+    """Unsubscribe listesini döndür (admin dashboard için)."""
+    try:
+        return jsonify({
+            "count": db.get_unsubscribe_count(),
+            "emails": db.get_all_unsubscribed(),
+        })
+    except Exception as e:
+        log.error(f"[UNSUBSCRIBES] Hata: {e}")
+        return jsonify({"count": 0, "emails": []})
+
+
 # ─── SEND TO SELECTED LEADS ───────────────────────────────────
 @app.route("/api/campaign/send-selected", methods=["POST"])
 def send_to_selected():
@@ -980,6 +1051,11 @@ def send_to_selected():
                 lead = {"email": email, "company": "", "sector": ""}
 
             lead_dict = dict(lead) if hasattr(lead, 'keys') else lead
+
+            # Unsubscribe kontrolü
+            if db.is_unsubscribed(email):
+                log.info(f"[SEND-SELECTED] Unsubscribed: {email} — atlandı")
+                continue
 
             # Duplicate kontrolü
             if db.is_duplicate_email(email):

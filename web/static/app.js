@@ -704,17 +704,20 @@ async function loadAgentLearnings() {
 
 // ─── VIEW SENT EMAIL DETAIL ───
 async function viewSentEmail(email) {
-    const data = await api(`/api/drafts/detail?email=${encodeURIComponent(email)}`);
-    if (data) {
-        const info = data.sent_info || data.draft_content || data;
+    const data = await api(`/api/sent/${encodeURIComponent(email)}/content`);
+    if (data && !data.error) {
         openModal('📧 Email Detay: ' + (email || ''), `<div style="padding:12px">
             <p><strong>Kime:</strong> ${esc(email)}</p>
-            <p><strong>Şirket:</strong> ${esc(info.company || '—')}</p>
-            <p><strong>Konu:</strong> ${esc(info.subject || info.chosen_subject || '—')}</p>
-            <p><strong>QC Skor:</strong> ${info.qc_score || '—'}</p>
-            <p><strong>Gönderim:</strong> ${fmtDate(info.sent_at || '')}</p>
+            <p><strong>Şirket:</strong> ${esc(data.company || '—')}</p>
+            <p><strong>Konu:</strong> ${esc(data.subject || data.chosen_subject || '—')}</p>
+            <p><strong>QC Skor:</strong> ${data.qc_score || '—'}</p>
+            <p><strong>Yöntem:</strong> ${esc(data.method || '—')}</p>
+            <p><strong>Gönderim:</strong> ${fmtDate(data.sent_at || '')}</p>
             <hr>
-            <div style="white-space:pre-wrap;font-size:0.9rem">${esc(info.body_text || info.body_html || 'İçerik bulunamadı')}</div>
+            ${data.body_html
+                ? `<div style="border:1px solid #333;border-radius:8px;padding:16px;background:#1a1a2e">${data.body_html}</div>`
+                : `<div style="white-space:pre-wrap;font-size:0.9rem">${esc(data.body_text || 'İçerik bulunamadı')}</div>`
+            }
         </div>`);
     } else {
         showToast('Email detayı bulunamadı', 'error');

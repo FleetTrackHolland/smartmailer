@@ -171,6 +171,15 @@ class Database:
                 CREATE INDEX IF NOT EXISTS idx_responses_email ON responses(email);
                 CREATE INDEX IF NOT EXISTS idx_responses_class ON responses(classification);
 
+                -- v5: Unsubscribe tablosu
+                CREATE TABLE IF NOT EXISTS unsubscribes (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    email TEXT UNIQUE NOT NULL,
+                    reason TEXT DEFAULT '',
+                    unsubscribed_at TEXT DEFAULT (datetime('now'))
+                );
+                CREATE INDEX IF NOT EXISTS idx_unsubscribes_email ON unsubscribes(email);
+
                 -- v4: leads tablosuna yeni alanlar (ALTER TABLE — hata verirse ignore)
             """)
 
@@ -1078,7 +1087,42 @@ class Database:
             """, (limit,)).fetchall()
             return [dict(r) for r in rows]
 
+    # ─── UNSUBSCRIBE ─────────────────────────────────────────────
+
+    def add_unsubscribe(self, email: str, reason: str = "") -> bool:
+        """Email adresini unsubscribe listesine ekle."""
+        with self._conn() as conn:
+            try:
+                conn.execute("""
+                    INSERT OR IGNORE INTO unsubscribes (email, reason)
+                    VALUES (?, ?)
+                """, (email.strip().lower(), reason))
+                return True
+            except Exception:
+                return False
+
+    def is_unsubscribed(self, email: str) -> bool:
+        """Email adresi unsubscribe listesinde mi?"""
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT 1 FROM unsubscribes WHERE email = ?",
+                (email.strip().lower(),)
+            ).fetchone()
+            return row is not None
+
+    def get_unsubscribe_count(self) -> int:
+        """Toplam unsubscribe sayısı."""
+        with self._conn() as conn:
+            return conn.execute("SELECT COUNT(*) FROM unsubscribes").fetchone()[0]
+
+    def get_all_unsubscribed(self) -> list[dict]:
+        """Tüm unsubscribe listesini döndür."""
+        with self._conn() as conn:
+            rows = conn.execute(
+                "SELECT * FROM unsubscribes ORDER BY unsubscribed_at DESC"
+            ).fetchall()
+            return [dict(r) for r in rows]
+
 
 # Singleton instance
 db = Database()
-
