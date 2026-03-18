@@ -1031,6 +1031,50 @@ def send_to_selected():
     return jsonify({"success": True, "sent": sent_count, "errors": errors})
 
 
+# ─── SKIP LEADS ───────────────────────────────────────────────
+@app.route("/api/leads/skip", methods=["POST"])
+def skip_leads():
+    """Seçili leadleri atla (send_status = 'skipped')."""
+    data = request.json or {}
+    emails = data.get("emails", [])
+    skipped = 0
+    for email in emails:
+        try:
+            db.update_lead_status(email, "skipped") if hasattr(db, 'update_lead_status') else None
+            skipped += 1
+        except Exception:
+            pass
+    return jsonify({"success": True, "skipped": skipped})
+
+
+# ─── AGENT LEARNINGS ──────────────────────────────────────────
+@app.route("/api/agents/learnings", methods=["GET"])
+def get_agent_learnings():
+    """Agent öğrenme istatistiklerini döner."""
+    try:
+        learnings = {
+            "total_emails_sent": db.count_sent() if hasattr(db, 'count_sent') else 0,
+            "avg_qc_score": db.avg_qc_score() if hasattr(db, 'avg_qc_score') else 0,
+            "top_performing_subject_type": ab_test.get_winner() if hasattr(ab_test, 'get_winner') else "—",
+            "response_rate": "—",
+            "improvement_notes": "Agent'lar her gönderimden sonra QC puanlarını ve yanıt oranlarını analiz ederek kendini geliştirir.",
+        }
+        return jsonify(learnings)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# ─── FOLLOWUPS STATS ──────────────────────────────────────────
+@app.route("/api/followups/stats", methods=["GET"])
+def get_followups_stats():
+    """Follow-up istatistiklerini döner."""
+    try:
+        stats = follow_up.get_stats() if hasattr(follow_up, 'get_stats') else {}
+        return jsonify(stats if stats else {"pending": 0, "sent": 0, "cancelled": 0})
+    except Exception as e:
+        return jsonify({"pending": 0, "sent": 0, "cancelled": 0})
+
+
 # ─── HEALTH CHECK (tüm modülleri test eder) ──────────────────
 @app.route("/api/health/check", methods=["GET"])
 def health_check():

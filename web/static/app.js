@@ -756,14 +756,16 @@ async function loadSentMails() {
     setText('sent-total', rows.length);
     setText('sent-opened', rows.filter(e => e.opened).length);
     setText('sent-replied', rows.filter(e => e.replied).length);
-    setText('sent-duplicate', rows.filter(e => e.duplicate_blocked).length || 0);
+    setText('sent-dup-blocked', rows.filter(e => e.duplicate_blocked).length || 0);
 
-    const tbody = document.getElementById('sent-table-body');
+    const tbody = document.getElementById('sentmails-body');
     if (!tbody) return;
     if (!rows.length) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;opacity:.5">Henüz gönderim yok</td></tr>'; return; }
 
-    tbody.innerHTML = rows.slice(0, 100).map(e => `
-        <tr>
+    tbody.innerHTML = rows.slice(0, 100).map(e => {
+        const bodyPreview = esc((e.body_text || e.body_html || 'İçerik yok').replace(/'/g, "\\'").replace(/\n/g, ' ').substring(0, 500));
+        return `
+        <tr style="cursor:pointer" onclick="viewSentEmail('${esc(e.email || '')}')">
             <td>${fmtDate(e.sent_at || e.date || '')}</td>
             <td>${esc(e.email || '')}</td>
             <td>${esc(e.company || '')}</td>
@@ -771,9 +773,9 @@ async function loadSentMails() {
             <td>${e.qc_score ? `<span class="badge ${e.qc_score >= 90 ? 'badge-green' : 'badge-yellow'}">${e.qc_score}</span>` : '—'}</td>
             <td>${e.opened ? '✅' : '—'}</td>
             <td>${e.replied ? '💬' : '—'}</td>
-            <td><button class="btn-sm" onclick="openModal('Email Detay', '<pre style=\\'white-space:pre-wrap\\'>${esc(e.body_text || e.body_html || 'İçerik yok')}</pre>')">👁</button></td>
-        </tr>
-    `).join('');
+            <td><button class="btn-sm btn-ghost" onclick="event.stopPropagation(); openModal('📧 Email Detay', '<div style=\'padding:8px\'><p><strong>Kime:</strong> ${esc(e.email || '')}</p><p><strong>Konu:</strong> ${esc(e.subject || '')}</p><p><strong>QC Skor:</strong> ${e.qc_score || '—'}</p><hr><div style=\'white-space:pre-wrap;font-size:0.9rem\'>${bodyPreview}</div></div>')">👁</button></td>
+        </tr>`;
+    }).join('');
 }
 
 // ─── AGENT STATUS ───
@@ -822,28 +824,62 @@ async function loadAgentStatus() {
 // ─── RESPONSES (Yanıtlar) ───
 async function loadResponses() {
     const data = await api('/api/responses');
-    const container = document.getElementById('responses-list');
-    if (!container || !data) return;
-
+    if (!data) return;
     const items = data.responses || data || [];
-    if (!items.length) {
-        container.innerHTML = '<p style="opacity:.5;text-align:center;padding:2rem">Henüz yanıt yok</p>';
-        return;
+
+    // Stats grid
+    const statsGrid = document.getElementById('response-stats-grid');
+    if (statsGrid) {
+        const interested = items.filter(r => r.classification === 'interested').length;
+        const questions = items.filter(r => r.classification === 'question').length;
+        const notInterested = items.filter(r => r.classification === 'not_interested').length;
+        const ooo = items.filter(r => r.classification === 'out_of_office').length;
+        statsGrid.innerHTML = `
+            <div class="stat-card gradient-3"><div class="stat-icon">🔥</div><div class="stat-info"><span class="stat-value">${interested}</span><span class="stat-label">İlgili</span></div></div>
+            <div class="stat-card gradient-4"><div class="stat-icon">❓</div><div class="stat-info"><span class="stat-value">${questions}</span><span class="stat-label">Soru</span></div></div>
+            <div class="stat-card gradient-6"><div class="stat-icon">🚫</div><div class="stat-info"><span class="stat-value">${notInterested}</span><span class="stat-label">İlgisiz</span></div></div>
+            <div class="stat-card gradient-5"><div class="stat-icon">🏖</div><div class="stat-info"><span class="stat-value">${ooo}</span><span class="stat-label">Ofis Dışı</span></div></div>
+        `;
     }
 
-    container.innerHTML = items.slice(0, 50).map(r => `
-        <div class="response-item ${r.classification === 'interested' ? 'response-hot' : ''}">
-            <div class="response-header">
-                <strong>${esc(r.from_email || r.email || '')}</strong>
-                <span class="badge badge-${r.classification === 'interested' ? 'green' : r.classification === 'question' ? 'yellow' : 'gray'}">${esc(r.classification || 'bilinmiyor')}</span>
-                <span class="response-date">${fmtDate(r.received_at || r.date || '')}</span>
-            </div>
-            <p class="response-body">${esc((r.body || r.snippet || '').substring(0, 200))}</p>
-        </div>
-    `).join('');
+    // Hot Leads table
+    const hotBody = document.getElementById('hot-leads-body');
+    if (hotBody) {
+        const hotLeads = items.filter(r => r.classification === 'interested');
+        if (hotLeads.length) {
+            hotBody.innerHTML = hotLeads.map(r => `
+                <tr>
+                    <td>${esc(r.company || '—')}</td>
+                    <td>${esc(r.from_email || r.email || '')}</td>
+                    <td>${esc((r.body || r.snippet || '').substring(0, 60))}</td>
+                    <td><span class="badge badge-green">${esc(r.classification || '')}</span></td>
+                    <td>${fmtDate(r.received_at || r.date || '')}</td>
+                    <td><button class="btn-sm btn-ghost" onclick="openModal('Yanıt Detay', '<pre style=\'white-space:pre-wrap\'>${esc((r.body || 'İçerik yok').replace(/'/g, "\\'"))}</pre>')">👁</button></td>
+                </tr>
+            `).join('');
+        } else {
+            hotBody.innerHTML = '<tr><td colspan="6" class="empty-state">Henüz hot lead yok</td></tr>';
+        }
+    }
+
+    // Follow-up stats
+    const fuStats = document.getElementById('followup-stats');
+    if (fuStats) {
+        const fuData = await api('/api/followups/stats');
+        if (fuData) {
+            fuStats.innerHTML = `<div class="info-grid">
+                <div class="info-item"><span class="info-label">Bekleyen</span><span class="info-value">${fuData.pending || 0}</span></div>
+                <div class="info-item"><span class="info-label">Gönderilen</span><span class="info-value">${fuData.sent || 0}</span></div>
+                <div class="info-item"><span class="info-label">İptal</span><span class="info-value">${fuData.cancelled || 0}</span></div>
+            </div>`;
+        }
+    }
 }
 
 // ─── SEND TO SELECTED LEADS ───
+// HTML onclick uses sendSelectedLeads — wrapper function
+function sendSelectedLeads() { sendToSelected(); }
+
 async function sendToSelected() {
     if (selectedLeads.size === 0) {
         showToast('Önce lead seçin!', 'error');
@@ -862,6 +898,46 @@ async function sendToSelected() {
     }
 }
 
+// ─── SKIP SELECTED LEADS ───
+async function skipSelectedLeads() {
+    if (selectedLeads.size === 0) { showToast('Önce lead seçin!', 'error'); return; }
+    const emails = Array.from(selectedLeads);
+    showToast(`${emails.length} lead atlanıyor...`, 'info');
+    const data = await api('/api/leads/skip', 'POST', { emails });
+    if (data) { showToast('Lead\'ler atlandı', 'success'); selectedLeads.clear(); loadLeads(); }
+}
+
+// ─── AGENT LEARNINGS ───
+async function loadAgentLearnings() {
+    const data = await api('/api/agents/learnings');
+    const container = document.getElementById('agent-learning-stats');
+    if (!container) return;
+    if (!data) { openModal('📈 Öğrenme Raporu', '<p>Henüz öğrenme verisi yok.</p>'); return; }
+    const html = `<div style="padding:12px">
+        <h4>Agent Öğrenme İstatistikleri</h4>
+        <pre style="white-space:pre-wrap;font-size:0.85rem">${esc(JSON.stringify(data, null, 2))}</pre>
+    </div>`;
+    openModal('📈 Agent Öğrenme Raporu', html);
+}
+
+// ─── VIEW SENT EMAIL DETAIL ───
+async function viewSentEmail(email) {
+    const data = await api(`/api/drafts/detail?email=${encodeURIComponent(email)}`);
+    if (data) {
+        const info = data.sent_info || data.draft_content || data;
+        openModal('📧 Email Detay: ' + (email || ''), `<div style="padding:12px">
+            <p><strong>Kime:</strong> ${esc(email)}</p>
+            <p><strong>Şirket:</strong> ${esc(info.company || '—')}</p>
+            <p><strong>Konu:</strong> ${esc(info.subject || info.chosen_subject || '—')}</p>
+            <p><strong>QC Skor:</strong> ${info.qc_score || '—'}</p>
+            <p><strong>Gönderim:</strong> ${fmtDate(info.sent_at || '')}</p>
+            <hr>
+            <div style="white-space:pre-wrap;font-size:0.9rem">${esc(info.body_text || info.body_html || 'İçerik bulunamadı')}</div>
+        </div>`);
+    } else {
+        showToast('Email detayı bulunamadı', 'error');
+    }
+}
 
 // ─── SECTOR DROPDOWN & QUEUE ───
 const SECTOR_COLORS = ['#06d6a0','#118ab2','#ef476f','#ffd166','#073b4c','#8338ec','#ff6b6b','#48bfe3','#4cc9f0','#7209b7','#f72585','#4361ee','#3a0ca3','#560bad','#b5179e','#f15bb5','#fee440','#00bbf9','#00f5d4','#9b5de5','#fb5607','#ff006e','#8ac926','#1982c4','#6a4c93','#f77f00','#0ead69'];
