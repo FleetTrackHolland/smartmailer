@@ -104,13 +104,25 @@
     <div class="card">
         <div class="card-header"><h3>Yeni Lead Keşfi</h3></div>
         <div class="form-row">
-            <div class="form-group"><label>Sektör</label><input type="text" id="discover-sector" value="transport" placeholder="örn: transport, bouw"></div>
+            <div class="form-group">
+                <label>Sektör Seç</label>
+                <select id="discover-sector-select" onchange="onSectorSelect(this)" style="padding:8px 12px;border-radius:8px;background:var(--bg-card);color:var(--text);border:1px solid var(--border)">
+                    <option value="">— Listeden seç veya aşağıya yaz —</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Sektör (Manuel)</label><input type="text" id="discover-sector" value="transport" placeholder="örn: transport, bouw"></div>
             <div class="form-group"><label>Konum</label><input type="text" id="discover-location" value="Nederland" placeholder="örn: Nederland, Amsterdam"></div>
             <button class="btn btn-primary" onclick="discoverLeads()">🔍 Keşfet</button>
             <button class="btn btn-accent" onclick="scoreAllLeads()">🔮 Tümünü AI ile Puanla</button>
         </div>
         <div class="discover-status" id="discover-status"></div>
         <div class="source-breakdown" id="discover-source-breakdown"></div>
+    </div>
+
+    <!-- Sektör Arama Sırası -->
+    <div class="card">
+        <div class="card-header"><h3>📋 Sektör Arama Sırası</h3><small class="text-muted">Otomasyon bu sırayla tarar — tıklayarak seçebilirsiniz</small></div>
+        <div id="sector-queue" style="display:flex;flex-wrap:wrap;gap:8px;padding:4px 0"></div>
     </div>
 
     <div class="card">
@@ -438,6 +450,6 @@
 <div class="toast-container" id="toast-container"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
-<script src="/app.js?v=4"></script>
+<script src="/app.js?v=5"></script>
 </body>
 </html>

@@ -692,6 +692,113 @@ async function toggleSystemMode() {
     if (data) { updateModeBadge(data); showToast(data.TEST_MODE ? 'Test modu açıldı' : '⚠️ CANLI moda geçildi!', data.TEST_MODE ? 'info' : 'error'); }
 }
 
+// ─── AUTOMATION STATUS ───
+async function loadAutomationStatus() {
+    const data = await api('/api/automation/status');
+    if (!data) return;
+
+    const running = data.running;
+    const cycle = data.cycle || 0;
+    const lastAction = data.last_action || '—';
+    const lastCycleAt = data.last_cycle_at || '';
+
+    // Status indicator (dot + text)
+    const indicator = document.getElementById('auto-indicator');
+    if (indicator) {
+        indicator.className = running ? 'auto-indicator running' : 'auto-indicator stopped';
+    }
+    const statusText = document.getElementById('auto-status-text');
+    if (statusText) {
+        statusText.textContent = running ? 'Çalışıyor' : 'Durdurulmuş';
+        statusText.style.color = running ? 'var(--green)' : 'var(--red)';
+    }
+
+    // Cycle badge
+    const cycleBadge = document.getElementById('cycle-badge');
+    if (cycleBadge) cycleBadge.textContent = `Cycle ${cycle}`;
+
+    // Last cycle time
+    const lastCycleEl = document.getElementById('auto-last-cycle');
+    if (lastCycleEl) lastCycleEl.textContent = lastCycleAt ? `Son: ${fmtDate(lastCycleAt)}` : 'Son: —';
+
+    // Action text
+    const actionEl = document.getElementById('auto-action-text');
+    if (actionEl) actionEl.textContent = lastAction;
+
+    // Start/Stop buttons (show/hide)
+    const startBtn = document.getElementById('btn-start-auto');
+    const stopBtn = document.getElementById('btn-stop-auto');
+    if (startBtn) startBtn.style.display = running ? 'none' : '';
+    if (stopBtn) stopBtn.style.display = running ? '' : 'none';
+}
+
+async function startAutomation() {
+    const data = await api('/api/automation/start', 'POST');
+    if (data) {
+        showToast('✅ Otomasyon başlatıldı!', 'success');
+        loadAutomationStatus();
+    }
+}
+
+async function stopAutomation() {
+    const data = await api('/api/automation/stop', 'POST');
+    if (data) {
+        showToast('⏹ Otomasyon durduruldu', 'info');
+        loadAutomationStatus();
+    }
+}
+
+
+// ─── SECTOR DROPDOWN & QUEUE ───
+const SECTOR_COLORS = ['#06d6a0','#118ab2','#ef476f','#ffd166','#073b4c','#8338ec','#ff6b6b','#48bfe3','#4cc9f0','#7209b7','#f72585','#4361ee','#3a0ca3','#560bad','#b5179e','#f15bb5','#fee440','#00bbf9','#00f5d4','#9b5de5','#fb5607','#ff006e','#8ac926','#1982c4','#6a4c93','#f77f00','#0ead69'];
+
+function initSectorUI() {
+    api('/api/config').then(cfg => {
+        if (!cfg) return;
+        const sectors = cfg.SECTORS || [];
+        // Dropdown doldur
+        const sel = document.getElementById('discover-sector-select');
+        if (sel) {
+            sel.innerHTML = '<option value="">— Listeden seç veya aşağıya yaz —</option>';
+            sectors.forEach((s, i) => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                opt.textContent = `${i + 1}. ${s}`;
+                sel.appendChild(opt);
+            });
+        }
+        // Queue chips
+        const queue = document.getElementById('sector-queue');
+        if (queue) {
+            queue.innerHTML = sectors.map((s, i) => {
+                const color = SECTOR_COLORS[i % SECTOR_COLORS.length];
+                return `<span class="sector-chip" onclick="selectSector('${s}')" style="
+                    display:inline-flex;align-items:center;gap:5px;padding:6px 14px;
+                    border-radius:20px;cursor:pointer;font-size:13px;font-weight:500;
+                    background:${color}22;color:${color};border:1px solid ${color}44;
+                    transition:all .2s;
+                " onmouseover="this.style.background='${color}44'" onmouseout="this.style.background='${color}22'">
+                    <span style="background:${color};color:#fff;border-radius:50%;width:20px;height:20px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700">${i + 1}</span>
+                    ${s}
+                </span>`;
+            }).join('');
+        }
+    });
+}
+
+function onSectorSelect(sel) {
+    if (sel.value) {
+        document.getElementById('discover-sector').value = sel.value;
+    }
+}
+
+function selectSector(sector) {
+    document.getElementById('discover-sector').value = sector;
+    const sel = document.getElementById('discover-sector-select');
+    if (sel) sel.value = sector;
+    showToast(`Sektör seçildi: ${sector}`, 'info');
+}
+
 // ─── UTILITY ───
 function setText(id, v) { const el = document.getElementById(id); if (el) el.textContent = v; }
 function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
@@ -774,6 +881,7 @@ function initSocketIO() {
 document.addEventListener('DOMContentLoaded', () => {
     refreshAll();
     initSocketIO();
+    initSectorUI();
     // Socket.IO aktifse daha az polling (60s), değilse 30s
     autoRefreshInterval = setInterval(refreshAll, socket ? 60000 : 30000);
 });
