@@ -649,7 +649,108 @@ async function loadLogs(containerId = 'logs-container') {
     if (container && data?.logs) { container.textContent = data.logs.join(''); container.scrollTop = container.scrollHeight; }
 }
 
-// toggleSystemMode kaldırıldı (TEST_MODE artık yok)
+// ─── AUTOMATION PIPELINE ───
+let autoRefreshTimer = null;
+
+async function startAutomation() {
+    const res = await api('/api/automation/start', 'POST');
+    if (res?.ok) {
+        showToast('Otomasyon başlatıldı', 'success');
+        document.getElementById('btn-start-auto').style.display = 'none';
+        document.getElementById('btn-stop-auto').style.display = '';
+        updateModeBadge(true);
+        // Auto-refresh every 5s
+        if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+        autoRefreshTimer = setInterval(refreshAutomation, 5000);
+        refreshAutomation();
+    } else {
+        showToast('Başlatılamadı: ' + (res?.error || ''), 'error');
+    }
+}
+
+async function stopAutomation() {
+    const res = await api('/api/automation/stop', 'POST');
+    if (res?.ok) {
+        showToast('Otomasyon durduruluyor...', 'info');
+        document.getElementById('btn-start-auto').style.display = '';
+        document.getElementById('btn-stop-auto').style.display = 'none';
+        updateModeBadge(false);
+        if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; }
+    }
+}
+
+async function refreshAutomation() {
+    const data = await api('/api/automation/status');
+    if (!data) return;
+
+    // Status text
+    const statusEl = document.getElementById('auto-status-text');
+    const actionEl = document.getElementById('auto-action-text');
+    const indEl = document.getElementById('auto-indicator');
+    if (statusEl) statusEl.textContent = data.running ? 'Çalışıyor' : 'Durdurulmuş';
+    if (actionEl) actionEl.textContent = data.current_step || '—';
+    if (indEl) { indEl.className = 'auto-indicator ' + (data.running ? 'running' : 'stopped'); }
+
+    // Cycle info
+    const cycleBadge = document.getElementById('cycle-badge');
+    const lastCycle = document.getElementById('auto-last-cycle');
+    if (cycleBadge) cycleBadge.textContent = 'Cycle ' + (data.cycle || 0);
+    if (lastCycle) lastCycle.textContent = 'Son: ' + (data.last_cycle ? fmtDate(data.last_cycle) : '—');
+
+    // Pipeline step indicators
+    const stepNum = parseInt((data.current_step || '0').charAt(0)) || 0;
+    for (let i = 1; i <= 6; i++) {
+        const el = document.getElementById('pipe-step-' + i);
+        if (el) {
+            el.className = 'pipeline-step' + (i === stepNum ? ' active' : i < stepNum ? ' done' : '');
+        }
+    }
+
+    // Buttons
+    if (data.running) {
+        document.getElementById('btn-start-auto').style.display = 'none';
+        document.getElementById('btn-stop-auto').style.display = '';
+    } else {
+        document.getElementById('btn-start-auto').style.display = '';
+        document.getElementById('btn-stop-auto').style.display = 'none';
+    }
+
+    // Logs
+    const logEl = document.getElementById('automation-log');
+    if (logEl && data.logs?.length > 0) {
+        logEl.innerHTML = data.logs.map(l => `<div class="log-line">${esc(l)}</div>`).join('');
+        logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    // Mode badge
+    updateModeBadge(data.running);
+
+    // Stats in sidebar
+    const stats = data.stats || {};
+    setText('stat-leads', (stats.leads_found || 0) + ' keşfedildi');
+}
+
+function updateModeBadge(running) {
+    const badge = document.getElementById('mode-badge');
+    const text = document.getElementById('mode-text');
+    if (badge) badge.className = 'mode-badge ' + (running ? 'live' : '');
+    if (text) text.textContent = running ? 'CANLI — AKTİF' : 'DURDURULMUŞ';
+}
+
+function toggleSystemMode() {
+    // Mode badge'e tıklayınca automation toggle
+    const data = document.getElementById('auto-status-text');
+    if (data && data.textContent === 'Çalışıyor') {
+        stopAutomation();
+    } else {
+        startAutomation();
+    }
+}
+
+// Load automation status on page load
+document.addEventListener('DOMContentLoaded', () => {
+    refreshAutomation();
+});
 
 
 

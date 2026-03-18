@@ -1844,6 +1844,238 @@ def deploy_status():
     return jsonify(_deploy_state)
 
 
+# ─── AUTOMATION STATE ─────────────────────────────────────────
+automation_state = {
+    "running": False,
+    "thread": None,
+    "cycle": 0,
+    "current_step": "",
+    "last_cycle": None,
+    "logs": [],
+    "stats": {"leads_found": 0, "scored": 0, "sent": 0, "followups": 0, "errors": 0},
+}
+
+
+def _auto_log(msg):
+    """Otomasyon loguna mesaj ekle (son 100 satır tut)."""
+    ts = datetime.now().strftime("%H:%M:%S")
+    line = f"[{ts}] {msg}"
+    automation_state["logs"].append(line)
+    if len(automation_state["logs"]) > 100:
+        automation_state["logs"] = automation_state["logs"][-100:]
+    log.info(f"[AUTOMATION] {msg}")
+
+
+def _run_automation_cycle():
+    """Tek bir otomasyon döngüsü — 6 aşama."""
+    from dataclasses import asdict
+    from core.send_engine import SendEngine, EmailMessage
+
+    automation_state["cycle"] += 1
+    cycle = automation_state["cycle"]
+    _auto_log(f"=== Döngü {cycle} başladı ===")
+    stats = automation_state["stats"]
+
+    # 1. LEAD KEŞFİ
+    automation_state["current_step"] = "1. Lead Keşfi"
+    _auto_log("Aşama 1: Lead keşfi başlatılıyor...")
+    try:
+        new_leads = lead_finder.find(sectors=config.SECTORS[:3], max_per_sector=5)
+        if new_leads:
+            for nl in new_leads:
+                try:
+                    db.add_lead(nl)
+                except Exception:
+                    pass
+            stats["leads_found"] += len(new_leads)
+            _auto_log(f"  {len(new_leads)} yeni lead bulundu")
+        else:
+            _auto_log("  Yeni lead bulunamadı")
+    except Exception as e:
+        _auto_log(f"  Lead keşfi HATA: {e}")
+        stats["errors"] += 1
+
+    if not automation_state["running"]:
+        return
+
+    # 2. AI PUANLAMA
+    automation_state["current_step"] = "2. AI Puanlama"
+    _auto_log("Aşama 2: AI puanlama...")
+    try:
+        unsent = db.get_unsent_leads(limit=20)
+        unscored = [l for l in unsent if not l.get("ai_score")]
+        if unscored:
+            scores = lead_scorer.score_batch(unscored[:10])
+            for sd in scores:
+                db.update_lead_ai_score(
+                    email=sd["email"], score=sd.get("score", 50),
+                    reason=sd.get("reason", ""))
+            stats["scored"] += len(scores)
+            _auto_log(f"  {len(scores)} lead puanlandı")
+        else:
+            _auto_log("  Puanlanacak yeni lead yok")
+    except Exception as e:
+        _auto_log(f"  Puanlama HATA: {e}")
+        stats["errors"] += 1
+
+    if not automation_state["running"]:
+        return
+
+    # 3. EMAIL YAZMA + KALİTE KONTROL + GÖNDERİM
+    automation_state["current_step"] = "3. Email Yazma + Gönderim"
+    _auto_log("Aşama 3: Email yazma ve gönderim...")
+    try:
+        send_eng = SendEngine()
+        leads_to_send = db.get_unsent_leads(limit=config.DAILY_SEND_LIMIT)
+        sent_this_cycle = 0
+        for lead in leads_to_send:
+            if not automation_state["running"]:
+                break
+            if sent_this_cycle >= 10:  # Max 10 per cycle
+                break
+
+            email = (lead.get("email") or "").strip()
+            company = lead.get("company") or "?"
+            if not email or db.is_unsubscribed(email) or db.is_duplicate_email(email):
+                continue
+
+            try:
+                draft = copywriter.write(lead)
+                if not draft:
+                    continue
+
+                # QC check
+                qc = quality.check(
+                    subject=draft.chosen_subject,
+                    body_text=draft.body_text,
+                    company_name=company,
+                    body_html=draft.body_html)
+
+                if qc.score < 70:
+                    _auto_log(f"  QC düşük ({qc.score}): {company} — atlandı")
+                    continue
+
+                # Save draft
+                draft_dict = asdict(draft) if hasattr(draft, '__dataclass_fields__') else {}
+                draft_dict["qc_score"] = qc.score
+                db.save_draft(email, draft_dict)
+
+                # Send
+                msg = EmailMessage(
+                    to_email=email, to_name=company,
+                    subject=draft.chosen_subject,
+                    html_body=draft.body_html, text_body=draft.body_text,
+                    lead_id=email)
+                result = send_eng.send(msg)
+                if result.success:
+                    sent_this_cycle += 1
+                    stats["sent"] += 1
+                    db.log_sent(email=email, company=company,
+                                sector=lead.get("sector", ""),
+                                subject=draft.chosen_subject,
+                                method=result.method,
+                                message_id=result.message_id)
+                    _auto_log(f"  SENT: {company} ({email})")
+                    # Delay between sends
+                    import random
+                    time.sleep(random.randint(15, 45))
+                else:
+                    _auto_log(f"  FAIL: {company} — {result.error}")
+                    stats["errors"] += 1
+            except Exception as e:
+                _auto_log(f"  Hata ({company}): {e}")
+                stats["errors"] += 1
+
+        _auto_log(f"  Bu döngüde {sent_this_cycle} email gönderildi")
+    except Exception as e:
+        _auto_log(f"  Gönderim HATA: {e}")
+        stats["errors"] += 1
+
+    if not automation_state["running"]:
+        return
+
+    # 4. FOLLOW-UP
+    automation_state["current_step"] = "4. Follow-Up"
+    _auto_log("Aşama 4: Follow-up kontrolü...")
+    try:
+        from agents.orchestrator import Orchestrator
+        orch = Orchestrator()
+        followups_sent = orch.process_followups()
+        stats["followups"] += len(followups_sent)
+        _auto_log(f"  {len(followups_sent)} follow-up gönderildi")
+    except Exception as e:
+        _auto_log(f"  Follow-up HATA: {e}")
+
+    # 5. YANIT TAKİP
+    automation_state["current_step"] = "5. Yanıt Takip"
+    _auto_log("Aşama 5: Yanıt takibi...")
+    _auto_log("  (Yanıt takip BCC üzerinden pasif çalışıyor)")
+
+    # 6. TAMAMLANDI
+    automation_state["current_step"] = "6. Döngü tamamlandı"
+    automation_state["last_cycle"] = datetime.now().isoformat()
+    _auto_log(f"=== Döngü {cycle} tamamlandı ===")
+
+
+def _auto_start_automation():
+    """Otomasyon döngüsünü başlat — her 30 dakikada tekrar."""
+    automation_state["running"] = True
+    interval = getattr(config, "AUTOMATION_INTERVAL", 30) * 60  # dakika -> saniye
+    _auto_log("Otomasyon pipeline başlatıldı")
+    while automation_state["running"]:
+        try:
+            _run_automation_cycle()
+        except Exception as e:
+            _auto_log(f"DÖNGÜ HATASI: {e}")
+        if not automation_state["running"]:
+            break
+        automation_state["current_step"] = "Bekleniyor..."
+        _auto_log(f"Sonraki döngü {interval // 60} dakika sonra...")
+        # 30 sn'lik parçalarda bekle (durdurma için duyarlı)
+        for _ in range(interval // 30):
+            if not automation_state["running"]:
+                break
+            time.sleep(30)
+
+    _auto_log("Otomasyon durduruldu")
+    automation_state["current_step"] = ""
+
+
+@app.route("/api/automation/start", methods=["POST"])
+def api_automation_start():
+    """Otomasyon pipeline'ı başlat."""
+    if automation_state["running"]:
+        return jsonify({"ok": True, "message": "Zaten çalışıyor"})
+    automation_state["running"] = True
+    automation_state["stats"] = {"leads_found": 0, "scored": 0, "sent": 0, "followups": 0, "errors": 0}
+    t = threading.Thread(target=_auto_start_automation, daemon=True)
+    automation_state["thread"] = t
+    t.start()
+    return jsonify({"ok": True, "message": "Otomasyon başlatıldı"})
+
+
+@app.route("/api/automation/stop", methods=["POST"])
+def api_automation_stop():
+    """Otomasyon pipeline'ı durdur."""
+    automation_state["running"] = False
+    automation_state["current_step"] = "Durduruluyor..."
+    _auto_log("Durdurma isteği alındı")
+    return jsonify({"ok": True, "message": "Otomasyon durduruluyor..."})
+
+
+@app.route("/api/automation/status")
+def api_automation_status():
+    """Otomasyon durumunu döndür."""
+    return jsonify({
+        "running": automation_state["running"],
+        "cycle": automation_state["cycle"],
+        "current_step": automation_state["current_step"],
+        "last_cycle": automation_state["last_cycle"],
+        "stats": automation_state["stats"],
+        "logs": automation_state["logs"][-30:],  # Son 30 log satırı
+    })
+
+
 # ─── MAIN ──────────────────────────────────────────────────────
 if __name__ == "__main__":
     print("=" * 60)
