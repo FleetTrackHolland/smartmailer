@@ -95,7 +95,7 @@ class Database:
                     ab_variant TEXT DEFAULT 'A',
                     method TEXT DEFAULT '',
                     message_id TEXT DEFAULT '',
-                    test_mode INTEGER DEFAULT 1,
+                    test_mode INTEGER DEFAULT 0,
                     campaign_id TEXT DEFAULT '',
                     sent_at TEXT DEFAULT (datetime('now'))
                 );
@@ -110,7 +110,7 @@ class Database:
                     skipped_compliance INTEGER DEFAULT 0,
                     skipped_quality INTEGER DEFAULT 0,
                     failed INTEGER DEFAULT 0,
-                    test_mode INTEGER DEFAULT 1,
+                    test_mode INTEGER DEFAULT 0,
                     started_at TEXT DEFAULT (datetime('now')),
                     ended_at TEXT
                 );
@@ -359,8 +359,8 @@ class Database:
         with self._conn() as conn:
             rows = conn.execute("""
                 SELECT l.* FROM leads l
-                WHERE l.email NOT IN (SELECT email FROM sent_log WHERE test_mode = 0)
-                  AND l.status != 'excluded'
+                WHERE l.email NOT IN (SELECT DISTINCT email FROM sent_log)
+                  AND l.status NOT IN ('excluded', 'opted_out', 'invalid')
                 ORDER BY l.ai_score DESC, l.score DESC
                 LIMIT ?
             """, (limit,)).fetchall()
@@ -496,17 +496,18 @@ class Database:
 
     # ─── SENT LOG ─────────────────────────────────────────────────
 
-    def log_sent(self, email: str, company: str, sector: str,
-                 subject: str, method: str, message_id: str,
-                 test_mode: bool, campaign_id: str = "",
-                 ab_variant: str = "A"):
+    def log_sent(self, email: str, company: str = "", sector: str = "",
+                 subject: str = "", method: str = "", message_id: str = "",
+                 campaign_id: str = "", ab_variant: str = "A",
+                 test_mode: bool = False):
+        """Email gönderimini logla. test_mode daima False (canlı mod)."""
         with self._conn() as conn:
             conn.execute("""
                 INSERT INTO sent_log (email, company, sector, subject, ab_variant,
                     method, message_id, test_mode, campaign_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (email, company, sector, subject, ab_variant,
-                  method, message_id, 1 if test_mode else 0, campaign_id))
+                  method, message_id, 0, campaign_id))
 
     def get_sent_emails(self) -> list[dict]:
         """Gönderilmiş email kayıtlarını dict listesi olarak döndür."""
@@ -517,10 +518,10 @@ class Database:
             return [dict(r) for r in rows]
 
     def get_sent_email_set(self) -> set:
-        """Gönderilmiş email adreslerini set olarak döndür (eski uyum)."""
+        """Gönderilmiş email adreslerini set olarak döndür."""
         with self._conn() as conn:
             rows = conn.execute(
-                "SELECT DISTINCT email FROM sent_log WHERE test_mode = 0"
+                "SELECT DISTINCT email FROM sent_log"
             ).fetchall()
             return {r["email"] for r in rows}
 
@@ -541,6 +542,52 @@ class Database:
             return conn.execute(
                 "SELECT COUNT(*) FROM sent_log WHERE date(sent_at) = date('now')"
             ).fetchone()[0]
+
+    def get_all_sent_with_content(self, limit: int = 200) -> list[dict]:
+        """Tüm gönderilen emailleri draft içerikleriyle birlikte döndür."""
+        with self._conn() as conn:
+            rows = conn.execute("""
+                SELECT s.*, d.body_html, d.body_text, d.qc_score,
+                       d.chosen_subject as draft_subject,
+                       CASE WHEN e_open.id IS NOT NULL THEN 1 ELSE 0 END as opened,
+                       CASE WHEN r.id IS NOT NULL THEN 1 ELSE 0 END as replied
+                FROM sent_log s
+                LEFT JOIN drafts d ON s.email = d.email
+                LEFT JOIN events e_open ON s.email = e_open.email AND e_open.event_type = 'open'
+                LEFT JOIN responses r ON s.email = r.email
+                GROUP BY s.id
+                ORDER BY s.sent_at DESC
+                LIMIT ?
+            """, (limit,)).fetchall()
+            return [dict(r) for r in rows]
+
+    def is_duplicate_email(self, email: str) -> bool:
+        """Bu email daha önce gönderilmiş mi?"""
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT 1 FROM sent_log WHERE email = ?",
+                (email.strip().lower(),)
+            ).fetchone()
+            return row is not None
+
+    def get_duplicate_stats(self) -> dict:
+        """Duplicate önleme istatistikleri."""
+        with self._conn() as conn:
+            total_sent = conn.execute("SELECT COUNT(*) FROM sent_log").fetchone()[0]
+            unique_sent = conn.execute("SELECT COUNT(DISTINCT email) FROM sent_log").fetchone()[0]
+            return {
+                "total_sent": total_sent,
+                "unique_emails": unique_sent,
+                "duplicates_prevented": total_sent - unique_sent,
+            }
+
+    def update_lead_status(self, email: str, status: str):
+        """Lead durumunu güncelle."""
+        with self._conn() as conn:
+            conn.execute("""
+                UPDATE leads SET status = ?, updated_at = datetime('now')
+                WHERE email = ?
+            """, (status, email.strip().lower()))
 
     # ─── CAMPAIGNS ────────────────────────────────────────────────
 
