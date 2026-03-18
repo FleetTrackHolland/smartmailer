@@ -213,12 +213,18 @@ class SendEngine:
             return SendResult(True, str(msg_id), method="brevo_api")
         except requests.HTTPError as e:
             status_code = getattr(e.response, "status_code", 0)
-            is_bounce = status_code in (400, 421, 450, 550, 553)
-            if is_bounce:
-                log.warning(f"[BOUNCE] {msg.to_email} — HTTP {status_code}")
-            return SendResult(False, error=str(e), method="brevo_api",
+            # Response body — Brevo'nun gerçek hata mesajını al
+            resp_text = ""
+            try:
+                resp_text = e.response.text[:500] if e.response else ""
+            except Exception:
+                pass
+            log.error(f"[BREVO API ❌] {msg.to_email} — HTTP {status_code} — {resp_text}")
+            is_bounce = status_code in (421, 450, 550, 553)
+            return SendResult(False, error=f"HTTP {status_code}: {resp_text[:200]}", method="brevo_api",
                               is_bounce=is_bounce)
         except Exception as e:
+            log.error(f"[BREVO API ❌] {msg.to_email} — Exception: {e}")
             return SendResult(False, error=str(e), method="brevo_api")
 
     # ─── BREVO SMTP (yedek) ───────────────────────────────────────
