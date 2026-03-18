@@ -550,8 +550,57 @@ def update_config():
         if key in data:
             setattr(config, key, data[key])
             updated.append(key)
+
+    # .env dosyasına kalıcı olarak kaydet (server restart'ta korunur)
+    if updated:
+        _persist_to_env(updated, data)
+
     log.info(f"[CONFIG] Güncellenen ayarlar: {updated}")
     return jsonify({"success": True, "updated": updated})
+
+
+def _persist_to_env(keys: list, data: dict):
+    """Ayarları .env dosyasına kalıcı olarak yaz."""
+    env_path = os.path.join(PROJECT_ROOT, ".env")
+    try:
+        # Mevcut .env oku
+        env_lines = []
+        if os.path.exists(env_path):
+            with open(env_path, "r", encoding="utf-8") as f:
+                env_lines = f.readlines()
+
+        # Güncelle veya ekle
+        existing_keys = set()
+        new_lines = []
+        for line in env_lines:
+            stripped = line.strip()
+            if not stripped or stripped.startswith("#"):
+                new_lines.append(line)
+                continue
+            key_part = stripped.split("=", 1)[0].strip()
+            if key_part in keys:
+                val = data[key_part]
+                # Boolean → string
+                if isinstance(val, bool):
+                    val = "true" if val else "false"
+                new_lines.append(f"{key_part}={val}\n")
+                existing_keys.add(key_part)
+            else:
+                new_lines.append(line)
+
+        # Eklenmemiş yeni key'ler
+        for key in keys:
+            if key not in existing_keys and key in data:
+                val = data[key]
+                if isinstance(val, bool):
+                    val = "true" if val else "false"
+                new_lines.append(f"{key}={val}\n")
+
+        with open(env_path, "w", encoding="utf-8") as f:
+            f.writelines(new_lines)
+        log.info(f"[CONFIG] .env kalıcı kayıt: {keys}")
+    except Exception as e:
+        log.error(f"[CONFIG] .env yazma hatası: {e}")
 
 
 @app.route("/api/config/test-mode", methods=["POST"])

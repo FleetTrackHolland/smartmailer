@@ -663,9 +663,18 @@ async function saveSettings() {
         DELAY_MIN: parseInt(getVal('set-delay-min')) || 25,
         DELAY_MAX: parseInt(getVal('set-delay-max')) || 55,
         HUMAN_REVIEW: getVal('set-human-review', 'checked'),
+        QC_MIN_SCORE: parseInt(getVal('set-qc-min')) || 90,
+        AUTO_START: getVal('set-auto-start', 'checked'),
+        AUTOMATION_INTERVAL: parseInt(getVal('set-auto-interval')) || 15,
     };
     const result = await api('/api/config', 'PUT', data);
-    if (result?.success) showToast('Ayarlar kaydedildi', 'success');
+    if (result?.success) {
+        showToast('Ayarlar kaydedildi ✅', 'success');
+        // Sync campaign test mode toggle
+        const campToggle = document.getElementById('campaign-test-mode');
+        if (campToggle) campToggle.checked = data.TEST_MODE;
+        updateModeBadge({ TEST_MODE: data.TEST_MODE });
+    }
     else showToast('Ayarlar kaydedilemedi', 'error');
 }
 
