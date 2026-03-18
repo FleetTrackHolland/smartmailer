@@ -35,8 +35,9 @@ def main():
                         help="Hedef konum")
     parser.add_argument("--limit", type=int, default=0,
                         help="Gönderim limiti")
-    parser.add_argument("--port", type=int, default=5000,
-                        help="Web dashboard portu")
+    parser.add_argument("--port", type=int,
+                        default=int(os.environ.get("PORT", 5000)),
+                        help="Web dashboard portu (Railway: $PORT env var)")
 
     args = parser.parse_args()
 
@@ -118,8 +119,12 @@ def run_campaign(limit: int = 0):
 
 def run_web(port: int = 5000):
     """Web dashboard başlat."""
+    is_production = os.environ.get("RAILWAY_ENVIRONMENT") or os.environ.get("RENDER")
+    debug_mode = not is_production
+
     print(f"\n🌐 Web Dashboard başlatılıyor...")
     print(f"   http://localhost:{port}")
+    print(f"   Mod: {'PRODUCTION' if is_production else 'DEVELOPMENT'}")
     print(f"   Durdurmak için Ctrl+C\n")
 
     # web/api.py'yi import et ve çalıştır
@@ -131,10 +136,10 @@ def run_web(port: int = 5000):
     auto_thread.start()
 
     if HAS_SOCKETIO and socketio:
-        socketio.run(app, host="0.0.0.0", port=port, debug=True,
+        socketio.run(app, host="0.0.0.0", port=port, debug=debug_mode,
                      allow_unsafe_werkzeug=True)
     else:
-        app.run(host="0.0.0.0", port=port, debug=True)
+        app.run(host="0.0.0.0", port=port, debug=debug_mode)
 
 
 if __name__ == "__main__":
