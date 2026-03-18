@@ -400,10 +400,30 @@ async function startCampaign() {
         pollCampaignStatus();
     }
 }
+
+// Test mode toggle — persist via API
+async function toggleCampaignTestMode() {
+    const el = document.getElementById('campaign-test-mode');
+    const newMode = el.checked;
+    await api('/api/config', 'PUT', { TEST_MODE: newMode });
+    updateModeBadge({ TEST_MODE: newMode });
+    const hint = el.closest('.form-group')?.querySelector('.toggle-hint');
+    if (hint) hint.textContent = newMode ? 'Test: Gerçek gönderim yapmaz' : '⚠️ CANLI: Gerçek email gönderir!';
+    showToast(newMode ? 'Test modu açıldı' : '⚠️ CANLI moda geçildi!', newMode ? 'info' : 'error');
+}
 async function stopCampaign() { await api('/api/campaign/stop', 'POST'); showToast('Kampanya durduruluyor...', 'info'); document.getElementById('btn-start-campaign').style.display = 'inline-flex'; document.getElementById('btn-stop-campaign').style.display = 'none'; }
 
 async function loadCampaignStatus() {
-    const [data, daily] = await Promise.all([api('/api/campaign/status'), api('/api/stats/daily')]);
+    const [data, daily, cfg] = await Promise.all([api('/api/campaign/status'), api('/api/stats/daily'), api('/api/config')]);
+    // Sync test mode toggle from saved config
+    if (cfg) {
+        const el = document.getElementById('campaign-test-mode');
+        if (el) {
+            el.checked = cfg.TEST_MODE;
+            const hint = el.closest('.form-group')?.querySelector('.toggle-hint');
+            if (hint) hint.textContent = cfg.TEST_MODE ? 'Test: Gerçek gönderim yapmaz' : '⚠️ CANLI: Gerçek email gönderir!';
+        }
+    }
     if (data?.running) { document.getElementById('btn-start-campaign').style.display = 'none'; document.getElementById('btn-stop-campaign').style.display = 'inline-flex'; document.getElementById('campaign-status-card').style.display = 'block'; }
     if (data?.stats) {
         const s = data.stats;
