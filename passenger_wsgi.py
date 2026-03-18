@@ -13,3 +13,12 @@ except Exception:
 
 # Flask uygulamasi
 from web.api import app as application
+
+# Otomasyon thread - arkaplanda lead bulma ve email gonderme
+try:
+    import threading
+    from web.api import _auto_start_automation
+    t = threading.Thread(target=_auto_start_automation, daemon=True)
+    t.start()
+except Exception:
+    pass
