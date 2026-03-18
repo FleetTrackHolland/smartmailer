@@ -1339,32 +1339,22 @@ def _automation_loop():
     """
     SIRASAL OTOMASYON PIPELINE — Shared hosting'de crash'i önler.
     Her phase arasında gc.collect() ile bellek temizliği yapılır.
-    Pipeline: Lead Bul (max 100) → Puanla → Email Yaz → Gönder → Follow-up → Cleanup
+    Pipeline: Lead Bul (AI) → Puanla → Email Yaz → Gönder → Follow-up → Cleanup
     """
     import gc
     import random
+    import traceback as tb
 
+    _automation_state["last_action"] = "Pipeline başlatılıyor..."
+    log.info("[AUTO] Pipeline başlatılıyor...")
+
+    # SendEngine — email göndermek için
     try:
-        _automation_state["last_action"] = "Orchestrator yükleniyor..."
-        from agents.orchestrator import Orchestrator
-        orch = Orchestrator()
-        _automation_state["last_action"] = "Orchestrator hazır — pipeline başlıyor..."
+        from core.send_engine import SendEngine
+        send_engine = SendEngine()
     except Exception as e:
-        _automation_state["running"] = False
-        _automation_state["last_action"] = f"HATA: Orchestrator yüklenemedi — {e}"
-        log.error(f"[AUTO] FATAL: Orchestrator import/init hatası: {e}")
-        import traceback
-        traceback.print_exc()
-        emit_event("automation_update", {"action": _automation_state["last_action"], "running": False, "error": str(e)})
-        return
-
-    _dutch_cities = [
-        "Amsterdam", "Rotterdam", "Den Haag", "Utrecht", "Eindhoven",
-        "Tilburg", "Groningen", "Almere", "Breda", "Nijmegen",
-        "Arnhem", "Haarlem", "Enschede", "Apeldoorn", "Amersfoort",
-        "Zaanstad", "Zwolle", "Leiden", "Zoetermeer", "Maastricht"
-    ]
-    _exhausted_combos = set()
+        log.warning(f"[AUTO] SendEngine yüklenemedi: {e}")
+        send_engine = None
 
     while _automation_state["running"]:
         try:
@@ -1514,11 +1504,9 @@ def _automation_loop():
                 gc.collect()
                 time.sleep(10)
 
-            # Tükenmiş kombinasyonları periyodik temizle
+            # Stats güncelle
             if cycle % 5 == 0:
-                cleared = len(_exhausted_combos)
-                _exhausted_combos.clear()
-                log.info(f"[AUTO] {cleared} tükenmiş kombinasyon sıfırlandı")
+                log.info(f"[AUTO] Cycle {cycle}: periyodik temizlik")
 
             log.info(f"[AUTO] Toplam {total_discovered} yeni lead keşfedildi (cycle {cycle})")
 
@@ -1554,17 +1542,74 @@ def _automation_loop():
                 try:
                     today_sent = db.get_today_sent_count()
                     remaining = max(0, config.DAILY_SEND_LIMIT - today_sent)
-                    batch_size = min(10, remaining)  # Bir seferde max 10
+                    batch_size = min(10, remaining)
 
                     if batch_size > 0:
                         unsent = db.get_unsent_leads(limit=batch_size)
                         if unsent:
                             log.info(f"[AUTO] {len(unsent)} lead'e email gönderilecek (günlük kalan: {remaining})")
-                            stats_result = orch.run_campaign(max_send=len(unsent))
-                            log.info(f"[AUTO] Kampanya: {stats_result.sent} gönderildi, "
-                                     f"{stats_result.skipped_quality} QC fail, "
-                                     f"{stats_result.skipped_compliance} compliance atlandı")
-                            emit_event("email_sent", {"count": stats_result.sent})
+                            sent_count = 0
+                            for lead_data in unsent:
+                                try:
+                                    email_addr = lead_data.get("email", "")
+                                    company = lead_data.get("company", "")
+                                    if not email_addr:
+                                        continue
+
+                                    # AI ile email yaz
+                                    draft = copywriter.write_email(lead_data)
+                                    if not draft:
+                                        log.warning(f"[AUTO] {email_addr}: email yazılamadı")
+                                        continue
+
+                                    subject = draft.get("subject", "")
+                                    body_html = draft.get("body_html", draft.get("body", ""))
+
+                                    if not subject or not body_html:
+                                        continue
+
+                                    # QC kontrol
+                                    try:
+                                        qc_result = quality.check(body_html)
+                                        qc_score = qc_result.get("score", 0) if isinstance(qc_result, dict) else 0
+                                    except Exception:
+                                        qc_score = 50  # QC hata verirse devam et
+
+                                    # Email gönder
+                                    if send_engine:
+                                        from core.send_engine import EmailMessage
+                                        msg = EmailMessage(
+                                            to_email=email_addr,
+                                            subject=subject,
+                                            body_html=body_html
+                                        )
+                                        result = send_engine.send(msg)
+                                        if result.get("success"):
+                                            # DB'ye kaydet
+                                            variant = ab_test.get_variant() if ab_test else "A"
+                                            db.save_draft(
+                                                email=email_addr,
+                                                company=company,
+                                                subject=subject,
+                                                body_html=body_html,
+                                                variant=variant,
+                                                qc_score=qc_score,
+                                                sector=lead_data.get("sector", ""),
+                                                method=result.get("method", "smtp")
+                                            )
+                                            sent_count += 1
+                                            log.info(f"[AUTO] ✅ Email gönderildi: {email_addr}")
+                                        else:
+                                            log.warning(f"[AUTO] Email gönderilemedi: {email_addr}")
+                                    else:
+                                        log.warning("[AUTO] SendEngine yok — email gönderilemiyor")
+                                except Exception as e:
+                                    log.error(f"[AUTO] Email hatası ({lead_data.get('email', '?')}): {e}")
+                                time.sleep(2)  # Her mail arası bekleme
+
+                            log.info(f"[AUTO] Phase 5: {sent_count} email gönderildi")
+                            _automation_state["last_action"] = f"Phase 5: {sent_count} email gönderildi"
+                            emit_event("email_sent", {"count": sent_count})
                         else:
                             log.info("[AUTO] Gönderilecek yeni lead yok")
                     else:
@@ -1573,7 +1618,7 @@ def _automation_loop():
                     log.error(f"[AUTO] Kampanya hatası: {e}")
 
                 gc.collect()
-                time.sleep(30)
+                time.sleep(5)
 
             # ══════════════════════════════════════════════════════
             # PHASE 6: FOLLOW-UP İŞLEME
