@@ -693,6 +693,34 @@ async function previewSelectedLead() {
     openModal('Email Önizleme: ' + esc(email), modalContent);
 }
 
+// ─── PREVIEW DRAFT PER LEAD (✍️ button) ───
+async function previewDraft(email) {
+    showToast('Email taslağı oluşturuluyor...', 'info');
+    const data = await api('/api/campaign/preview', 'POST', { email });
+    if (!data || data.error) {
+        showToast('Taslak oluşturulamadı: ' + (data?.error || 'Bilinmiyor'), 'error');
+        return;
+    }
+
+    const modalContent = `<div style="padding:0">
+        <div style="padding:12px 16px;background:var(--card-bg);border-bottom:1px solid var(--border)">
+            <p><strong>Kime:</strong> ${esc(email)}</p>
+            <p><strong>Şirket:</strong> ${esc(data.company || '-')}</p>
+            <p><strong>Konu:</strong> ${esc(data.chosen_subject || data.subject_a || '-')}</p>
+            <p><strong>QC Skor:</strong> ${data.qc_score || '-'}</p>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:8px;margin:12px;background:#fff;overflow:hidden;max-height:500px;overflow-y:auto">
+            ${data.body_html || '<p style="padding:20px">HTML içerik yok</p>'}
+        </div>
+        <div style="padding:12px 16px;display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--border)">
+            <button class="btn btn-sm btn-ghost" onclick="closeModal()">Vazgeç</button>
+            <button class="btn btn-sm btn-primary" onclick="closeModal(); selectedLeads.clear(); selectedLeads.add('${esc(email)}'); sendToSelected();">Onayla ve Gönder</button>
+        </div>
+    </div>`;
+
+    openModal('Email Taslağı: ' + esc(email), modalContent);
+}
+
 // ─── SEND TO SELECTED LEADS ───
 // HTML onclick uses sendSelectedLeads — wrapper function
 function sendSelectedLeads() { sendToSelected(); }

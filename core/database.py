@@ -1140,6 +1140,51 @@ class Database:
                 return dict(row)
             return {}
 
+    def save_draft(self, email: str, draft_data: dict):
+        """Email taslağını drafts tablosuna kaydet (upsert)."""
+        try:
+            with self._conn() as conn:
+                conn.execute("""
+                    INSERT OR REPLACE INTO drafts
+                    (email, subject_a, subject_b, subject_c, chosen_subject,
+                     body_html, body_text, qc_score, qc_passed, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                """, (
+                    email.lower(),
+                    draft_data.get("subject_a", ""),
+                    draft_data.get("subject_b", ""),
+                    draft_data.get("subject_c", ""),
+                    draft_data.get("chosen_subject", ""),
+                    draft_data.get("body_html", ""),
+                    draft_data.get("body_text", ""),
+                    draft_data.get("qc_score", 0),
+                    1 if draft_data.get("qc_score", 0) >= 70 else 0,
+                ))
+                conn.commit()
+                log.info(f"[DB] Draft kaydedildi: {email}")
+        except Exception as e:
+            log.error(f"[DB] Draft kayıt hatası: {email} — {e}")
+
+    def log_sent(self, email: str, company: str = "", sector: str = "",
+                 subject: str = "", method: str = "", message_id: str = "",
+                 ab_variant: str = "A", campaign_id: str = "", test_mode: int = 0):
+        """Gönderilen emaili sent_log tablosuna kaydet."""
+        try:
+            with self._conn() as conn:
+                conn.execute("""
+                    INSERT INTO sent_log
+                    (email, company, sector, subject, method, message_id,
+                     ab_variant, campaign_id, test_mode, sent_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                """, (
+                    email.lower(), company, sector, subject, method,
+                    message_id, ab_variant, campaign_id, test_mode,
+                ))
+                conn.commit()
+                log.info(f"[DB] Sent log kaydedildi: {email}")
+        except Exception as e:
+            log.error(f"[DB] Sent log hatası: {email} — {e}")
+
 
 # Singleton instance
 db = Database()
