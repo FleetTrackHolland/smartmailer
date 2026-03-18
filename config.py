@@ -58,6 +58,7 @@ class Config:
     ).split(",")
     TARGET_LOCATION    = os.getenv("TARGET_LOCATION", "Nederland")
     AUTO_START         = os.getenv("AUTO_START", "true").lower() == "true"
+    DEPLOY_SECRET      = os.getenv("DEPLOY_SECRET", "fleettrack2026")
     AUTOMATION_INTERVAL = int(os.getenv("AUTOMATION_INTERVAL", "15"))
 
     # ─── LEAD DISCOVERY (ULTIMATE) ───────────────────────────────

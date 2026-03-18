@@ -697,8 +697,83 @@ function setText(id, v) { const el = document.getElementById(id); if (el) el.tex
 function esc(s) { if (!s) return ''; return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtDate(d) { if (!d) return '—'; try { return new Date(d).toLocaleDateString('tr-TR', {day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}); } catch { return d; } }
 
+// ═══ REAL-TIME SOCKET.IO ═══
+let socket = null;
+function initSocketIO() {
+    if (typeof io === 'undefined') {
+        console.warn('Socket.IO not loaded — falling back to polling');
+        return;
+    }
+    try {
+        socket = io({ transports: ['websocket', 'polling'] });
+        socket.on('connect', () => {
+            console.log('🔌 Real-time bağlantı aktif');
+            const badge = document.getElementById('mode-badge');
+            if (badge) badge.title = 'Real-time aktif';
+        });
+        socket.on('disconnect', () => console.warn('🔌 Real-time bağlantı kesildi'));
+
+        // ─── Lead bulunduğunda dashboard anında güncelle ───
+        socket.on('leads_updated', (data) => {
+            console.log('📡 Lead güncellendi:', data);
+            loadDashboard();
+            showToast(`${data.count || 0} yeni lead bulundu`, 'success');
+        });
+
+        // ─── Otomasyon durumu değiştiğinde ───
+        socket.on('automation_update', (data) => {
+            console.log('⚙️ Otomasyon:', data);
+            loadAutomationStatus();
+            if (data.action) {
+                const el = document.getElementById('auto-action-text');
+                if (el) el.textContent = data.action;
+            }
+        });
+
+        // ─── Kampanya bittiğinde ───
+        socket.on('campaign_finished', (data) => {
+            console.log('🏁 Kampanya tamamlandı:', data);
+            loadDashboard();
+            loadCampaignStatus();
+            showToast('✅ Kampanya tamamlandı!', 'success');
+        });
+
+        // ─── Email taslağı oluşturulduğunda ───
+        socket.on('draft_generated', (data) => {
+            console.log('📝 Taslak:', data);
+            loadCampaignStatus();
+        });
+
+        // ─── Brevo event (open, click, bounce) ───
+        socket.on('brevo_event', (data) => {
+            console.log('📧 Brevo event:', data);
+            loadDashboard();
+        });
+
+        // ─── Leads keşfedildiğinde ───
+        socket.on('leads_discovered', (data) => {
+            console.log('🔍 Lead keşfedildi:', data);
+            loadDashboard();
+            if (data.count > 0) {
+                showToast(`🔍 ${data.count} yeni lead keşfedildi!`, 'success');
+            }
+        });
+
+        // ─── Email gönderildiğinde ───
+        socket.on('email_sent', (data) => {
+            console.log('📤 Email gönderildi:', data);
+            loadDashboard();
+        });
+
+    } catch (e) {
+        console.warn('Socket.IO init hatası:', e);
+    }
+}
+
 // ═══ INIT ═══
 document.addEventListener('DOMContentLoaded', () => {
     refreshAll();
-    autoRefreshInterval = setInterval(refreshAll, 30000);
+    initSocketIO();
+    // Socket.IO aktifse daha az polling (60s), değilse 30s
+    autoRefreshInterval = setInterval(refreshAll, socket ? 60000 : 30000);
 });

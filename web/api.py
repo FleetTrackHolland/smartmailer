@@ -1368,6 +1368,76 @@ def _find_leads_file():
     return None
 
 
+# ─── AUTO-DEPLOY (GitHub → Server otomatik güncelleme) ─────────
+_deploy_state = {
+    "last_deploy": None,
+    "last_status": "never",
+    "last_error": None,
+}
+
+@app.route("/api/admin/deploy", methods=["POST"])
+def auto_deploy():
+    """
+    GitHub webhook veya cron job ile otomatik güncelleme.
+    Güvenlik: DEPLOY_SECRET header kontrolü.
+    """
+    # Güvenlik kontrolü
+    deploy_secret = getattr(config, 'DEPLOY_SECRET', 'fleettrack2026')
+    req_secret = request.headers.get("X-Deploy-Secret", "")
+    if req_secret != deploy_secret:
+        # JSON body'den de kontrol et
+        data = request.json or {}
+        if data.get("secret") != deploy_secret:
+            return jsonify({"error": "Unauthorized"}), 403
+
+    import subprocess
+    try:
+        log.info("[DEPLOY] ═══ OTOMATİK GÜNCELLEME BAŞLADI ═══")
+
+        # 1. Git pull
+        result = subprocess.run(
+            ["git", "pull", "origin", "main"],
+            cwd=PROJECT_ROOT,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        git_output = result.stdout + result.stderr
+        log.info(f"[DEPLOY] Git pull: {git_output.strip()}")
+
+        if result.returncode != 0:
+            _deploy_state["last_status"] = "git_error"
+            _deploy_state["last_error"] = git_output
+            return jsonify({"status": "error", "message": git_output}), 500
+
+        _deploy_state["last_deploy"] = datetime.now().isoformat()
+        _deploy_state["last_status"] = "success"
+        _deploy_state["last_error"] = None
+
+        log.info("[DEPLOY] ═══ GÜNCELLEME TAMAMLANDI — Restart gerekebilir ═══")
+
+        return jsonify({
+            "status": "success",
+            "git_output": git_output.strip(),
+            "message": "Güncelleme başarılı. Değişiklikler hemen aktif — büyük değişikliklerde Python restart gerekebilir.",
+            "deployed_at": _deploy_state["last_deploy"],
+        })
+
+    except subprocess.TimeoutExpired:
+        _deploy_state["last_status"] = "timeout"
+        return jsonify({"status": "error", "message": "Git pull timeout"}), 500
+    except Exception as e:
+        _deploy_state["last_status"] = "error"
+        _deploy_state["last_error"] = str(e)
+        log.error(f"[DEPLOY] Hata: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/admin/deploy/status", methods=["GET"])
+def deploy_status():
+    return jsonify(_deploy_state)
+
+
 # ─── MAIN ──────────────────────────────────────────────────────
 if __name__ == "__main__":
     print("=" * 60)
