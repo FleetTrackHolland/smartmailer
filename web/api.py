@@ -1028,6 +1028,57 @@ def api_unsubscribes():
         return jsonify({"count": 0, "emails": []})
 
 
+# ─── PREVIEW EMAIL (ÖNIZLEME) ────────────────────────────────
+@app.route("/api/campaign/preview", methods=["POST"])
+def preview_email():
+    """Bir lead için email önizlemesi oluştur — göndermeden."""
+    try:
+        data = request.json or {}
+        email = data.get("email", "").strip()
+        if not email:
+            return jsonify({"error": "Email adresi gerekli"}), 400
+
+        lead = db.get_lead_by_email(email)
+        if not lead:
+            lead = {"email": email, "company": "", "sector": ""}
+
+        lead_dict = dict(lead) if hasattr(lead, 'keys') else lead
+
+        # Draft oluştur (Claude API)
+        log.info(f"[PREVIEW] Draft oluşturuluyor: {email}")
+        draft = copywriter.write(lead_dict)
+        if not draft:
+            return jsonify({"error": "Draft oluşturulamadı"}), 500
+
+        # QC skoru
+        try:
+            qc = quality.check(draft)
+            qc_score = qc.get("score", 0) if isinstance(qc, dict) else (qc.score if hasattr(qc, 'score') else 0)
+        except Exception:
+            qc_score = 0
+
+        from dataclasses import asdict
+        draft_data = asdict(draft) if hasattr(draft, '__dataclass_fields__') else draft
+
+        return jsonify({
+            "success": True,
+            "email": email,
+            "company": lead_dict.get("company", lead_dict.get("Company", "")),
+            "subject_a": draft_data.get("subject_a", ""),
+            "subject_b": draft_data.get("subject_b", ""),
+            "subject_c": draft_data.get("subject_c", ""),
+            "chosen_subject": draft_data.get("chosen_subject", ""),
+            "body_html": draft_data.get("body_html", ""),
+            "body_text": draft_data.get("body_text", ""),
+            "qc_score": qc_score,
+        })
+    except Exception as e:
+        log.error(f"[PREVIEW] Hata: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
+
+
 # ─── SEND TO SELECTED LEADS ───────────────────────────────────
 @app.route("/api/campaign/send-selected", methods=["POST"])
 def send_to_selected():

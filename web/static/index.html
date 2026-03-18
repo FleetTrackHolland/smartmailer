@@ -129,8 +129,9 @@
         <div class="card-header">
             <h3>Lead Listesi <span class="text-muted" style="font-weight:400"> — <span id="leads-count">0</span> lead</span></h3>
             <div class="table-actions-inline">
-                <button class="btn btn-sm btn-primary" id="btn-send-selected" disabled onclick="sendSelectedLeads()">📬 Seçilenlere Gönder</button>
-                <button class="btn btn-sm btn-ghost" id="btn-skip-selected" disabled onclick="skipSelectedLeads()">⏭ Atla</button>
+                <button class="btn btn-sm btn-ghost" id="btn-preview-selected" disabled onclick="previewSelectedLead()" style="border:1px solid var(--purple)">Önizle</button>
+                <button class="btn btn-sm btn-primary" id="btn-send-selected" disabled onclick="sendSelectedLeads()">Seçilenlere Gönder</button>
+                <button class="btn btn-sm btn-ghost" id="btn-skip-selected" disabled onclick="skipSelectedLeads()">Atla</button>
             </div>
         </div>
         <div class="table-container" style="max-height:600px;overflow-y:auto">

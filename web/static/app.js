@@ -198,9 +198,10 @@ function toggleLead(email, cb) { if (cb.checked) selectedLeads.add(email); else 
 function toggleAllLeads(cb) { leadsData.forEach(l => { const e = l.email || l.Email || ''; if (cb.checked) selectedLeads.add(e); else selectedLeads.delete(e); }); renderLeads(); updateSelectionButtons(); }
 function updateSelectionButtons() {
     const c = selectedLeads.size;
-    const s = document.getElementById('btn-send-selected'), k = document.getElementById('btn-skip-selected');
-    if (s) { s.disabled = c === 0; s.textContent = c > 0 ? `📬 Seçilenlere Gönder (${c})` : '📬 Seçilenlere Gönder'; }
+    const s = document.getElementById('btn-send-selected'), k = document.getElementById('btn-skip-selected'), p = document.getElementById('btn-preview-selected');
+    if (s) { s.disabled = c === 0; s.textContent = c > 0 ? `Seçilenlere Gönder (${c})` : 'Seçilenlere Gönder'; }
     if (k) k.disabled = c === 0;
+    if (p) p.disabled = c === 0;
 }
 // sendSelectedLeads + skipSelectedLeads — tek tanım aşağıda (L888+ civarı)
 
@@ -657,6 +658,40 @@ async function loadLogs(containerId = 'logs-container') {
 
 
 
+
+// ─── PREVIEW SELECTED LEAD ───
+async function previewSelectedLead() {
+    if (selectedLeads.size === 0) { showToast('Önce lead seçin!', 'error'); return; }
+    const email = Array.from(selectedLeads)[0];
+    showToast('Email önizlemesi oluşturuluyor...', 'info');
+
+    const data = await api('/api/campaign/preview', 'POST', { email });
+    if (!data || data.error) {
+        showToast('Önizleme oluşturulamadı: ' + (data?.error || 'Bilinmiyor'), 'error');
+        return;
+    }
+
+    const modalContent = `<div style="padding:0">
+        <div style="padding:12px 16px;background:var(--card-bg);border-bottom:1px solid var(--border)">
+            <p><strong>Kime:</strong> ${esc(email)}</p>
+            <p><strong>Şirket:</strong> ${esc(data.company || '-')}</p>
+            <p><strong>Konu A:</strong> ${esc(data.subject_a || '-')}</p>
+            <p><strong>Konu B:</strong> ${esc(data.subject_b || '-')}</p>
+            <p><strong>Konu C:</strong> ${esc(data.subject_c || '-')}</p>
+            <p><strong>Seçilen Konu:</strong> ${esc(data.chosen_subject || '-')}</p>
+            <p><strong>QC Skor:</strong> ${data.qc_score || '-'}</p>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:8px;margin:12px;background:#fff;overflow:hidden">
+            ${data.body_html || '<p style="padding:20px">HTML içerik yok</p>'}
+        </div>
+        <div style="padding:12px 16px;display:flex;gap:8px;justify-content:flex-end;border-top:1px solid var(--border)">
+            <button class="btn btn-sm btn-ghost" onclick="closeModal()">Vazgeç</button>
+            <button class="btn btn-sm btn-primary" onclick="closeModal(); sendToSelected();">Onayla ve Gönder</button>
+        </div>
+    </div>`;
+
+    openModal('Email Önizleme: ' + esc(email), modalContent);
+}
 
 // ─── SEND TO SELECTED LEADS ───
 // HTML onclick uses sendSelectedLeads — wrapper function
