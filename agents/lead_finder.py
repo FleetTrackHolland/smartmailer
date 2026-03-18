@@ -251,6 +251,28 @@ class LeadFinder:
         return True
 
     # ══════════════════════════════════════════════════════════════
+    # WRAPPER — automation pipeline kullanır
+    # ══════════════════════════════════════════════════════════════
+
+    def find(self, sectors: list = None, max_per_sector: int = 10,
+             location: str = "Nederland") -> list[dict]:
+        """Otomasyon pipeline wrapper — birden fazla sektörde arama."""
+        if not sectors:
+            sectors = ["transport"]
+        all_leads = []
+        for sector in sectors:
+            try:
+                leads = self.discover_leads(sector=sector, location=location)
+                if leads:
+                    all_leads.extend(leads[:max_per_sector])
+                    log.info(f"[FIND] {sector}: {len(leads)} lead bulundu, "
+                             f"{min(len(leads), max_per_sector)} alındı")
+            except Exception as e:
+                log.error(f"[FIND] {sector} hatası: {e}")
+        log.info(f"[FIND] Toplam: {len(all_leads)} lead ({len(sectors)} sektör)")
+        return all_leads
+
+    # ══════════════════════════════════════════════════════════════
     # ANA KEŞİF METODU
     # ══════════════════════════════════════════════════════════════
 
