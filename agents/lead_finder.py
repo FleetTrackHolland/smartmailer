@@ -84,10 +84,51 @@ SEARCH_QUERIES = {
         "{city} zorginstelling wagenpark",
         "thuiszorg {city} bedrijf email",
     ],
+    "verhuisbedrijf": [
+        "{city} verhuisbedrijf email contact",
+        "{city} verhuisservice bedrijf",
+    ],
+    "taxi": [
+        "{city} taxibedrijf email contact",
+        "{city} personenvervoer bedrijf",
+    ],
+    "installatiebedrijf": [
+        "{city} installatiebedrijf email contact",
+        "{city} cv ketel installatie bedrijf",
+    ],
+    "catering": [
+        "{city} cateringbedrijf email contact",
+        "{city} horeca catering bedrijf",
+    ],
+    "beveiliging": [
+        "{city} beveiligingsbedrijf email contact",
+        "{city} security bedrijf wagenpark",
+    ],
+    "groenvoorziening": [
+        "{city} hoveniersbedrijf email contact",
+        "{city} groenvoorziening bedrijf",
+    ],
+    "autorijschool": [
+        "{city} autorijschool email contact",
+        "{city} rijschool wagenpark bedrijf",
+    ],
+    "autoverhuur": [
+        "{city} autoverhuur bedrijf email",
+        "{city} lease auto verhuur contact",
+    ],
+    "garage": [
+        "{city} garage autogarage email contact",
+        "{city} autobedrijf werkplaats",
+    ],
+    "vuilophaal": [
+        "{city} afvalinzameling bedrijf email",
+        "{city} vuilophaal container bedrijf",
+    ],
     "default": [
         "{city} bedrijf wagenpark email",
         "{city} fleet contact email",
         "{city} bedrijfswagens contact",
+        "{city} zakelijk bedrijf email",
     ],
 }
 
@@ -112,6 +153,14 @@ SECTOR_MAP_TELEFOONBOEK = {
     "afvalverwerking": "afvalverwerking",
     "ambulance": "ambulancediensten",
     "bezorgdienst": "bezorgdiensten",
+    "autorijschool": "autorijscholen",
+    "autoverhuur": "autoverhuurbedrijven",
+    "garage": "garages",
+    "vuilophaal": "afvalinzameling",
+    "glas": "glaszetters",
+    "stukadoor": "stukadoors",
+    "timmerman": "timmerbedrijven",
+    "metselaar": "metselaars",
 }
 
 # ─── USER AGENTS ROTATION ────────────────────────────────────────
@@ -232,6 +281,18 @@ class LeadFinder:
             self._stats["telefoonboek_found"] = len(tb_leads)
             log.info(f"[DISCOVER] Phase 2: {len(tb_leads)} lead (Telefoonboek)")
 
+        # ── PHASE 2B: Goudengids.nl ──
+        log.info("[DISCOVER] PHASE 2B: Goudengids.nl...")
+        gg_leads = self._scrape_goudengids(sector)
+        all_results.extend(gg_leads)
+        log.info(f"[DISCOVER] Phase 2B: {len(gg_leads)} lead (Goudengids)")
+
+        # ── PHASE 2C: Bedrijvenpagina.nl ──
+        log.info("[DISCOVER] PHASE 2C: Bedrijvenpagina.nl...")
+        bp_leads = self._scrape_bedrijvenpagina(sector)
+        all_results.extend(bp_leads)
+        log.info(f"[DISCOVER] Phase 2C: {len(bp_leads)} lead (Bedrijvenpagina)")
+
         # ── PHASE 3: OpenStreetMap / Nominatim (FleetTrack CRM'den) ──
         if config.OPENSTREETMAP_ENABLED:
             log.info("[DISCOVER] PHASE 3: OpenStreetMap...")
@@ -239,6 +300,12 @@ class LeadFinder:
             all_results.extend(osm_leads)
             self._stats["openstreetmap_found"] = len(osm_leads)
             log.info(f"[DISCOVER] Phase 3: {len(osm_leads)} lead (OpenStreetMap)")
+
+        # ── PHASE 3B: OpenKVK — Kamer van Koophandel ──
+        log.info("[DISCOVER] PHASE 3B: OpenKVK...")
+        kvk_leads = self._scrape_openkvk(sector)
+        all_results.extend(kvk_leads)
+        log.info(f"[DISCOVER] Phase 3B: {len(kvk_leads)} lead (OpenKVK)")
 
         # ── PHASE 4: AI bilgi bankası (Claude) ──
         log.info("[DISCOVER] PHASE 4: AI bilgi bankası...")
@@ -396,7 +463,141 @@ class LeadFinder:
         return results
 
     # ══════════════════════════════════════════════════════════════
-    # PHASE 2: Telefoonboek.nl (FleetTrack CRM'den)
+    # PHASE 2B: Goudengids.nl
+    # ══════════════════════════════════════════════════════════════
+
+    def _scrape_goudengids(self, sector: str) -> list[dict]:
+        """Goudengids.nl — Altın Rehber scraping."""
+        results = []
+        search_term = SECTOR_MAP_TELEFOONBOEK.get(sector, sector)
+        cities = ["rotterdam", "amsterdam", "den-haag", "utrecht", "eindhoven",
+                  "groningen", "tilburg", "breda", "nijmegen", "arnhem",
+                  "almere", "haarlem", "enschede", "zwolle", "maastricht"]
+
+        for city in cities:
+            try:
+                url = f"https://www.goudengids.nl/{search_term}/{city}/"
+                resp = self._safe_get(url, timeout=12)
+                if not resp or not resp.ok:
+                    continue
+
+                self._stats["directories_scraped"] += 1
+                companies = self._extract_directory_listings(resp.text, url)
+                for comp in companies:
+                    if comp.get("email") and comp["email"] not in self._found_emails:
+                        if not db.lead_exists(comp["email"]):
+                            self._found_emails.add(comp["email"])
+                            comp["sector"] = sector
+                            comp["location"] = city.replace("-", " ").title()
+                            comp["source"] = "goudengids"
+                            comp["score"] = 65
+                            results.append(comp)
+                time.sleep(0.8)
+            except Exception as e:
+                self._stats["errors"] += 1
+                log.debug(f"[GOUDENGIDS] Hata: {city}/{sector} — {e}")
+
+        log.info(f"[GOUDENGIDS] {len(results)} lead bulundu")
+        return results
+
+    # ══════════════════════════════════════════════════════════════
+    # PHASE 2C: Bedrijvenpagina.nl
+    # ══════════════════════════════════════════════════════════════
+
+    def _scrape_bedrijvenpagina(self, sector: str) -> list[dict]:
+        """Bedrijvenpagina.nl — Bedrijven dizini scraping."""
+        results = []
+        search_term = SECTOR_MAP_TELEFOONBOEK.get(sector, sector)
+        cities = ["rotterdam", "amsterdam", "utrecht", "eindhoven", "den-haag",
+                  "groningen", "tilburg", "breda", "nijmegen", "arnhem"]
+
+        for city in cities:
+            try:
+                url = f"https://www.bedrijvenpagina.nl/zoek/{search_term}/{city}/"
+                resp = self._safe_get(url, timeout=12)
+                if not resp or not resp.ok:
+                    continue
+
+                self._stats["directories_scraped"] += 1
+                companies = self._extract_directory_listings(resp.text, url)
+                for comp in companies:
+                    if comp.get("email") and comp["email"] not in self._found_emails:
+                        if not db.lead_exists(comp["email"]):
+                            self._found_emails.add(comp["email"])
+                            comp["sector"] = sector
+                            comp["location"] = city.replace("-", " ").title()
+                            comp["source"] = "bedrijvenpagina"
+                            comp["score"] = 60
+                            results.append(comp)
+                time.sleep(0.8)
+            except Exception as e:
+                self._stats["errors"] += 1
+                log.debug(f"[BEDRIJVENPAGINA] Hata: {city}/{sector} — {e}")
+
+        log.info(f"[BEDRIJVENPAGINA] {len(results)} lead bulundu")
+        return results
+
+    # ══════════════════════════════════════════════════════════════
+    # PHASE 3B: OpenKVK — Kamer van Koophandel
+    # ══════════════════════════════════════════════════════════════
+
+    def _scrape_openkvk(self, sector: str) -> list[dict]:
+        """OpenKVK.nl/Overheid — Kamer van Koophandel açık veri."""
+        results = []
+        sector_nl = SECTOR_MAP_TELEFOONBOEK.get(sector, sector)
+
+        # Meerdere bronnen proberen
+        search_urls = [
+            f"https://openkvk.nl/zoeken/{sector_nl}",
+            f"https://www.kvk.nl/zoeken/?source=all&q={sector_nl}&start=0&site=kvk2014",
+        ]
+
+        for search_url in search_urls:
+            try:
+                resp = self._safe_get(search_url, timeout=15)
+                if not resp or not resp.ok:
+                    continue
+
+                self._stats["directories_scraped"] += 1
+
+                # Extract bedrijfsnamen en websites
+                companies = self._extract_directory_listings(resp.text, search_url)
+                for comp in companies:
+                    if comp.get("email") and comp["email"] not in self._found_emails:
+                        if not db.lead_exists(comp["email"]):
+                            self._found_emails.add(comp["email"])
+                            comp["sector"] = sector
+                            comp["source"] = "kvk"
+                            comp["score"] = 70
+                            results.append(comp)
+
+                # Ook bedrijfsnamen + .nl domain proberen
+                names = re.findall(r'(?:class="[^"]*name[^"]*"|data-name=)["\s]*([A-Z][a-zA-Z\s&-]{3,40})', resp.text)
+                for name in names[:30]:
+                    clean = re.sub(r'[^a-z0-9]', '', name.strip().lower())
+                    if clean and len(clean) > 3:
+                        guessed = f"info@{clean}.nl"
+                        if guessed not in self._found_emails and not db.lead_exists(guessed):
+                            self._found_emails.add(guessed)
+                            results.append({
+                                "company_name": name.strip(),
+                                "email": guessed,
+                                "phone": "",
+                                "website": f"https://www.{clean}.nl",
+                                "sector": sector,
+                                "location": "Nederland",
+                                "source": "kvk",
+                                "score": 50,
+                                "is_good_lead": True,
+                            })
+
+                time.sleep(1)
+            except Exception as e:
+                self._stats["errors"] += 1
+                log.debug(f"[KVK] Hata: {sector} — {e}")
+
+        log.info(f"[KVK] {len(results)} lead bulundu")
+        return results
     # ══════════════════════════════════════════════════════════════
 
     def _scrape_telefoonboek(self, sector: str, location: str) -> list[dict]:
