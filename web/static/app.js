@@ -10,6 +10,7 @@ let sortState = { key: '', dir: 'asc' };
 let selectedLeads = new Set();
 let autoRefreshInterval = null;
 let logRefreshInterval = null;
+let currentLeadFilter = 'all';
 
 const AGENT_DESC = {
     'AI Copywriter': 'Claude AI ile her lead için kişiselleştirilmiş, profesyonel email yazar. Şirket adı, sektörü ve detaylarına göre özgün içerik oluşturur. 3 farklı konu başlığı (A/B/C) üretir. Zamanla müşteri yanıtlarından öğrenerek daha etkili emailler yazar.',
@@ -178,12 +179,40 @@ async function viewSentEmail(email) {
 // ═══════════════════════════════════════════════════════════
 // LEADS
 // ═══════════════════════════════════════════════════════════
-async function loadLeads() {
-    const data = await api('/api/leads');
+async function loadLeads(filter) {
+    if (filter) currentLeadFilter = filter;
+    const data = await api(`/api/leads?status=${currentLeadFilter}`);
     if (!data) return;
     leadsData = data.leads || [];
     setText('leads-count', data.count || 0);
     selectedLeads.clear(); updateSelectionButtons(); renderLeads();
+}
+
+function filterLeads(status) {
+    currentLeadFilter = status;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    const btn = document.getElementById(`filter-${status}`);
+    if (btn) btn.classList.add('active');
+    loadLeads(status);
+}
+
+async function sendToUnsent() {
+    if (!confirm('Tüm gönderilmemiş leadlere email göndermek istediğinize emin misiniz?')) return;
+    // Unsent leadleri getir
+    const data = await api('/api/leads?status=unsent');
+    if (!data || !data.leads || data.leads.length === 0) {
+        showToast('Gönderilmemiş lead bulunamadı', 'info');
+        return;
+    }
+    const emails = data.leads.map(l => l.email || l.Email || '').filter(e => e);
+    showToast(`${emails.length} gönderilmemiş lead seçildi, gönderiliyor...`, 'info');
+    const result = await api('/api/leads/send-selected', 'POST', { emails });
+    if (result) {
+        showToast(`${result.sent || 0} email gönderildi!`, 'success');
+        loadLeads();
+    } else {
+        showToast('Gönderim hatası', 'error');
+    }
 }
 
 function renderLeads() {

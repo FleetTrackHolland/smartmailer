@@ -116,12 +116,17 @@ class FollowUpEngine:
                  f"(Gün {config.FOLLOWUP_DAY_1}/{config.FOLLOWUP_DAY_2}"
                  f"/{config.FOLLOWUP_DAY_3})")
 
-    # ─── BEKLEYEN FOLLOW-UP'LARI İŞLE ──────────────────────────
+    # ─── BEKLEYEN FOLLOW-UP'LARI İŞLE VE GÖNDER ────────────────
 
     def process_pending(self) -> list[dict]:
-        """Zamanı gelen follow-up'ları üret ve gönder."""
+        """Zamanı gelen follow-up'ları üret, Brevo ile gönder ve DB güncelle."""
+        from core.send_engine import SendEngine
+
         pending = db.get_pending_followups()
         results = []
+        sender = SendEngine()
+
+        log.info(f"[FOLLOWUP] {len(pending)} bekleyen follow-up işleniyor...")
 
         for fu in pending:
             email = fu["email"]
@@ -136,12 +141,14 @@ class FollowUpEngine:
             # Unsubscribe olduysa atla
             if db.is_unsubscribed(email):
                 db.update_followup_status(fu["id"], "skipped_unsub")
+                log.info(f"[FOLLOWUP] Atlandı (unsub): {email} step {step}")
                 continue
 
             # E-posta açılmış ama yanıt yok → daha agresif follow-up
             has_opened = db.has_opened(email)
 
             try:
+                # 1. AI ile follow-up e-postası üret
                 draft = self._generate_followup(
                     step=step,
                     original_subject=fu.get("original_subject", ""),
@@ -150,19 +157,61 @@ class FollowUpEngine:
                     vehicles=fu.get("vehicles", ""),
                     has_opened=has_opened,
                 )
-                results.append({
-                    "id": fu["id"],
-                    "email": email,
-                    "step": step,
-                    "subject": draft["subject"],
-                    "body_html": draft["body_html"],
-                    "body_text": draft["body_text"],
-                    "has_opened": has_opened,
-                })
+
+                # 2. Brevo ile gönder
+                from core.send_engine import EmailMessage
+                msg = EmailMessage(
+                    to_email=email,
+                    to_name=fu.get("company", ""),
+                    subject=draft["subject"],
+                    html_body=draft["body_html"],
+                    text_body=draft.get("body_text", ""),
+                )
+                send_result = sender.send(msg)
+
+                if send_result.success:
+                    # 3. DB güncelle — sent olarak işaretle
+                    db.update_followup_status(
+                        fu["id"], "sent",
+                        subject=draft["subject"],
+                        body_html=draft["body_html"],
+                        body_text=draft.get("body_text", ""),
+                    )
+                    # 4. Sent log'a kaydet (follow-up olarak)
+                    db.log_sent(
+                        email=email,
+                        company=fu.get("company", ""),
+                        sector=fu.get("sector", ""),
+                        subject=draft["subject"],
+                        method=f"followup_step_{step}",
+                        message_id=send_result.message_id or "",
+                    )
+                    log.info(f"[FOLLOWUP] ✅ Gönderildi: {email} step {step}")
+                    results.append({
+                        "id": fu["id"],
+                        "email": email,
+                        "step": step,
+                        "subject": draft["subject"],
+                        "status": "sent",
+                        "has_opened": has_opened,
+                    })
+                else:
+                    error_msg = send_result.error or "Bilinmeyen hata"
+                    log.error(f"[FOLLOWUP] ❌ Gönderilemedi: {email} — {error_msg}")
+                    db.update_followup_status(fu["id"], "error")
+                    results.append({
+                        "id": fu["id"],
+                        "email": email,
+                        "step": step,
+                        "status": "error",
+                        "error": error_msg,
+                    })
+
             except Exception as e:
-                log.error(f"[FOLLOWUP] Üretim hatası: {email} step {step} — {e}")
+                log.error(f"[FOLLOWUP] Üretim/gönderim hatası: {email} step {step} — {e}")
                 db.update_followup_status(fu["id"], "error")
 
+        log.info(f"[FOLLOWUP] İşlem tamamlandı: {len(results)} follow-up işlendi")
         return results
 
     # ─── AI FOLLOW-UP ÜRETİCİ ──────────────────────────────────

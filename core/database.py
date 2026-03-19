@@ -179,8 +179,6 @@ class Database:
                     unsubscribed_at TEXT DEFAULT (datetime('now'))
                 );
                 CREATE INDEX IF NOT EXISTS idx_unsubscribes_email ON unsubscribes(email);
-
-                -- v4: leads tablosuna yeni alanlar (ALTER TABLE — hata verirse ignore)
             """)
 
             # Safe ALTER TABLE for new columns (ignore if already exist)
@@ -305,16 +303,13 @@ class Database:
                             phone: str = "", contact_person: str = "",
                             discovery_score: int = 60, source: str = "web_discovery",
                             icebreaker: str = "") -> bool:
-        """
-        Lead keşif motoru tarafından bulunan lead'i veritabanına ekle.
-        Varsa güncelle (upsert), yoksa ekle.
-        """
+        """Keşfedilen lead'i veritabanına ekle (upsert)."""
         email = email.strip().lower()
         if not email or "@" not in email:
             return False
 
         try:
-            veh = int(vehicles) if vehicles else 0
+            veh = int(vehicles) if vehicles and str(vehicles).isdigit() else 0
         except (ValueError, TypeError):
             veh = 0
 
@@ -330,14 +325,17 @@ class Database:
         }
         try:
             self.upsert_lead(lead_data)
-            # Ekstra alanları da güncelle (contact_person, icebreaker, source)
             with self._conn() as conn:
                 conn.execute("""
                     UPDATE leads SET
+                        source = ?,
+                        contact_person = ?,
+                        icebreaker = ?,
+                        discovery_score = ?,
                         status = CASE WHEN status = 'new' THEN 'discovered' ELSE status END,
                         updated_at = datetime('now')
                     WHERE email = ?
-                """, (email,))
+                """, (source, contact_person, icebreaker, discovery_score, email))
             return True
         except Exception as e:
             log.debug(f"Lead kayıt hatası ({email}): {e}")
@@ -357,16 +355,14 @@ class Database:
             return dict(row) if row else None
 
     def lead_exists(self, email: str) -> bool:
-        """Lead veritabanında var mı kontrol et."""
+        """Email zaten veritabanında mı?"""
         with self._conn() as conn:
-            row = conn.execute(
-                "SELECT 1 FROM leads WHERE email = ? LIMIT 1",
-                (email.strip().lower(),)
-            ).fetchone()
+            row = conn.execute("SELECT 1 FROM leads WHERE email = ? LIMIT 1",
+                               (email.strip().lower(),)).fetchone()
             return row is not None
 
-    def get_unsent_leads(self, limit: int = 20) -> list[dict]:
-        """Henüz email gönderilmemiş lead'leri getir."""
+    def get_unsent_leads(self, limit: int = 100) -> list[dict]:
+        """Henüz gönderilmemiş lead'leri getir (unsubscribe/opt-out hariç)."""
         with self._conn() as conn:
             rows = conn.execute("""
                 SELECT l.* FROM leads l
@@ -377,6 +373,7 @@ class Database:
                   AND u.email IS NULL
                   AND o.email IS NULL
                   AND l.email != ''
+                  AND l.status NOT IN ('excluded', 'opted_out', 'invalid')
                 ORDER BY l.ai_score DESC, l.score DESC
                 LIMIT ?
             """, (limit,)).fetchall()
@@ -410,9 +407,26 @@ class Database:
             """, (limit,)).fetchall()
             return [dict(r) for r in rows]
 
+    def get_leads_for_rescoring(self, min_score: int = 90, limit: int = 20) -> list[dict]:
+        """AI skoru düşük olan lead'leri yeniden puanlamak için getir."""
+        with self._conn() as conn:
+            rows = conn.execute("""
+                SELECT * FROM leads
+                WHERE ai_score > 0 AND ai_score < ?
+                  AND email != ''
+                ORDER BY ai_score DESC, score DESC
+                LIMIT ?
+            """, (min_score, limit)).fetchall()
+            return [dict(r) for r in rows]
+
     def is_duplicate_email(self, email: str) -> bool:
-        """Alias for lead_exists."""
-        return self.lead_exists(email)
+        """Bu email daha önce gönderilmiş mi?"""
+        with self._conn() as conn:
+            row = conn.execute(
+                "SELECT 1 FROM sent_log WHERE email = ? LIMIT 1",
+                (email.strip().lower(),)
+            ).fetchone()
+            return row is not None
 
     def update_lead_ai_score(self, email: str, score: int, reason: str = ""):
         with self._conn() as conn:
@@ -420,25 +434,6 @@ class Database:
                 UPDATE leads SET ai_score = ?, ai_score_reason = ?, updated_at = datetime('now')
                 WHERE email = ?
             """, (score, reason, email.strip().lower()))
-
-    def get_unsent_leads(self, limit: int = 100) -> list[dict]:
-        """Henüz gönderilmemiş lead'leri AI skoru sırasıyla getir."""
-        with self._conn() as conn:
-            rows = conn.execute("""
-                SELECT l.* FROM leads l
-                WHERE l.email NOT IN (SELECT DISTINCT email FROM sent_log)
-                  AND l.status NOT IN ('excluded', 'opted_out', 'invalid')
-                ORDER BY l.ai_score DESC, l.score DESC
-                LIMIT ?
-            """, (limit,)).fetchall()
-            return [dict(r) for r in rows]
-
-    def lead_exists(self, email: str) -> bool:
-        """Email zaten veritabanında mı?"""
-        with self._conn() as conn:
-            row = conn.execute("SELECT 1 FROM leads WHERE email = ?",
-                               (email.strip().lower(),)).fetchone()
-            return row is not None
 
     def flag_lead_hot(self, email: str):
         """Lead'i 'hot' olarak işaretle (yanıt var)."""
@@ -456,33 +451,13 @@ class Database:
                 WHERE email = ?
             """, (email.strip().lower(),))
 
-    def add_discovered_lead(self, email: str, company: str = "",
-                            sector: str = "", location: str = "",
-                            vehicles: str = "", website: str = "",
-                            phone: str = "", contact_person: str = "",
-                            discovery_score: int = 0, source: str = "web",
-                            icebreaker: str = ""):
-        """Keşfedilen lead'i veritabanına ekle."""
-        email = email.strip().lower()
+    def update_lead_status(self, email: str, status: str):
+        """Lead durumunu güncelle."""
         with self._conn() as conn:
-            try:
-                conn.execute("""
-                    INSERT INTO leads (email, company, sector, location, vehicles,
-                        phone, website, source, discovery_score)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, (email, company, sector, location,
-                      int(vehicles) if vehicles.isdigit() else 0,
-                      phone, website, source, discovery_score))
-                # Extra fields — try to update if columns exist
-                try:
-                    conn.execute("""
-                        UPDATE leads SET contact_person = ?, icebreaker = ?
-                        WHERE email = ?
-                    """, (contact_person, icebreaker, email))
-                except sqlite3.OperationalError:
-                    pass
-            except sqlite3.IntegrityError:
-                pass  # Duplicate
+            conn.execute("""
+                UPDATE leads SET status = ?, updated_at = datetime('now')
+                WHERE email = ?
+            """, (status, email.strip().lower()))
 
     # ─── DRAFTS CRUD ──────────────────────────────────────────────
 
@@ -490,7 +465,6 @@ class Database:
         """Taslak kaydet veya güncelle."""
         email = email.strip().lower()
         with self._conn() as conn:
-            # Mevcut taslak var mı?
             existing = conn.execute(
                 "SELECT id, version FROM drafts WHERE email = ? ORDER BY version DESC LIMIT 1",
                 (email,)
@@ -540,7 +514,6 @@ class Database:
                 d["qc_issues"] = json.loads(d.get("qc_issues") or "[]")
                 d["qc_passed"] = bool(d.get("qc_passed"))
                 d["compliance_ok"] = bool(d.get("compliance_ok"))
-                # Lead bilgisini de ekle
                 lead = self.get_lead_by_email(d["email"])
                 d["lead"] = lead
                 result[d["email"]] = d
@@ -567,13 +540,13 @@ class Database:
                  subject: str = "", method: str = "", message_id: str = "",
                  campaign_id: str = "", ab_variant: str = "A",
                  test_mode: bool = False):
-        """Email gönderimini logla. test_mode daima False (canlı mod)."""
+        """Email gönderimini logla."""
         with self._conn() as conn:
             conn.execute("""
                 INSERT INTO sent_log (email, company, sector, subject, ab_variant,
                     method, message_id, test_mode, campaign_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (email, company, sector, subject, ab_variant,
+            """, (email.lower(), company, sector, subject, ab_variant,
                   method, message_id, 0, campaign_id))
 
     def get_sent_emails(self) -> list[dict]:
@@ -593,9 +566,14 @@ class Database:
             return {r["email"] for r in rows}
 
     def get_recent_sent(self, limit: int = 20) -> list[dict]:
+        """Son gönderilen emailleri listele."""
         with self._conn() as conn:
             rows = conn.execute("""
-                SELECT * FROM sent_log ORDER BY sent_at DESC LIMIT ?
+                SELECT s.email, s.company, s.sector, s.subject, s.method,
+                       s.ab_variant, s.sent_at, d.qc_score
+                FROM sent_log s
+                LEFT JOIN drafts d ON s.email = d.email
+                ORDER BY s.sent_at DESC LIMIT ?
             """, (limit,)).fetchall()
             return [dict(r) for r in rows]
 
@@ -614,9 +592,11 @@ class Database:
         """Tüm gönderilen emailleri draft içerikleriyle birlikte döndür."""
         with self._conn() as conn:
             rows = conn.execute("""
-                SELECT s.*, d.body_html, d.body_text, d.qc_score,
-                       d.chosen_subject as draft_subject,
-                       CASE WHEN e_open.id IS NOT NULL THEN 1 ELSE 0 END as opened,
+                SELECT s.email, s.company, s.sector, s.subject, s.method,
+                       s.message_id, s.ab_variant, s.sent_at,
+                       d.body_html, d.body_text, d.chosen_subject,
+                       d.qc_score, d.subject_a, d.subject_b, d.subject_c,
+                       CASE WHEN e_open.id IS NOT NULL THEN 1 ELSE 0 END as was_opened,
                        CASE WHEN r.id IS NOT NULL THEN 1 ELSE 0 END as replied
                 FROM sent_log s
                 LEFT JOIN drafts d ON s.email = d.email
@@ -628,33 +608,38 @@ class Database:
             """, (limit,)).fetchall()
             return [dict(r) for r in rows]
 
-    def is_duplicate_email(self, email: str) -> bool:
-        """Bu email daha önce gönderilmiş mi?"""
+    def get_sent_email_content(self, email: str) -> dict:
+        """Gönderilmiş email içeriğini sent_log + drafts birleştirerek döndür."""
         with self._conn() as conn:
-            row = conn.execute(
-                "SELECT 1 FROM sent_log WHERE email = ?",
-                (email.strip().lower(),)
-            ).fetchone()
-            return row is not None
+            row = conn.execute("""
+                SELECT s.email, s.company, s.subject, s.method, s.sent_at, s.ab_variant,
+                       d.body_html, d.body_text, d.subject_a, d.subject_b, d.subject_c,
+                       d.chosen_subject, d.qc_score
+                FROM sent_log s
+                LEFT JOIN drafts d ON s.email = d.email
+                WHERE s.email = ?
+                ORDER BY s.sent_at DESC
+                LIMIT 1
+            """, (email.lower(),)).fetchone()
+            if row:
+                return dict(row)
+            return {}
 
     def get_duplicate_stats(self) -> dict:
         """Duplicate önleme istatistikleri."""
         with self._conn() as conn:
-            total_sent = conn.execute("SELECT COUNT(*) FROM sent_log").fetchone()[0]
-            unique_sent = conn.execute("SELECT COUNT(DISTINCT email) FROM sent_log").fetchone()[0]
+            total_leads = conn.execute("SELECT COUNT(*) FROM leads").fetchone()[0]
+            total_sent = conn.execute("SELECT COUNT(DISTINCT email) FROM sent_log").fetchone()[0]
+            duplicates_prevented = conn.execute("""
+                SELECT COUNT(*) FROM leads
+                WHERE email IN (SELECT DISTINCT email FROM sent_log)
+            """).fetchone()[0]
             return {
-                "total_sent": total_sent,
-                "unique_emails": unique_sent,
-                "duplicates_prevented": total_sent - unique_sent,
+                "total_leads": total_leads,
+                "unique_sent": total_sent,
+                "duplicates_prevented": duplicates_prevented,
+                "unsent_leads": total_leads - duplicates_prevented,
             }
-
-    def update_lead_status(self, email: str, status: str):
-        """Lead durumunu güncelle."""
-        with self._conn() as conn:
-            conn.execute("""
-                UPDATE leads SET status = ?, updated_at = datetime('now')
-                WHERE email = ?
-            """, (status, email.strip().lower()))
 
     # ─── CAMPAIGNS ────────────────────────────────────────────────
 
@@ -706,6 +691,11 @@ class Database:
             """, (email, message_id, event_type,
                   json.dumps(metadata or {})))
 
+    # Alias for webhook compatibility
+    def log_event(self, email: str, event_type: str, metadata: dict = None):
+        """Alias for record_event (webhook uyumluluğu)."""
+        self.record_event(email, event_type, metadata=metadata)
+
     def get_events_by_type(self, event_type: str, limit: int = 100) -> list[dict]:
         with self._conn() as conn:
             rows = conn.execute("""
@@ -715,27 +705,25 @@ class Database:
             return [dict(r) for r in rows]
 
     def get_open_rates_by_variant(self) -> dict:
-        """A/B test için varyant bazlı open rate hesapla."""
+        """A/B test varyantına göre açılma oranları."""
         with self._conn() as conn:
-            rows = conn.execute("""
-                SELECT
-                    s.ab_variant,
-                    COUNT(DISTINCT s.email) as total_sent,
-                    COUNT(DISTINCT e.email) as total_opened
-                FROM sent_log s
-                LEFT JOIN events e ON s.email = e.email AND e.event_type = 'open'
-                GROUP BY s.ab_variant
-            """).fetchall()
-
-            result = {}
-            for r in rows:
-                total = r["total_sent"] or 1
-                result[r["ab_variant"]] = {
-                    "sent": r["total_sent"],
-                    "opened": r["total_opened"],
-                    "open_rate": round(r["total_opened"] / total * 100, 1),
-                }
-            return result
+            variants = {}
+            for variant in ["A", "B", "C"]:
+                sent = conn.execute(
+                    "SELECT COUNT(*) FROM sent_log WHERE ab_variant = ?",
+                    (variant,)
+                ).fetchone()[0]
+                opened = conn.execute("""
+                    SELECT COUNT(DISTINCT e.email) FROM events e
+                    INNER JOIN sent_log s ON e.email = s.email
+                    WHERE s.ab_variant = ? AND e.event_type = 'open'
+                """, (variant,)).fetchone()[0]
+                if sent > 0:
+                    variants[variant] = {
+                        "sent": sent, "opened": opened,
+                        "rate": round(opened / sent * 100, 1)
+                    }
+            return variants
 
     # ─── FOLLOW-UP (v4) ──────────────────────────────────────────
 
@@ -829,30 +817,27 @@ class Database:
                 steps[f"step_{step}"] = {"total": step_total, "sent": step_sent}
 
             return {
-                "total": total, "pending": pending, "sent": sent,
+                "total": total, "pending": pending, "sent": sent, "pending_count": pending,
                 "cancelled": cancelled, "skipped": skipped, "error": error,
                 "steps": steps,
             }
 
-    def get_followup_detail(self, limit: int = 50) -> list[dict]:
+    def get_followup_detail(self, limit: int = 100) -> list[dict]:
         """Kişi bazlı detaylı follow-up listesi."""
         with self._conn() as conn:
             rows = conn.execute("""
-                SELECT f.id, f.email, f.company, f.step, f.status,
-                       f.scheduled_at, f.sent_at, f.subject,
-                       f.original_subject, f.sector, f.vehicles,
-                       CASE WHEN e.id IS NOT NULL THEN 1 ELSE 0 END as was_opened,
-                       CASE WHEN r.id IS NOT NULL THEN 1 ELSE 0 END as has_reply,
-                       CASE WHEN u.id IS NOT NULL THEN 1 ELSE 0 END as is_unsub
+                SELECT f.*, l.company as lead_company, l.sector as lead_sector,
+                       l.ai_score, l.source
                 FROM followups f
-                LEFT JOIN events e ON f.email = e.email AND e.event_type = 'open'
-                LEFT JOIN responses r ON f.email = r.email
-                LEFT JOIN events u ON f.email = u.email AND u.event_type = 'unsubscribe'
-                GROUP BY f.id
+                LEFT JOIN leads l ON f.email = l.email
                 ORDER BY f.scheduled_at DESC
                 LIMIT ?
             """, (limit,)).fetchall()
             return [dict(r) for r in rows]
+
+    def get_all_followups(self, limit: int = 100) -> list[dict]:
+        """Tüm follow-up kayıtlarını detaylı döndür."""
+        return self.get_followup_detail(limit=limit)
 
     # ─── RESPONSES (v4) ──────────────────────────────────────────
 
@@ -887,16 +872,6 @@ class Database:
             ).fetchone()
             return row is not None
 
-    def is_unsubscribed(self, email: str) -> bool:
-        """Unsubscribe olmuş mu?"""
-        with self._conn() as conn:
-            row = conn.execute("""
-                SELECT 1 FROM events WHERE email = ? AND event_type = 'unsubscribe'
-                UNION
-                SELECT 1 FROM responses WHERE email = ? AND classification = 'unsubscribe'
-            """, (email.strip().lower(), email.strip().lower())).fetchone()
-            return row is not None
-
     def add_opt_out(self, email: str):
         """Opt-out işle + event kaydet."""
         self.record_event(email, "unsubscribe", metadata={"source": "response"})
@@ -910,6 +885,7 @@ class Database:
         """Yanıt istatistikleri."""
         with self._conn() as conn:
             total = conn.execute("SELECT COUNT(*) FROM responses").fetchone()[0]
+            total_responses = total
             classifications = {}
             for cls in ["interested", "not_interested", "question",
                         "out_of_office", "bounce", "unsubscribe"]:
@@ -918,7 +894,8 @@ class Database:
                     (cls,)
                 ).fetchone()[0]
                 classifications[cls] = count
-            return {"total": total, "classifications": classifications}
+            return {"total": total, "total_responses": total_responses,
+                    "classifications": classifications}
 
     def get_hot_leads(self) -> list[dict]:
         """İlgi gösteren 'hot' lead'leri getir."""
@@ -969,12 +946,11 @@ class Database:
                 "unsubscribe_count": unsubscribes,
             }
 
-    # ─── REPORTS (Phase 3) ───────────────────────────────────────
+    # ─── REPORTS ─────────────────────────────────────────────────
 
     def get_campaign_report(self) -> dict:
-        """Kapsamli kampanya raporu."""
+        """Kapsamlı kampanya raporu."""
         with self._conn() as conn:
-            # Genel istatistikler
             total_leads = conn.execute("SELECT COUNT(*) FROM leads").fetchone()[0]
             total_sent = conn.execute("SELECT COUNT(*) FROM sent_log").fetchone()[0]
             total_opens = conn.execute(
@@ -990,14 +966,12 @@ class Database:
                 "SELECT COUNT(*) FROM events WHERE event_type = 'unsubscribe'"
             ).fetchone()[0]
 
-            # Sektör bazlı dağılım
             sectors = conn.execute("""
                 SELECT sector, COUNT(*) as cnt FROM leads
                 WHERE sector IS NOT NULL AND sector != ''
                 GROUP BY sector ORDER BY cnt DESC
             """).fetchall()
 
-            # Follow-up funnel
             fu_total = conn.execute("SELECT COUNT(*) FROM followups").fetchone()[0]
             fu_sent = conn.execute(
                 "SELECT COUNT(*) FROM followups WHERE status = 'sent'"
@@ -1006,13 +980,11 @@ class Database:
                 "SELECT COUNT(*) FROM followups WHERE status = 'pending'"
             ).fetchone()[0]
 
-            # Response dağılımı
             responses = conn.execute("""
                 SELECT classification, COUNT(*) as cnt FROM responses
                 GROUP BY classification ORDER BY cnt DESC
             """).fetchall()
 
-            # Günlük gönderim (son 14 gün)
             daily = conn.execute("""
                 SELECT DATE(sent_at) as day, COUNT(*) as cnt
                 FROM sent_log
@@ -1041,11 +1013,11 @@ class Database:
             }
 
     def get_export_data(self) -> list[dict]:
-        """CSV export icin tum lead verileri."""
+        """CSV export için tüm lead verileri."""
         with self._conn() as conn:
             rows = conn.execute("""
                 SELECT l.email, l.company, l.sector, l.location,
-                       l.vehicles, l.ai_score, l.ai_reason, l.source,
+                       l.vehicles, l.ai_score, l.ai_score_reason, l.source,
                        l.created_at,
                        CASE WHEN s.id IS NOT NULL THEN 'Evet' ELSE 'Hayir' END as sent,
                        s.sent_at,
@@ -1060,34 +1032,6 @@ class Database:
                 ORDER BY l.ai_score DESC
             """).fetchall()
             return [dict(r) for r in rows]
-
-
-    # ─── DUPLICATE PREVENTION ─────────────────────────────────────
-
-    def is_duplicate_email(self, email: str) -> bool:
-        """Bu email adresine daha önce gönderim yapılmış mı kontrol et."""
-        with self._conn() as conn:
-            count = conn.execute(
-                "SELECT COUNT(*) FROM sent_log WHERE email = ?",
-                (email.strip().lower(),)
-            ).fetchone()[0]
-            return count > 0
-
-    def get_duplicate_stats(self) -> dict:
-        """Duplicate istatistikleri."""
-        with self._conn() as conn:
-            total_leads = conn.execute("SELECT COUNT(*) FROM leads").fetchone()[0]
-            total_sent = conn.execute("SELECT COUNT(DISTINCT email) FROM sent_log").fetchone()[0]
-            duplicates_prevented = conn.execute("""
-                SELECT COUNT(*) FROM leads
-                WHERE email IN (SELECT DISTINCT email FROM sent_log)
-            """).fetchone()[0]
-            return {
-                "total_leads": total_leads,
-                "unique_sent": total_sent,
-                "duplicates_prevented": duplicates_prevented,
-                "unsent_leads": total_leads - duplicates_prevented,
-            }
 
     # ─── AGENT SELF-IMPROVEMENT ────────────────────────────────────
 
@@ -1129,22 +1073,6 @@ class Database:
             return {r["agent_name"]: {"learnings": r["total_learnings"],
                     "avg_improvement": round(r["avg_improvement"] or 0, 2)} for r in agents}
 
-
-    # ─── ALL FOLLOWUPS WITH DETAIL ─────────────────────────────────
-
-    def get_all_followups(self, limit: int = 100) -> list[dict]:
-        """Tüm follow-up kayıtlarını detaylı döndür."""
-        with self._conn() as conn:
-            rows = conn.execute("""
-                SELECT f.*, l.company as lead_company, l.sector as lead_sector,
-                       l.ai_score, l.source
-                FROM followups f
-                LEFT JOIN leads l ON f.email = l.email
-                ORDER BY f.scheduled_at DESC
-                LIMIT ?
-            """, (limit,)).fetchall()
-            return [dict(r) for r in rows]
-
     # ─── UNSUBSCRIBE ─────────────────────────────────────────────
 
     def add_unsubscribe(self, email: str, reason: str = "") -> bool:
@@ -1159,15 +1087,6 @@ class Database:
             except Exception:
                 return False
 
-    def is_unsubscribed(self, email: str) -> bool:
-        """Email adresi unsubscribe listesinde mi?"""
-        with self._conn() as conn:
-            row = conn.execute(
-                "SELECT 1 FROM unsubscribes WHERE email = ?",
-                (email.strip().lower(),)
-            ).fetchone()
-            return row is not None
-
     def get_unsubscribe_count(self) -> int:
         """Toplam unsubscribe sayısı."""
         with self._conn() as conn:
@@ -1181,144 +1100,7 @@ class Database:
             ).fetchall()
             return [dict(r) for r in rows]
 
-    def get_sent_email_content(self, email: str) -> dict:
-        """Gönderilmiş email içeriğini sent_log + drafts birleştirerek döndür."""
-        with self._conn() as conn:
-            row = conn.execute("""
-                SELECT s.email, s.company, s.subject, s.method, s.sent_at, s.ab_variant,
-                       d.body_html, d.body_text, d.subject_a, d.subject_b, d.subject_c,
-                       d.chosen_subject, d.qc_score
-                FROM sent_log s
-                LEFT JOIN drafts d ON s.email = d.email
-                WHERE s.email = ?
-                ORDER BY s.sent_at DESC
-                LIMIT 1
-            """, (email.lower(),)).fetchone()
-            if row:
-                return dict(row)
-            return {}
-
-    def save_draft(self, email: str, draft_data: dict):
-        """Email taslağını drafts tablosuna kaydet (upsert)."""
-        try:
-            with self._conn() as conn:
-                conn.execute("""
-                    INSERT OR REPLACE INTO drafts
-                    (email, subject_a, subject_b, subject_c, chosen_subject,
-                     body_html, body_text, qc_score, qc_passed, updated_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-                """, (
-                    email.lower(),
-                    draft_data.get("subject_a", ""),
-                    draft_data.get("subject_b", ""),
-                    draft_data.get("subject_c", ""),
-                    draft_data.get("chosen_subject", ""),
-                    draft_data.get("body_html", ""),
-                    draft_data.get("body_text", ""),
-                    draft_data.get("qc_score", 0),
-                    1 if draft_data.get("qc_score", 0) >= 70 else 0,
-                ))
-                conn.commit()
-                log.info(f"[DB] Draft kaydedildi: {email}")
-        except Exception as e:
-            log.error(f"[DB] Draft kayıt hatası: {email} — {e}")
-
-    def log_sent(self, email: str, company: str = "", sector: str = "",
-                 subject: str = "", method: str = "", message_id: str = "",
-                 ab_variant: str = "A", campaign_id: str = "", test_mode: int = 0):
-        """Gönderilen emaili sent_log tablosuna kaydet."""
-        try:
-            with self._conn() as conn:
-                conn.execute("""
-                    INSERT INTO sent_log
-                    (email, company, sector, subject, method, message_id,
-                     ab_variant, campaign_id, test_mode, sent_at)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
-                """, (
-                    email.lower(), company, sector, subject, method,
-                    message_id, ab_variant, campaign_id, test_mode,
-                ))
-                conn.commit()
-                log.info(f"[DB] Sent log kaydedildi: {email}")
-        except Exception as e:
-            log.error(f"[DB] Sent log hatası: {email} — {e}")
-
-    def get_recent_sent(self, limit: int = 20) -> list[dict]:
-        """Son gönderilen emailleri listele (body_html HARİÇ — sadece özet)."""
-        with self._conn() as conn:
-            rows = conn.execute("""
-                SELECT s.email, s.company, s.sector, s.subject, s.method,
-                       s.ab_variant, s.sent_at, d.qc_score
-                FROM sent_log s
-                LEFT JOIN drafts d ON s.email = d.email
-                ORDER BY s.sent_at DESC LIMIT ?
-            """, (limit,)).fetchall()
-            return [dict(r) for r in rows]
-
-    def get_all_sent_with_content(self, limit: int = 200) -> list[dict]:
-        """Tüm gönderilen emailleri draft içerikleriyle birlikte döndür."""
-        with self._conn() as conn:
-            rows = conn.execute("""
-                SELECT s.email, s.company, s.sector, s.subject, s.method,
-                       s.message_id, s.ab_variant, s.sent_at,
-                       d.body_html, d.body_text, d.chosen_subject,
-                       d.qc_score, d.subject_a, d.subject_b, d.subject_c
-                FROM sent_log s
-                LEFT JOIN drafts d ON s.email = d.email
-                ORDER BY s.sent_at DESC
-                LIMIT ?
-            """, (limit,)).fetchall()
-            return [dict(r) for r in rows]
-
-    def get_open_rates_by_variant(self) -> dict:
-        """A/B test varyantına göre açılma oranları."""
-        with self._conn() as conn:
-            variants = {}
-            for variant in ["A", "B", "C"]:
-                sent = conn.execute(
-                    "SELECT COUNT(*) FROM sent_log WHERE ab_variant = ?",
-                    (variant,)
-                ).fetchone()[0]
-                opened = conn.execute("""
-                    SELECT COUNT(DISTINCT e.email) FROM events e
-                    INNER JOIN sent_log s ON e.email = s.email
-                    WHERE s.ab_variant = ? AND e.event_type = 'open'
-                """, (variant,)).fetchone()[0]
-                if sent > 0:
-                    variants[variant] = {
-                        "sent": sent, "opened": opened,
-                        "rate": round(opened / sent * 100, 1)
-                    }
-            return variants
-
-    def get_followup_stats(self) -> dict:
-        """Follow-up istatistikleri."""
-        with self._conn() as conn:
-            total = conn.execute("SELECT COUNT(*) FROM followups").fetchone()[0]
-            sent = conn.execute(
-                "SELECT COUNT(*) FROM followups WHERE status = 'sent'"
-            ).fetchone()[0]
-            pending = conn.execute(
-                "SELECT COUNT(*) FROM followups WHERE status = 'pending'"
-            ).fetchone()[0]
-            scheduled = conn.execute(
-                "SELECT COUNT(*) FROM followups WHERE status = 'scheduled'"
-            ).fetchone()[0]
-            return {
-                "total": total, "sent": sent,
-                "pending": pending, "scheduled": scheduled
-            }
-
-    def get_followup_detail(self, limit: int = 100) -> list[dict]:
-        """Kişi bazlı detaylı follow-up listesi."""
-        with self._conn() as conn:
-            rows = conn.execute("""
-                SELECT f.*, l.company, l.sector
-                FROM followups f
-                LEFT JOIN leads l ON f.email = l.email
-                ORDER BY f.scheduled_at DESC LIMIT ?
-            """, (limit,)).fetchall()
-            return [dict(r) for r in rows]
+    # ─── LEADS BY SOURCE ─────────────────────────────────────────
 
     def get_leads_by_source(self, source: str, limit: int = 100) -> list[dict]:
         """Belirli bir kaynaktan bulunan lead'leri döndür."""

@@ -125,6 +125,13 @@ def get_leads():
         else:
             lead["send_status"] = "unsent"
 
+    # Status filtresi (?status=unsent|sent|all)
+    status_filter = request.args.get("status", "all").lower()
+    if status_filter == "unsent":
+        leads = [l for l in leads if l.get("send_status") != "sent"]
+    elif status_filter == "sent":
+        leads = [l for l in leads if l.get("send_status") == "sent"]
+
     return jsonify({"leads": leads, "count": len(leads)})
 
 
@@ -1469,6 +1476,27 @@ def _automation_loop():
                     break
 
                 # ═══════════════════════════════════════════════════
+                # PHASE 2.5: DÜŞÜK SKORLU LEAD'LERİ YENİDEN PUANLA
+                # ═══════════════════════════════════════════════════
+                try:
+                    _automation_state["last_action"] = "Phase 2.5: Düşük skorlu leadleri revize..."
+                    low_score_leads = db.get_leads_for_rescoring(min_score=90, limit=10)
+                    if low_score_leads:
+                        _auto_log(f"🔄 Phase 2.5: {len(low_score_leads)} düşük skorlu lead revize ediliyor")
+                        rescored = lead_scorer.score_batch(low_score_leads)
+                        for s in rescored:
+                            db.update_lead_ai_score(s["email"], s.get("score", 50), s.get("reason", ""))
+                        _auto_log(f"✅ {len(rescored)} lead yeniden puanlandı")
+                    else:
+                        _auto_log("ℹ️ Revize edilecek lead yok")
+                except Exception as e:
+                    _auto_log(f"❌ Phase 2.5 HATA: {e}", "error")
+
+                gc.collect()
+                if not _automation_state["running"]:
+                    break
+
+                # ═══════════════════════════════════════════════════
                 # PHASE 3: EMAIL YAZ + GÖNDER
                 # ═══════════════════════════════════════════════════
                 try:
@@ -1574,6 +1602,19 @@ def _automation_loop():
                                                 )
                                                 sent_count += 1
                                                 _auto_log(f"✅ Email gönderildi: {company} ({email_addr})")
+
+                                                # Follow-up zamanla (3 aşamalı)
+                                                try:
+                                                    follow_up.schedule_followups(
+                                                        email=email_addr,
+                                                        original_subject=subject,
+                                                        company=company,
+                                                        sector=sector,
+                                                        vehicles=str(lead_data.get("vehicles", "")),
+                                                    )
+                                                    _auto_log(f"📅 Follow-up zamanlandı: {email_addr}")
+                                                except Exception as fu_err:
+                                                    _auto_log(f"⚠️ Follow-up zamanlama hatası: {fu_err}")
                                             else:
                                                 err_msg = result.get("error", "bilinmiyor") if isinstance(result, dict) else getattr(result, "error", "bilinmiyor")
                                                 _auto_log(f"❌ Gönderim başarısız: {email_addr} — {err_msg}")
@@ -1671,15 +1712,21 @@ def _automation_loop():
         _automation_state["last_action"] = "Pipeline durduruldu"
 
     except Exception as e:
-        # En dıştaki koruma — hiçbir şey bu thread'i öldüremez
+        # En dıştaki koruma — thread ÖLMEZ, 60sn sonra tekrar dener
         _auto_log(f"FATAL: {e}", "error")
         try:
             import traceback
             traceback.print_exc()
         except Exception:
             pass
-        _automation_state["last_action"] = f"FATAL: {str(e)[:200]}"
-        _automation_state["running"] = False
+        _automation_state["last_action"] = f"FATAL: {str(e)[:200]} — 60sn sonra yeniden başlıyor..."
+        # RUNNING=FALSE YAPMIYORUZ — otomatik recovery
+        gc.collect()
+        time.sleep(60)
+        # Tekrar başlat (recursive olmadan, while döngüsüne geri dön)
+        if _automation_state["running"]:
+            _auto_log("🔄 FATAL recovery — pipeline yeniden başlıyor")
+            _automation_loop()  # Yeniden başlat
 
 
 def _auto_start_automation():

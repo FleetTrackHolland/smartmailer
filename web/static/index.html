@@ -129,6 +129,12 @@
         <div class="card-header">
             <h3>Lead Listesi <span class="text-muted" style="font-weight:400"> — <span id="leads-count">0</span> lead</span></h3>
             <div class="table-actions-inline">
+                <div class="filter-group" style="display:flex;gap:4px;margin-right:12px">
+                    <button class="btn btn-sm btn-ghost filter-btn active" id="filter-all" onclick="filterLeads('all')" style="border:1px solid var(--border)">Tümü</button>
+                    <button class="btn btn-sm btn-ghost filter-btn" id="filter-unsent" onclick="filterLeads('unsent')" style="border:1px solid var(--amber);color:var(--amber)">📧 Gönderilmemiş</button>
+                    <button class="btn btn-sm btn-ghost filter-btn" id="filter-sent" onclick="filterLeads('sent')" style="border:1px solid var(--green);color:var(--green)">✅ Gönderilmiş</button>
+                </div>
+                <button class="btn btn-sm btn-accent" onclick="sendToUnsent()" title="Sadece gönderilmemiş leadlere otomatik gönder">🚀 Gönderilmemişlere Gönder</button>
                 <button class="btn btn-sm btn-ghost" id="btn-preview-selected" disabled onclick="previewSelectedLead()" style="border:1px solid var(--purple)">Önizle</button>
                 <button class="btn btn-sm btn-primary" id="btn-send-selected" disabled onclick="sendSelectedLeads()">Seçilenlere Gönder</button>
                 <button class="btn btn-sm btn-ghost" id="btn-skip-selected" disabled onclick="skipSelectedLeads()">Atla</button>
