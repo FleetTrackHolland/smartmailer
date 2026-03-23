@@ -8,6 +8,7 @@ import json
 import requests
 from config import config
 from core.logger import get_logger
+from core.api_guard import api_guard
 
 log = get_logger("lead_scorer")
 
@@ -123,10 +124,9 @@ Lead #{idx}:
         }
 
         try:
-            resp = requests.post(CLAUDE_API_URL, json=payload,
-                                 headers=self._headers, timeout=45)
-            if not resp.ok:
-                log.error(f"[LeadScorer] API hatası: {resp.status_code}")
+            resp = api_guard.call(payload, self._headers, timeout=45)
+            if not resp or not resp.ok:
+                log.error(f"[LeadScorer] API hatası: {resp.status_code if resp else 'guard blocked'}")
                 return self._fallback_scores(leads)
 
             raw = resp.json()["content"][0]["text"]

@@ -15,6 +15,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from config import config
 from core.logger import get_logger
 from core.database import db
+from core.api_guard import api_guard
 
 log = get_logger("lead_finder")
 
@@ -238,7 +239,16 @@ class LeadFinder:
             "mx_verified": 0, "telefoonboek_found": 0,
             "openstreetmap_found": 0,
         }
-        log.info("LeadFinder v7.0 hazır (SmartMailer Ultimate — 10+ kaynak).")
+        # DB'deki mevcut lead email'lerini yükle — restart sonrası duplicate önleme
+        try:
+            existing = db.get_all_leads()
+            for lead in existing:
+                e = (lead.get("email") or "").strip().lower()
+                if e:
+                    self._found_emails.add(e)
+            log.info(f"LeadFinder v7.0 hazır — {len(self._found_emails)} mevcut lead yüklendi.")
+        except Exception:
+            log.info("LeadFinder v7.0 hazır (SmartMailer Ultimate — 10+ kaynak).")
 
     def get_discovery_stats(self) -> dict:
         return dict(self._stats)
@@ -814,12 +824,13 @@ Antwoord ALLEEN als JSON array:
                 "max_tokens": 4000,
                 "messages": [{"role": "user", "content": prompt}],
             }
-            resp = requests.post(CLAUDE_API_URL, json=payload,
-                                 headers=self._headers, timeout=60)
+
+            # API Guard ile korumalı çağrı (rate limit + retry + circuit breaker)
+            resp = api_guard.call(payload, self._headers, timeout=60)
             self._stats["ai_calls"] += 1
 
-            if not resp.ok:
-                log.warning(f"[AI-BULK] API hata: {resp.status_code}")
+            if not resp or not resp.ok:
+                log.warning(f"[AI-BULK] API hata: {resp.status_code if resp else 'guard blocked'}")
                 return results
 
             raw = resp.json()["content"][0]["text"]
@@ -1181,11 +1192,10 @@ Antwoord als JSON array:
         try:
             payload = {"model": config.CLAUDE_MODEL, "max_tokens": 2000,
                        "messages": [{"role": "user", "content": prompt}]}
-            resp = requests.post(CLAUDE_API_URL, json=payload,
-                                 headers=self._headers, timeout=30)
+            resp = api_guard.call(payload, self._headers, timeout=30)
             self._stats["ai_calls"] += 1
 
-            if resp.ok:
+            if resp and resp.ok:
                 raw = resp.json()["content"][0]["text"]
                 json_str = raw
                 if "```json" in raw:

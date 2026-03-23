@@ -9,6 +9,7 @@ from datetime import datetime
 from config import config
 from core.logger import get_logger
 from core.database import db
+from core.api_guard import api_guard
 
 log = get_logger("response_tracker")
 
@@ -90,10 +91,9 @@ class ResponseTracker:
         }
 
         try:
-            resp = requests.post(CLAUDE_API_URL, json=payload,
-                                 headers=self._headers, timeout=20)
-            if not resp.ok:
-                raise Exception(f"Claude API: {resp.status_code}")
+            resp = api_guard.call(payload, self._headers, timeout=20)
+            if not resp or not resp.ok:
+                raise Exception(f"Claude API: {resp.status_code if resp else 'guard blocked'}")
 
             raw = resp.json()["content"][0]["text"]
             json_str = raw
@@ -168,10 +168,9 @@ class ResponseTracker:
             "messages": [{"role": "user", "content": user_prompt}],
         }
 
-        resp = requests.post(CLAUDE_API_URL, json=payload,
-                             headers=self._headers, timeout=30)
-        if not resp.ok:
-            raise Exception(f"Claude reply hatası: {resp.status_code}")
+        resp = api_guard.call(payload, self._headers, timeout=30)
+        if not resp or not resp.ok:
+            raise Exception(f"Claude reply hatası: {resp.status_code if resp else 'guard blocked'}")
 
         raw = resp.json()["content"][0]["text"]
         json_str = raw

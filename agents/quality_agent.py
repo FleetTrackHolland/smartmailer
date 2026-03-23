@@ -9,6 +9,7 @@ import requests
 from dataclasses import dataclass, field
 from config import config
 from core.logger import get_logger
+from core.api_guard import api_guard
 
 log = get_logger("quality")
 
@@ -128,10 +129,9 @@ E-MAIL TEKST:
             "messages": [{"role": "user", "content": user_prompt}],
         }
 
-        resp = requests.post(CLAUDE_API_URL, json=payload,
-                             headers=self._headers, timeout=30)
-        if not resp.ok:
-            raise Exception(f"Claude QC API hatası: {resp.status_code}")
+        resp = api_guard.call(payload, self._headers, timeout=30)
+        if not resp or not resp.ok:
+            raise Exception(f"Claude QC API hatası: {resp.status_code if resp else 'guard blocked'}")
 
         raw = resp.json()["content"][0]["text"]
 

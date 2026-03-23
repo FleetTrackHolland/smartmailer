@@ -1374,6 +1374,14 @@ def _automation_loop():
         _auto_log("═══ PIPELINE THREAD BAŞLADI ═══")
         _automation_state["last_action"] = "Pipeline başlatılıyor..."
 
+        # Başlangıçta duplicate sent_log kayıtlarını temizle
+        try:
+            removed = db.cleanup_duplicate_sent()
+            if removed > 0:
+                _auto_log(f"🧹 {removed} duplicate gönderim kaydı temizlendi")
+        except Exception as cleanup_err:
+            _auto_log(f"⚠️ Cleanup hatası: {cleanup_err}")
+
         # SendEngine — email göndermek için (opsiyonel)
         send_engine = None
         try:
@@ -1440,7 +1448,8 @@ def _automation_loop():
                         except Exception as e:
                             _auto_log(f"❌ {sector} hatası: {e}", "error")
 
-                        time.sleep(2)
+                        # Rate limit koruması: sektörler arası yeterli bekleme
+                        time.sleep(8)
 
                     _auto_log(f"📊 Phase 1 TAMAM: {total_discovered} lead keşfedildi")
                     _automation_state["last_action"] = f"Phase 1 tamam: {total_discovered} lead"
@@ -1522,6 +1531,10 @@ def _automation_loop():
                                     if not email_addr:
                                         continue
 
+                                    # Duplicate gönderim kontrolü
+                                    if db.is_duplicate_email(email_addr):
+                                        continue
+
                                     _automation_state["last_action"] = f"Phase 3: {company or email_addr} — email yazılıyor..."
                                     _auto_log(f"✍️ Email yazılıyor: {company or email_addr}")
 
@@ -1578,8 +1591,11 @@ def _automation_loop():
                                             from core.send_engine import EmailMessage
                                             msg = EmailMessage(
                                                 to_email=email_addr,
+                                                to_name=company,
                                                 subject=subject,
-                                                body_html=body_html
+                                                html_body=body_html,
+                                                text_body=body_text,
+                                                lead_id=email_addr,
                                             )
                                             result = send_engine.send(msg)
                                             success = result.get("success") if isinstance(result, dict) else getattr(result, "success", False)

@@ -540,13 +540,22 @@ class Database:
                  subject: str = "", method: str = "", message_id: str = "",
                  campaign_id: str = "", ab_variant: str = "A",
                  test_mode: bool = False):
-        """Email gönderimini logla."""
+        """Email gönderimini logla — sadece ilk gönderimi kaydet."""
+        email_lower = email.lower().strip()
         with self._conn() as conn:
+            # Duplicate gönderimi önle
+            already = conn.execute(
+                "SELECT 1 FROM sent_log WHERE email = ? LIMIT 1",
+                (email_lower,)
+            ).fetchone()
+            if already:
+                log.debug(f"[DB] Duplicate gönderim engellendi: {email_lower}")
+                return
             conn.execute("""
                 INSERT INTO sent_log (email, company, sector, subject, ab_variant,
                     method, message_id, test_mode, campaign_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (email.lower(), company, sector, subject, ab_variant,
+            """, (email_lower, company, sector, subject, ab_variant,
                   method, message_id, 0, campaign_id))
 
     def get_sent_emails(self) -> list[dict]:
@@ -630,16 +639,32 @@ class Database:
         with self._conn() as conn:
             total_leads = conn.execute("SELECT COUNT(*) FROM leads").fetchone()[0]
             total_sent = conn.execute("SELECT COUNT(DISTINCT email) FROM sent_log").fetchone()[0]
-            duplicates_prevented = conn.execute("""
-                SELECT COUNT(*) FROM leads
-                WHERE email IN (SELECT DISTINCT email FROM sent_log)
-            """).fetchone()[0]
+            total_sent_rows = conn.execute("SELECT COUNT(*) FROM sent_log").fetchone()[0]
+            duplicate_sends = total_sent_rows - total_sent
             return {
                 "total_leads": total_leads,
                 "unique_sent": total_sent,
-                "duplicates_prevented": duplicates_prevented,
-                "unsent_leads": total_leads - duplicates_prevented,
+                "total_sent_rows": total_sent_rows,
+                "duplicate_sends": duplicate_sends,
+                "unsent_leads": total_leads - total_sent,
             }
+
+    def cleanup_duplicate_sent(self) -> int:
+        """sent_log'daki duplicate gönderim kayıtlarını temizle. Her email için sadece ilk kaydı tut."""
+        with self._conn() as conn:
+            # Duplicate kayıtları say
+            before = conn.execute("SELECT COUNT(*) FROM sent_log").fetchone()[0]
+            # Her email için en eski kaydı tut, gerisini sil
+            conn.execute("""
+                DELETE FROM sent_log WHERE id NOT IN (
+                    SELECT MIN(id) FROM sent_log GROUP BY email
+                )
+            """)
+            after = conn.execute("SELECT COUNT(*) FROM sent_log").fetchone()[0]
+            removed = before - after
+            if removed > 0:
+                log.info(f"[DB] 🧹 {removed} duplicate gönderim kaydı silindi (önceki: {before}, şimdi: {after})")
+            return removed
 
     # ─── CAMPAIGNS ────────────────────────────────────────────────
 
