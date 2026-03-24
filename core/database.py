@@ -864,6 +864,26 @@ class Database:
         """Tüm follow-up kayıtlarını detaylı döndür."""
         return self.get_followup_detail(limit=limit)
 
+    def get_sent_email_content(self, email: str) -> dict | None:
+        """Gönderilmiş e-postanın subject ve tarih bilgisini döndür."""
+        with self._conn() as conn:
+            row = conn.execute("""
+                SELECT email, subject, sent_at, company, sector
+                FROM sent_log WHERE email = ? ORDER BY sent_at ASC LIMIT 1
+            """, (email.lower().strip(),)).fetchone()
+            return dict(row) if row else None
+
+    def get_followups_for_email(self, email: str) -> list[dict]:
+        """Belirli bir e-posta için tüm follow-up kayıtlarını döndür."""
+        with self._conn() as conn:
+            rows = conn.execute("""
+                SELECT id, email, step, status, subject, body_text, body_html,
+                       scheduled_at, sent_at
+                FROM followups WHERE email = ?
+                ORDER BY step ASC
+            """, (email.lower().strip(),)).fetchall()
+            return [dict(r) for r in rows]
+
     # ─── RESPONSES (v4) ──────────────────────────────────────────
 
     def save_response(self, email: str, classification: str,

@@ -41,9 +41,9 @@ class Config:
     QC_MAX_RETRIES     = int(os.getenv("QC_MAX_RETRIES", "5"))
     PARALLEL_WORKERS   = int(os.getenv("PARALLEL_WORKERS", "5"))
     FOLLOWUP_ENABLED   = os.getenv("FOLLOWUP_ENABLED", "true").lower() == "true"
-    FOLLOWUP_DAY_1     = int(os.getenv("FOLLOWUP_DAY_1", "2"))
-    FOLLOWUP_DAY_2     = int(os.getenv("FOLLOWUP_DAY_2", "5"))
-    FOLLOWUP_DAY_3     = int(os.getenv("FOLLOWUP_DAY_3", "10"))
+    FOLLOWUP_DAY_1     = int(os.getenv("FOLLOWUP_DAY_1", "3"))
+    FOLLOWUP_DAY_2     = int(os.getenv("FOLLOWUP_DAY_2", "7"))
+    FOLLOWUP_DAY_3     = int(os.getenv("FOLLOWUP_DAY_3", "14"))
 
     # ─── OTOMASYON ───────────────────────────────────────────────
     SECTORS            = os.getenv("SECTORS",
