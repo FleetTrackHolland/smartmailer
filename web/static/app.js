@@ -1100,17 +1100,17 @@ let meetingPollInterval = null;
 let meetingMessages = [];
 
 const AGENT_ICONS = {
-    'Orchestrator': '/static/img/agent_orchestrator.png',
-    'AI Copywriter': '/static/img/agent_copywriter.png',
-    'AI Quality Control': '/static/img/agent_quality.png',
-    'Lead Scorer': '/static/img/agent_scorer.png',
-    'Recon Agent': '/static/img/agent_recon.png',
-    'Lead Finder': '/static/img/agent_finder.png',
-    'Follow-Up Engine': '/static/img/agent_followup.png',
-    'Response Tracker': '/static/img/agent_tracker.png',
-    'Watchdog': '/static/img/agent_watchdog.png',
-    'Compliance (AVG)': '/static/img/agent_compliance.png',
-    'A/B Test Engine': '/static/img/agent_abtest.png'
+    'Orchestrator': '/img/agent_orchestrator.png',
+    'AI Copywriter': '/img/agent_copywriter.png',
+    'AI Quality Control': '/img/agent_quality.png',
+    'Lead Scorer': '/img/agent_scorer.png',
+    'Recon Agent': '/img/agent_recon.png',
+    'Lead Finder': '/img/agent_finder.png',
+    'Follow-Up Engine': '/img/agent_followup.png',
+    'Response Tracker': '/img/agent_tracker.png',
+    'Watchdog': '/img/agent_watchdog.png',
+    'Compliance (AVG)': '/img/agent_compliance.png',
+    'A/B Test Engine': '/img/agent_abtest.png'
 };
 
 async function startAgentMeeting() {
@@ -1124,12 +1124,35 @@ async function startAgentMeeting() {
         document.getElementById('btn-start-meeting').style.display = 'none';
         document.getElementById('btn-stop-meeting').style.display = 'inline-flex';
         document.getElementById('meeting-chat-stream').innerHTML = '';
+
+        // ── Toplantı masasını aktifleştir
+        document.querySelector('.meeting-table')?.classList.add('active');
+
+        // ── Agent'ları sırayla masaya yürüt
+        const seats = document.querySelectorAll('.meeting-seat');
+        seats.forEach((seat, i) => {
+            // Önce yürüme animasyonu başlat
+            setTimeout(() => {
+                seat.classList.remove('idle', 'at-desk');
+                seat.classList.add('walking');
+            }, i * 300);
+
+            // Sonra masaya oturt
+            setTimeout(() => {
+                seat.classList.remove('walking');
+                seat.classList.add('at-table');
+            }, i * 300 + 1800);
+        });
+
         showToast('Toplantı başladı — agent\'lar toplanıyor...', 'success');
 
-        // İlk mesajları göster
-        if (d.messages && d.messages.length > 0) {
-            displayMeetingMessages(d.messages);
-        }
+        // Tüm agent'lar oturduktan sonra mesajları göster
+        const totalWalkTime = seats.length * 300 + 2500;
+        setTimeout(() => {
+            if (d.messages && d.messages.length > 0) {
+                displayMeetingMessages(d.messages);
+            }
+        }, totalWalkTime);
 
         // Yeni mesajları polling ile getir
         meetingPollInterval = setInterval(pollMeetingMessages, 8000);
@@ -1146,10 +1169,28 @@ function stopAgentMeeting() {
     document.getElementById('btn-start-meeting').style.display = 'inline-flex';
     document.getElementById('btn-stop-meeting').style.display = 'none';
 
-    // Tüm konuşan agent'ları durdur
+    // Konuşanları durdur
     document.querySelectorAll('.meeting-seat.speaking').forEach(s => s.classList.remove('speaking'));
     document.getElementById('speech-bubbles-overlay').innerHTML = '';
-    showToast('Toplantı sona erdi', 'info');
+
+    // ── Toplantı masasını deaktif et
+    document.querySelector('.meeting-table')?.classList.remove('active');
+
+    // ── Agent'ları sırayla masalarına geri yürüt
+    const seats = document.querySelectorAll('.meeting-seat');
+    seats.forEach((seat, i) => {
+        setTimeout(() => {
+            seat.classList.remove('at-table');
+            seat.classList.add('walking');
+        }, i * 200);
+
+        setTimeout(() => {
+            seat.classList.remove('walking');
+            seat.classList.add('at-desk', 'idle');
+        }, i * 200 + 1800);
+    });
+
+    showToast('Toplantı sona erdi — agent\'lar masalarına dönüyor', 'info');
 }
 
 async function pollMeetingMessages() {
@@ -1220,11 +1261,19 @@ function displayMeetingMessages(messages) {
     });
 }
 
+// ═══ OFFICE INIT — Agent'ları ofiste masalarına yerleştir ═══
+function initOfficeAgents() {
+    document.querySelectorAll('.meeting-seat').forEach(seat => {
+        seat.classList.add('at-desk', 'idle');
+    });
+}
+
 // ═══ INIT ═══
 document.addEventListener('DOMContentLoaded', () => {
     refreshAll();
     initSocketIO();
     initSectorUI();
+    initOfficeAgents();
     // Socket.IO aktifse daha az polling (60s), değilse 30s
     autoRefreshInterval = setInterval(refreshAll, socket ? 60000 : 30000);
 });

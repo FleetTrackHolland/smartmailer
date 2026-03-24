@@ -872,8 +872,8 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .meeting-office {
     position: relative;
     width: 100%;
-    height: 500px;
-    background: linear-gradient(180deg, #0a0a1a 0%, #0d0d22 100%);
+    height: 700px;
+    background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
     border-radius: var(--radius-sm);
     border: 1px solid var(--border);
     overflow: hidden;
@@ -886,7 +886,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0.35;
+    opacity: 0.6;
     pointer-events: none;
     z-index: 0;
 }
@@ -895,8 +895,20 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse at center, rgba(124,92,252,0.06) 0%, transparent 70%);
+    background: radial-gradient(ellipse at center, rgba(124,92,252,0.04) 0%, transparent 70%);
     pointer-events: none;
+    z-index: 1;
+}
+
+/* ─── 3D Perspective Container ─── */
+.meeting-office {
+    perspective: 1200px;
+}
+
+.meeting-office-inner {
+    transform-style: preserve-3d;
+    width: 100%;
+    height: 100%;
 }
 
 /* ─── Toplantı Masası ─── */
@@ -904,10 +916,17 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
-    width: 280px;
-    height: 160px;
+    transform: translate(-50%, -50%) rotateX(25deg);
+    width: 320px;
+    height: 180px;
     z-index: 1;
+    transition: all 1s var(--ease);
+    opacity: 0.3;
+}
+
+.meeting-table.active {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotateX(15deg) scale(1.05);
 }
 
 .table-surface {
@@ -916,7 +935,8 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     background: linear-gradient(135deg, #1a1a3e, #24244a);
     border-radius: 50%;
     border: 2px solid rgba(124,92,252,0.25);
-    box-shadow: 0 0 40px rgba(124,92,252,0.1), inset 0 0 30px rgba(0,0,0,0.3);
+    box-shadow: 0 0 40px rgba(124,92,252,0.1), inset 0 0 30px rgba(0,0,0,0.3),
+                0 20px 60px rgba(0,0,0,0.4);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -929,7 +949,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     letter-spacing: 1px;
 }
 
-/* ─── Agent Koltukları ─── */
+/* ─── Agent Koltukları — artık animasyonlu ─── */
 .meeting-seat {
     position: absolute;
     display: flex;
@@ -937,12 +957,39 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     align-items: center;
     gap: 4px;
     z-index: 5;
-    transition: all 0.4s var(--ease);
     cursor: pointer;
+    /* Smooth walking transition */
+    transition: top 2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                left 2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+                transform 2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-.meeting-seat:hover { transform: scale(1.1); }
+.meeting-seat:hover { z-index: 20; }
+.meeting-seat:hover .agent-avatar { transform: scale(1.15) translateY(-3px); }
 
+/* Idle — masada çalışırken hafif sallanma */
+.meeting-seat.idle {
+    animation: idleBob 3s ease-in-out infinite;
+}
+
+@keyframes idleBob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+/* Yürüme animasyonu — toplantıya giderken zıplama */
+.meeting-seat.walking .agent-avatar {
+    animation: walkBounce 0.4s ease-in-out infinite;
+}
+
+@keyframes walkBounce {
+    0%, 100% { transform: translateY(0) scaleX(1); }
+    25% { transform: translateY(-8px) scaleX(0.95); }
+    50% { transform: translateY(0) scaleX(1.02); }
+    75% { transform: translateY(-6px) scaleX(0.97); }
+}
+
+/* Konuşma efekti */
 .meeting-seat.speaking .agent-avatar {
     box-shadow: 0 0 20px rgba(0,214,143,0.5), 0 0 40px rgba(0,214,143,0.2);
     border-color: var(--green);
@@ -954,6 +1001,24 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     50% { box-shadow: 0 0 30px rgba(0,214,143,0.7), 0 0 60px rgba(0,214,143,0.2); }
 }
 
+/* Masada çalışma efekti — mini monitör glow */
+.meeting-seat.idle::after {
+    content: '💻';
+    position: absolute;
+    bottom: -8px;
+    font-size: 14px;
+    opacity: 0.6;
+    animation: screenGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes screenGlow {
+    0% { opacity: 0.4; filter: brightness(0.8); }
+    100% { opacity: 0.8; filter: brightness(1.2); }
+}
+
+/* Toplantıda — monitör kaldır */
+.meeting-seat.at-table::after { display: none; }
+
 .agent-avatar {
     width: 64px;
     height: 64px;
@@ -964,7 +1029,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     align-items: center;
     justify-content: center;
     font-size: 22px;
-    transition: all 0.3s var(--ease);
+    transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.3s var(--ease);
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     overflow: hidden;
 }
@@ -999,20 +1064,57 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     text-align: center;
     max-width: 70px;
     white-space: nowrap;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
 }
 
-/* Seat positions — elliptical around the table */
-.seat-0  { top: 10px;  left: 50%;  transform: translateX(-50%); z-index: 8; }
-.seat-1  { top: 55px;  left: 78%; }
-.seat-2  { top: 55px;  left: 20%; }
-.seat-3  { top: 160px; left: 90%; }
-.seat-4  { top: 160px; left: 2%; }
-.seat-5  { top: 280px; left: 88%; }
-.seat-6  { top: 280px; left: 5%; }
-.seat-7  { top: 380px; left: 75%; }
-.seat-8  { top: 380px; left: 18%; }
-.seat-9  { top: 410px; left: 55%; }
-.seat-10 { top: 410px; left: 35%; }
+/* ═══ DESK POSITIONS — agent'lar ofiste dağılmış çalışıyor ═══ */
+.seat-0.at-desk  { top: 30px;  left: 50%;  }
+.seat-1.at-desk  { top: 80px;  left: 12%; }
+.seat-2.at-desk  { top: 80px;  left: 85%; }
+.seat-3.at-desk  { top: 200px; left: 5%; }
+.seat-4.at-desk  { top: 200px; left: 92%; }
+.seat-5.at-desk  { top: 350px; left: 8%; }
+.seat-6.at-desk  { top: 350px; left: 88%; }
+.seat-7.at-desk  { top: 500px; left: 15%; }
+.seat-8.at-desk  { top: 500px; left: 80%; }
+.seat-9.at-desk  { top: 600px; left: 35%; }
+.seat-10.at-desk { top: 600px; left: 60%; }
+
+/* ═══ MEETING POSITIONS — toplantı masası etrafında ═══ */
+.seat-0.at-table  { top: 180px; left: 50%;  transform: translateX(-50%); z-index: 8; }
+.seat-1.at-table  { top: 230px; left: 72%; }
+.seat-2.at-table  { top: 230px; left: 24%; }
+.seat-3.at-table  { top: 320px; left: 80%; }
+.seat-4.at-table  { top: 320px; left: 14%; }
+.seat-5.at-table  { top: 420px; left: 78%; }
+.seat-6.at-table  { top: 420px; left: 18%; }
+.seat-7.at-table  { top: 500px; left: 68%; }
+.seat-8.at-table  { top: 500px; left: 28%; }
+.seat-9.at-table  { top: 540px; left: 55%; }
+.seat-10.at-table { top: 540px; left: 40%; }
+
+/* ─── Status indicator dot ─── */
+.agent-status-dot {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--green);
+    border: 2px solid #0d1117;
+    z-index: 6;
+}
+
+.agent-status-dot.busy {
+    background: #f59e0b;
+    animation: busyPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes busyPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
 
 /* ─── Konuşma Baloncukları ─── */
 .speech-bubbles-overlay {
