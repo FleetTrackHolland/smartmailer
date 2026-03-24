@@ -585,17 +585,28 @@ async function loadAutomationStatus() {
     const actionText = document.getElementById('auto-action-text');
     const startBtn = document.getElementById('btn-start-auto');
     const stopBtn = document.getElementById('btn-stop-auto');
-    if (data.running) {
-        indicator.className = 'auto-indicator running'; statusText.textContent = 'Çalışıyor — Aktif';
+
+    // Cron activity detection
+    let cronActive = false;
+    if (data.last_cycle_at) {
+        cronActive = (Date.now() - new Date(data.last_cycle_at).getTime()) < 15 * 60 * 1000;
+    }
+    const isActive = data.running || cronActive;
+
+    if (isActive) {
+        indicator.className = 'auto-indicator running';
+        statusText.textContent = data.running ? 'Çalışıyor — Aktif' : 'Cron Aktif';
         actionText.textContent = data.last_action || '...';
         startBtn.style.display = 'none'; stopBtn.style.display = 'inline-flex';
         setText('cycle-badge', `Cycle ${data.cycle || 0}`);
         setText('auto-last-cycle', data.last_cycle_at ? `Son: ${fmtDate(data.last_cycle_at)}` : 'Son: —');
         updatePipelineViz(data.last_action || '');
+        updateModeBadge(true, cronActive);
     } else {
         indicator.className = 'auto-indicator stopped'; statusText.textContent = 'Durdurulmuş';
         actionText.textContent = data.last_action || '—';
         startBtn.style.display = 'inline-flex'; stopBtn.style.display = 'none';
+        updateModeBadge(false, false);
     }
 }
 function updatePipelineViz(action) {
