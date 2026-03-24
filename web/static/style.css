@@ -873,22 +873,98 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     position: relative;
     width: 100%;
     height: 800px;
-    background: linear-gradient(180deg, #e8ecf1 0%, #d1d8e0 100%);
+    background: linear-gradient(180deg, #c8d6e5 0%, #dfe6ed 30%, #e8ecf1 60%, #d1d8e0 100%);
     border-radius: var(--radius-sm);
     border: 1px solid rgba(0,0,0,0.1);
     overflow: hidden;
     margin-bottom: 16px;
+    perspective: 1200px;
 }
 
-.office-bg-img {
+/* ─── CSS Office Floor ─── */
+.office-floor {
     position: absolute;
     inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: 0.85;
-    pointer-events: none;
+    background:
+        linear-gradient(180deg, rgba(180,200,220,0.3) 0%, rgba(210,180,140,0.15) 100%),
+        repeating-linear-gradient(90deg, rgba(160,140,110,0.08) 0px, rgba(160,140,110,0.08) 1px, transparent 1px, transparent 80px),
+        repeating-linear-gradient(0deg, rgba(160,140,110,0.06) 0px, rgba(160,140,110,0.06) 1px, transparent 1px, transparent 80px);
     z-index: 0;
+}
+
+/* ─── CSS Desks ─── */
+.office-furniture { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+
+.css-desk {
+    position: absolute;
+    width: 120px;
+    height: 50px;
+    background: linear-gradient(135deg, #b0bec5 0%, #90a4ae 50%, #78909c 100%);
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.3);
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Monitor on desk */
+.css-desk::before {
+    content: '🖥️';
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 20px;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
+}
+
+/* Chair next to desk */
+.css-desk::after {
+    content: '';
+    position: absolute;
+    bottom: -20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 16px;
+    background: linear-gradient(135deg, #546e7a, #37474f);
+    border-radius: 4px 4px 2px 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* ─── CSS Windows ─── */
+.css-window {
+    position: absolute;
+    top: 0;
+    width: 80px;
+    height: 40px;
+    background: linear-gradient(180deg, #87ceeb 0%, #b3e5fc 40%, rgba(255,255,255,0.5) 100%);
+    border-radius: 0 0 4px 4px;
+    box-shadow: inset 0 0 10px rgba(135,206,235,0.3), 0 2px 6px rgba(0,0,0,0.1);
+    border: 1px solid rgba(255,255,255,0.4);
+    border-top: none;
+}
+
+.css-window::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: rgba(255,255,255,0.5);
+}
+
+/* ─── CSS Plants ─── */
+.css-plant {
+    position: absolute;
+    font-size: 24px;
+    z-index: 2;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.2));
+    animation: plantSway 4s ease-in-out infinite;
+}
+
+@keyframes plantSway {
+    0%, 100% { transform: rotate(0deg); }
+    50% { transform: rotate(3deg); }
 }
 
 /* Isometric floor grid overlay for depth */
@@ -1181,41 +1257,128 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .meeting-seat.depth-near  { transform: scale(1.1);  z-index: 7; }
 .meeting-seat.depth-front { transform: scale(1.2);  z-index: 9; }
 /* ═══════════════════════════════════════════ */
-/* ═══ CHIBI IMAGE AVATAR SYSTEM ════════════ */
+/* ═══ SVG CHIBI CHARACTER SYSTEM ═══════════ */
 /* ═══════════════════════════════════════════ */
 
 .agent-avatar {
     width: 80px;
-    height: 80px;
-    border-radius: 8px;
-    background: transparent;
-    border: none;
+    height: 90px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
-    transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease);
-    box-shadow: none;
     overflow: visible;
     filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
 }
 
-.agent-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    border-radius: 0;
-    transition: transform 0.3s var(--ease);
-}
-
-.meeting-seat:hover .agent-avatar img {
-    transform: scale(1.15) translateY(-4px);
-}
-
 .agent-avatar.boss {
     width: 90px;
-    height: 90px;
+    height: 95px;
     filter: drop-shadow(0 0 12px rgba(255,215,0,0.5)) drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+
+/* ─── SVG Base ─── */
+.chibi-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+/* ─── Leg positioning (below body) ─── */
+.chibi-leg {
+    transform-origin: center top;
+}
+.chibi-leg-l { transform: translate(0, 55px); }
+.chibi-leg-r { transform: translate(0, 55px); }
+
+/* ─── Arm positioning (at shoulder level) ─── */
+.chibi-arm {
+    transform-origin: center top;
+}
+.chibi-arm-l { transform: translate(0, 36px); }
+.chibi-arm-r { transform: translate(0, 36px); }
+
+/* ═══ IDLE STATE — arms slightly swinging, breathing ═══ */
+.meeting-seat.idle .chibi-arm-l {
+    animation: svgArmIdleL 2s ease-in-out infinite;
+}
+.meeting-seat.idle .chibi-arm-r {
+    animation: svgArmIdleR 2s ease-in-out infinite 1s;
+}
+.meeting-seat.idle .chibi-svg {
+    animation: svgBreathe 3s ease-in-out infinite;
+}
+
+@keyframes svgArmIdleL {
+    0%, 100% { transform: translate(0, 36px) rotate(0deg); }
+    50% { transform: translate(0, 36px) rotate(-8deg); }
+}
+@keyframes svgArmIdleR {
+    0%, 100% { transform: translate(0, 36px) rotate(0deg); }
+    50% { transform: translate(0, 36px) rotate(8deg); }
+}
+@keyframes svgBreathe {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+}
+
+/* ═══ WALKING — arms and legs swing alternately ═══ */
+.meeting-seat.walking .chibi-arm-l {
+    animation: svgArmWalkL 0.4s ease-in-out infinite !important;
+}
+.meeting-seat.walking .chibi-arm-r {
+    animation: svgArmWalkR 0.4s ease-in-out infinite !important;
+}
+.meeting-seat.walking .chibi-leg-l {
+    animation: svgLegWalkL 0.4s ease-in-out infinite !important;
+}
+.meeting-seat.walking .chibi-leg-r {
+    animation: svgLegWalkR 0.4s ease-in-out infinite !important;
+}
+.meeting-seat.walking .chibi-svg {
+    animation: svgWalkBounce 0.4s ease-in-out infinite !important;
+}
+.meeting-seat.walking .chibi-head {
+    animation: svgHeadBob 0.4s ease-in-out infinite;
+}
+
+@keyframes svgArmWalkL {
+    0%, 100% { transform: translate(0, 36px) rotate(35deg); }
+    50% { transform: translate(0, 36px) rotate(-35deg); }
+}
+@keyframes svgArmWalkR {
+    0%, 100% { transform: translate(0, 36px) rotate(-35deg); }
+    50% { transform: translate(0, 36px) rotate(35deg); }
+}
+@keyframes svgLegWalkL {
+    0%, 100% { transform: translate(0, 55px) rotate(-25deg); }
+    50% { transform: translate(0, 55px) rotate(25deg); }
+}
+@keyframes svgLegWalkR {
+    0%, 100% { transform: translate(0, 55px) rotate(25deg); }
+    50% { transform: translate(0, 55px) rotate(-25deg); }
+}
+@keyframes svgWalkBounce {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    25% { transform: translateY(-6px) rotate(-2deg); }
+    50% { transform: translateY(0) rotate(0deg); }
+    75% { transform: translateY(-6px) rotate(2deg); }
+}
+@keyframes svgHeadBob {
+    0%, 50%, 100% { transform: translateY(0); }
+    25% { transform: translateY(-2px); }
+    75% { transform: translateY(-2px); }
+}
+
+/* ═══ SPEAKING — glow pulse ═══ */
+.meeting-seat.speaking .agent-avatar {
+    filter: drop-shadow(0 0 15px rgba(0,214,143,0.6)) drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+.meeting-seat.speaking .chibi-svg {
+    animation: svgSpeakPulse 0.8s ease-in-out infinite !important;
+}
+@keyframes svgSpeakPulse {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50% { transform: translateY(-3px) scale(1.05); }
 }
 
 /* ─── Name tags ─── */
