@@ -15,11 +15,6 @@ except Exception:
 # Flask uygulamasini yukle — hata olursa basit hata sayfasi goster
 try:
     from web.api import app as application
-    # Start automation thread in production (Passenger doesn't run main.py)
-    import threading
-    from web.api import _auto_start_automation
-    auto_thread = threading.Thread(target=_auto_start_automation, daemon=True)
-    auto_thread.start()
 except Exception as e:
     # Hata detaylarini logla
     error_msg = traceback.format_exc()

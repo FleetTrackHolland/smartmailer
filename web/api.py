@@ -2591,10 +2591,15 @@ def _auto_sync_db():
             log.error(f"[AUTO-SYNC] Hata: {e}")
 
 
-# Auto-sync thread'ini başlat
-_sync_thread = threading.Thread(target=_auto_sync_db, daemon=True, name="DBAutoSync")
-_sync_thread.start()
-log.info("[AUTO-SYNC] Veritabanı otomatik sync aktif — her 30 dakikada bir GitHub'a push edilecek.")
+# Auto-sync thread — sadece doğrudan çalıştırıldığında başlat (Passenger'da değil)
+_is_passenger = os.environ.get("PASSENGER_BASE_URI") or "passenger" in os.environ.get("SERVER_SOFTWARE", "").lower()
+if not _is_passenger:
+    try:
+        _sync_thread = threading.Thread(target=_auto_sync_db, daemon=True, name="DBAutoSync")
+        _sync_thread.start()
+        log.info("[AUTO-SYNC] Veritabanı otomatik sync aktif — her 30 dakikada bir GitHub'a push edilecek.")
+    except Exception as _sync_err:
+        log.warning(f"[AUTO-SYNC] Thread başlatılamadı: {_sync_err}")
 
 
 # ─── MAIN ──────────────────────────────────────────────────────
