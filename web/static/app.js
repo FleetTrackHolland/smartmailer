@@ -13,15 +13,16 @@ let logRefreshInterval = null;
 let currentLeadFilter = 'all';
 
 const AGENT_DESC = {
-    'AI Copywriter': 'Claude AI ile her lead için kişiselleştirilmiş, profesyonel email yazar. Şirket adı, sektörü ve detaylarına göre özgün içerik oluşturur. 3 farklı konu başlığı (A/B/C) üretir. Zamanla müşteri yanıtlarından öğrenerek daha etkili emailler yazar.',
+    'AI Copywriter': 'Claude AI ile her lead için kişiselleştirilmiş, profesyonel email yazar. Şirket adı, sektörü ve detaylarına göre özgün içerik oluşturur. 3 farklı konu başlığı (A/B/C) üretir. ReconAgent istihbaratını kullanarak her emaili hedefin psikolojik profiline göre yazar.',
     'AI Quality Control': 'Yazılan emailleri 15+ kriterde puanlar (konu uzunluğu, spam kelimeleri, kişiselleştirme, CTA, dil hatası, vb). ≥90 puan geçer, altında otomatik revize edilir. Her revizeden sonra puanı neden düştüğünü öğrenir ve gelecekte aynı hatayı yapmaktan kaçınır.',
     'Compliance (AVG)': 'GDPR/AVG uyumluluğunu kontrol eder. Unsubscribe listesi, bounce listesi ve opt-out kayıtlarını yönetir. Her emailde yasal bilgi footeri ekler.',
     'Lead Scorer': 'Claude AI ile lead kalitesini puanlar: şirket büyüklüğü, sektör uyumu, web varlığı, potansiyel filo büyüklüğü gibi kriterlere göre 0-100 puan verir. Hangi tür leadlerin yanıt verdiğini takip edip puanlama modelini geliştirir.',
     'Watchdog': 'Tüm sistemin sağlığını izler: API bağlantıları, veritabanı, email gönderim durumu, agent sağlıkları. Sorun tespit ederse uyarı verir.',
     'A/B Test Engine': '12 email gönderdikten sonra A/B/C konu başlıklarından hangisinin daha çok açıldığını analiz eder. Kazananı otomatik seçer. Zamanla en etkili konu formatını keşfeder.',
-    'Follow-Up Engine': '3 aşamalı otomatik follow-up: 3. gün nazik hatırlatma, 7. gün ek değer teklifi, 14. gün son şans. Yanıt gelirse follow-up iptal. Hangi follow-up aşamasının daha çok yanıt aldığını öğrenir.',
+    'Follow-Up Engine': '3 aşamalı gelişmiş follow-up sistemi: Gün 3 — Social Proof + Curiosity Gap, Gün 7 — ROI Case Study + Value-Add, Gün 14 — FOMO + Scarcity + Loss Aversion ile kapanış. Önceki maillere atıfta bulunarak yazılır. Her aşamada farklı psikolojik teknikler kullanılır.',
     'Response Tracker': 'Gelen yanıtları Claude AI ile sınıflar: İlgili, İlgisiz, Soru, Ofis dışı. İlgili yanıtlar hot lead olarak işaretlenir. Sınıflandırma doğruluğunu sürekli iyileştirir.',
     'Lead Finder': '10+ kaynaktan lead keşfi: DeTelefoongids, Opendi, Telefoonboek.nl, OpenStreetMap, Bing, DuckDuckGo, Startpage, AI bilgi bankası, website crawl, email tahmini. Paralel 5 şehir taraması. Hangi kaynakların daha kaliteli lead verdiğini öğrenir.',
+    'Recon Agent': 'Mail göndermeden ÖNCE hedef şirket hakkında derinlemesine araştırma yapan OSINT ajanı. 3 katmanlı analiz: 1) Website scraping (about, team, services), 2) Email/domain intelligence (kişi adı, rol tespiti), 3) Claude AI ile psikolojik profil — Cialdini\'nin 6 ikna prensibi, Kahneman System 1/2, Maslow ihtiyaçlar hiyerarşisi, nudging teknikleri. Her lead için benzersiz ikna stratejisi üretir.',
 };
 
 // ═══ TAB NAVIGATION ═══
@@ -1088,6 +1089,126 @@ function initSocketIO() {
     } catch (e) {
         console.warn('Socket.IO init hatası:', e);
     }
+}
+
+// ═══════════════════════════════════════════════════════════
+// AGENT TOPLANTI ODASI
+// ═══════════════════════════════════════════════════════════
+let meetingActive = false;
+let meetingPollInterval = null;
+let meetingMessages = [];
+
+const AGENT_ICONS = {
+    'AI Copywriter': '✍️', 'AI Quality Control': '🧠', 'Lead Scorer': '🔮',
+    'Recon Agent': '🕵️', 'Lead Finder': '🔍', 'Follow-Up Engine': '🔄',
+    'Response Tracker': '💬', 'Watchdog': '🛡️', 'Compliance (AVG)': '⚖️',
+    'A/B Test Engine': '🎯'
+};
+
+async function startAgentMeeting() {
+    showToast('Agent toplantısı başlatılıyor...', 'info');
+    const d = await api('/api/agents/meeting', 'POST', { action: 'start' });
+    if (d?.success) {
+        meetingActive = true;
+        meetingMessages = [];
+        document.getElementById('meeting-status-badge').textContent = 'CANLI';
+        document.getElementById('meeting-status-badge').classList.add('active');
+        document.getElementById('btn-start-meeting').style.display = 'none';
+        document.getElementById('btn-stop-meeting').style.display = 'inline-flex';
+        document.getElementById('meeting-chat-stream').innerHTML = '';
+        showToast('Toplantı başladı — agent\'lar toplanıyor...', 'success');
+
+        // İlk mesajları göster
+        if (d.messages && d.messages.length > 0) {
+            displayMeetingMessages(d.messages);
+        }
+
+        // Yeni mesajları polling ile getir
+        meetingPollInterval = setInterval(pollMeetingMessages, 8000);
+    } else {
+        showToast('Toplantı başlatılamadı', 'error');
+    }
+}
+
+function stopAgentMeeting() {
+    meetingActive = false;
+    if (meetingPollInterval) { clearInterval(meetingPollInterval); meetingPollInterval = null; }
+    document.getElementById('meeting-status-badge').textContent = 'Bitti';
+    document.getElementById('meeting-status-badge').classList.remove('active');
+    document.getElementById('btn-start-meeting').style.display = 'inline-flex';
+    document.getElementById('btn-stop-meeting').style.display = 'none';
+
+    // Tüm konuşan agent'ları durdur
+    document.querySelectorAll('.meeting-seat.speaking').forEach(s => s.classList.remove('speaking'));
+    document.getElementById('speech-bubbles-overlay').innerHTML = '';
+    showToast('Toplantı sona erdi', 'info');
+}
+
+async function pollMeetingMessages() {
+    if (!meetingActive) return;
+    const d = await api('/api/agents/meeting', 'POST', { action: 'continue', offset: meetingMessages.length });
+    if (d?.messages && d.messages.length > 0) {
+        displayMeetingMessages(d.messages);
+    }
+    if (d?.finished) {
+        stopAgentMeeting();
+    }
+}
+
+function displayMeetingMessages(messages) {
+    const stream = document.getElementById('meeting-chat-stream');
+    const overlay = document.getElementById('speech-bubbles-overlay');
+
+    messages.forEach((msg, idx) => {
+        meetingMessages.push(msg);
+
+        // Delayed display for dramatic effect
+        setTimeout(() => {
+            // 1. Chat stream message
+            const chatEl = document.createElement('div');
+            chatEl.className = 'chat-msg';
+            const icon = AGENT_ICONS[msg.agent] || '🤖';
+            const time = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+            chatEl.innerHTML = `
+                <div class="chat-msg-avatar">${icon}</div>
+                <div class="chat-msg-content">
+                    <div class="chat-msg-header">
+                        <span class="chat-msg-name">${esc(msg.agent)}</span>
+                        <span class="chat-msg-time">${time}</span>
+                    </div>
+                    <div class="chat-msg-text">${esc(msg.text)}</div>
+                </div>`;
+            stream.appendChild(chatEl);
+            stream.scrollTop = stream.scrollHeight;
+
+            // 2. Highlight speaking agent seat
+            document.querySelectorAll('.meeting-seat.speaking').forEach(s => s.classList.remove('speaking'));
+            const seat = document.querySelector(`.meeting-seat[data-agent="${msg.agent}"]`);
+            if (seat) {
+                seat.classList.add('speaking');
+
+                // 3. Speech bubble near the agent
+                overlay.innerHTML = '';
+                const bubble = document.createElement('div');
+                bubble.className = 'speech-bubble';
+                const truncText = msg.text.length > 80 ? msg.text.substring(0, 80) + '...' : msg.text;
+                bubble.innerHTML = `<div class="bubble-agent">${esc(msg.agent)}</div>${esc(truncText)}`;
+
+                // Position near the seat
+                const seatRect = seat.getBoundingClientRect();
+                const officeRect = document.getElementById('meeting-office').getBoundingClientRect();
+                const bX = seatRect.left - officeRect.left + 30;
+                const bY = seatRect.top - officeRect.top - 60;
+                bubble.style.left = Math.max(10, Math.min(bX, officeRect.width - 220)) + 'px';
+                bubble.style.top = Math.max(5, bY) + 'px';
+                overlay.appendChild(bubble);
+
+                // Clear bubble after delay
+                setTimeout(() => { if (bubble.parentNode) bubble.remove(); }, 6000);
+            }
+
+        }, idx * 2500);
+    });
 }
 
 // ═══ INIT ═══

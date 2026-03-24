@@ -292,6 +292,80 @@
 
     <div class="agents-grid" id="agents-grid"></div>
 
+    <!-- ═══ TOPLANTI ODASI ═══ -->
+    <div class="card meeting-room-card">
+        <div class="card-header">
+            <h3>🏢 Agent Toplantı Odası</h3>
+            <div style="display:flex;gap:8px;align-items:center">
+                <span class="meeting-status-badge" id="meeting-status-badge">Bekleniyor</span>
+                <button class="btn btn-primary btn-sm" id="btn-start-meeting" onclick="startAgentMeeting()">🎙️ Toplantı Başlat</button>
+                <button class="btn btn-danger btn-sm" id="btn-stop-meeting" onclick="stopAgentMeeting()" style="display:none">⏹ Bitir</button>
+            </div>
+        </div>
+
+        <!-- Ofis Alanı — Toplantı Masası -->
+        <div class="meeting-office" id="meeting-office">
+            <div class="meeting-table">
+                <div class="table-surface">
+                    <span class="table-logo">⚡ SmartMailer</span>
+                </div>
+            </div>
+
+            <!-- Agent Koltukları — masa etrafında -->
+            <div class="meeting-seat seat-1" data-agent="AI Copywriter">
+                <div class="agent-avatar">✍️</div>
+                <div class="agent-seat-name">Copywriter</div>
+            </div>
+            <div class="meeting-seat seat-2" data-agent="AI Quality Control">
+                <div class="agent-avatar">🧠</div>
+                <div class="agent-seat-name">QC</div>
+            </div>
+            <div class="meeting-seat seat-3" data-agent="Lead Scorer">
+                <div class="agent-avatar">🔮</div>
+                <div class="agent-seat-name">Scorer</div>
+            </div>
+            <div class="meeting-seat seat-4" data-agent="Recon Agent">
+                <div class="agent-avatar">🕵️</div>
+                <div class="agent-seat-name">Recon</div>
+            </div>
+            <div class="meeting-seat seat-5" data-agent="Lead Finder">
+                <div class="agent-avatar">🔍</div>
+                <div class="agent-seat-name">Finder</div>
+            </div>
+            <div class="meeting-seat seat-6" data-agent="Follow-Up Engine">
+                <div class="agent-avatar">🔄</div>
+                <div class="agent-seat-name">Follow-Up</div>
+            </div>
+            <div class="meeting-seat seat-7" data-agent="Response Tracker">
+                <div class="agent-avatar">💬</div>
+                <div class="agent-seat-name">Tracker</div>
+            </div>
+            <div class="meeting-seat seat-8" data-agent="Watchdog">
+                <div class="agent-avatar">🛡️</div>
+                <div class="agent-seat-name">Watchdog</div>
+            </div>
+            <div class="meeting-seat seat-9" data-agent="Compliance (AVG)">
+                <div class="agent-avatar">⚖️</div>
+                <div class="agent-seat-name">Compliance</div>
+            </div>
+            <div class="meeting-seat seat-10" data-agent="A/B Test Engine">
+                <div class="agent-avatar">🎯</div>
+                <div class="agent-seat-name">A/B Test</div>
+            </div>
+
+            <!-- Konuşma Baloncukları — ofisin üstünde gösterilecek -->
+            <div class="speech-bubbles-overlay" id="speech-bubbles-overlay"></div>
+        </div>
+
+        <!-- Canlı Sohbet Akışı -->
+        <div class="meeting-chat-stream" id="meeting-chat-stream">
+            <div class="chat-placeholder">
+                <span class="chat-placeholder-icon">💡</span>
+                <p>Toplantı başlatıldığında agent'lar burada fikirlerini paylaşır — sistemi geliştirmek için öneriler sunar, performans analizleri yapar ve strateji belirler.</p>
+            </div>
+        </div>
+    </div>
+
     <!-- Agent Self-Improvement Section -->
     <div class="card">
         <div class="card-header"><h3>🧠 Agent Öğrenme Sistemi</h3></div>
