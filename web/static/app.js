@@ -1303,10 +1303,220 @@ function displayMeetingMessages(messages) {
     });
 }
 
+// ═══ SUPER MARIO STYLE CHARACTER GENERATOR ═══
+function generateMarioCharacter(agentName) {
+    const chars = {
+        Orchestrator: {
+            capColor: '#1a237e', capDark: '#0d1b5e', shirt: '#283593', shirtLight: '#3949ab',
+            pants: '#1a237e', shoes: '#4e342e', skin: '#ffcc99', skinDark: '#f0b87a',
+            hair: '#2c3e50', eyeColor: '#1a237e', blush: '#ffab91',
+            capStyle: 'crown', accessory: 'tie', tieColor: '#ffd700',
+        },
+        Copywriter: {
+            capColor: '#7b1fa2', capDark: '#4a148c', shirt: '#9c27b0', shirtLight: '#ba68c8',
+            pants: '#4a148c', shoes: '#3e2723', skin: '#ffe0bd', skinDark: '#f5c5a3',
+            hair: '#7b1fa2', eyeColor: '#4a148c', blush: '#f48fb1',
+            capStyle: 'beret', accessory: 'pencil',
+        },
+        QualityControl: {
+            capColor: '#eceff1', capDark: '#b0bec5', shirt: '#eceff1', shirtLight: '#fafafa',
+            pants: '#37474f', shoes: '#212121', skin: '#ffcc99', skinDark: '#f0b87a',
+            hair: '#5d4037', eyeColor: '#1a1a2e', blush: '#ffccbc',
+            capStyle: 'none', accessory: 'glasses',
+        },
+        Scorer: {
+            capColor: '#1565c0', capDark: '#0d47a1', shirt: '#1976d2', shirtLight: '#42a5f5',
+            pants: '#0d47a1', shoes: '#3e2723', skin: '#ffe0bd', skinDark: '#f5c5a3',
+            hair: '#ffb74d', eyeColor: '#0d47a1', blush: '#ffab91',
+            capStyle: 'cap', accessory: 'none',
+        },
+        Recon: {
+            capColor: '#263238', capDark: '#1a1a1a', shirt: '#37474f', shirtLight: '#546e7a',
+            pants: '#263238', shoes: '#212121', skin: '#d7a87e', skinDark: '#c49066',
+            hair: '#1a1a1a', eyeColor: '#263238', blush: '#e0a98f',
+            capStyle: 'fedora', accessory: 'none',
+        },
+        Finder: {
+            capColor: '#c62828', capDark: '#8e0000', shirt: '#388e3c', shirtLight: '#4caf50',
+            pants: '#1b5e20', shoes: '#4e342e', skin: '#ffcc99', skinDark: '#f0b87a',
+            hair: '#c62828', eyeColor: '#1b5e20', blush: '#ffab91',
+            capStyle: 'cap', accessory: 'none',
+        },
+        FollowUp: {
+            capColor: '#004d40', capDark: '#00251a', shirt: '#00897b', shirtLight: '#26a69a',
+            pants: '#004d40', shoes: '#3e2723', skin: '#d7a87e', skinDark: '#c49066',
+            hair: '#3e2723', eyeColor: '#004d40', blush: '#e0a98f',
+            capStyle: 'beanie', accessory: 'none',
+        },
+        Tracker: {
+            capColor: '#283593', capDark: '#1a237e', shirt: '#3949ab', shirtLight: '#5c6bc0',
+            pants: '#1a237e', shoes: '#3e2723', skin: '#ffe0bd', skinDark: '#f5c5a3',
+            hair: '#1a237e', eyeColor: '#1a237e', blush: '#ffccbc',
+            capStyle: 'cap', accessory: 'headphones',
+        },
+        Watchdog: {
+            capColor: '#b71c1c', capDark: '#7f0000', shirt: '#c62828', shirtLight: '#ef5350',
+            pants: '#8e0000', shoes: '#212121', skin: '#ffcc99', skinDark: '#f0b87a',
+            hair: '#4e342e', eyeColor: '#b71c1c', blush: '#ffab91',
+            capStyle: 'none', accessory: 'shield',
+        },
+        Compliance: {
+            capColor: '#3e2723', capDark: '#1b0f0a', shirt: '#5d4037', shirtLight: '#795548',
+            pants: '#3e2723', shoes: '#212121', skin: '#d7a87e', skinDark: '#c49066',
+            hair: '#1a1a2e', eyeColor: '#3e2723', blush: '#e0a98f',
+            capStyle: 'none', accessory: 'tie', tieColor: '#455a64',
+        },
+        ABTest: {
+            capColor: '#e65100', capDark: '#bf360c', shirt: '#ef6c00', shirtLight: '#ff9800',
+            pants: '#bf360c', shoes: '#3e2723', skin: '#ffe0bd', skinDark: '#f5c5a3',
+            hair: '#212121', eyeColor: '#e65100', blush: '#ffccbc',
+            capStyle: 'cap', accessory: 'none',
+        },
+    };
+
+    const c = chars[agentName] || chars.Orchestrator;
+    const id = agentName.replace(/[^a-zA-Z]/g, '');
+
+    let capSvg = '';
+    if (c.capStyle === 'cap') {
+        capSvg = `
+            <ellipse cx="30" cy="6" rx="20" ry="8" fill="${c.capColor}"/>
+            <rect x="10" y="4" width="40" height="10" rx="5" fill="${c.capColor}"/>
+            <rect x="6" y="12" width="22" height="4" rx="2" fill="${c.capDark}"/>
+            <circle cx="30" cy="7" r="4" fill="${c.capDark}" opacity="0.6"/>`;
+    } else if (c.capStyle === 'crown') {
+        capSvg = `
+            <polygon points="18,10 22,0 26,8 30,-2 34,8 38,0 42,10" fill="#ffd700" stroke="#e6ac00" stroke-width="0.5"/>
+            <rect x="18" y="8" width="24" height="5" rx="1" fill="#ffd700"/>
+            <circle cx="26" cy="10" r="1.5" fill="#e53935"/><circle cx="30" cy="10" r="1.5" fill="#2196f3"/><circle cx="34" cy="10" r="1.5" fill="#4caf50"/>`;
+    } else if (c.capStyle === 'fedora') {
+        capSvg = `
+            <ellipse cx="30" cy="10" rx="24" ry="5" fill="${c.capColor}"/>
+            <ellipse cx="30" cy="6" rx="16" ry="8" fill="${c.capColor}"/>
+            <rect x="20" y="7" width="20" height="3" rx="1" fill="${c.capDark}"/>`;
+    } else if (c.capStyle === 'beanie') {
+        capSvg = `
+            <ellipse cx="30" cy="8" rx="18" ry="12" fill="${c.capColor}"/>
+            <rect x="12" y="10" width="36" height="4" rx="2" fill="${c.capDark}"/>
+            <circle cx="30" cy="-2" r="3" fill="${c.capColor}"/>`;
+    } else if (c.capStyle === 'beret') {
+        capSvg = `
+            <ellipse cx="26" cy="6" rx="18" ry="9" fill="${c.capColor}"/>
+            <circle cx="20" cy="2" r="2" fill="${c.capDark}"/>`;
+    }
+
+    let accessorySvg = '';
+    if (c.accessory === 'glasses') {
+        accessorySvg = `
+            <rect x="17" y="17" width="10" height="7" rx="3" fill="none" stroke="#78909c" stroke-width="1.5"/>
+            <rect x="33" y="17" width="10" height="7" rx="3" fill="none" stroke="#78909c" stroke-width="1.5"/>
+            <line x1="27" y1="20" x2="33" y2="20" stroke="#78909c" stroke-width="1"/>`;
+    } else if (c.accessory === 'tie') {
+        accessorySvg = `<polygon points="28,42 30,38 32,42 30,52" fill="${c.tieColor || '#c62828'}"/>`;
+    } else if (c.accessory === 'headphones') {
+        accessorySvg = `
+            <path d="M12 14 Q12 3 30 3 Q48 3 48 14" fill="none" stroke="#333" stroke-width="2.5"/>
+            <rect x="9" y="12" width="5" height="8" rx="2" fill="#333"/>
+            <rect x="46" y="12" width="5" height="8" rx="2" fill="#333"/>`;
+    } else if (c.accessory === 'shield') {
+        accessorySvg = `<path d="M42 44 L48 42 L48 50 Q48 55 42 57 Q36 55 36 50 L36 42Z" fill="#ffd700" stroke="#e6ac00" stroke-width="0.5"/>`;
+    } else if (c.accessory === 'pencil') {
+        accessorySvg = `<rect x="48" y="38" width="3" height="16" rx="1" fill="#ffeb3b" transform="rotate(15 49 46)"/>
+            <polygon points="49,54 50,58 51,54" fill="#616161" transform="rotate(15 49 46)"/>`;
+    }
+
+    return `<svg class="chibi-svg" viewBox="0 0 60 95" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+            <linearGradient id="skin-${id}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="${c.skin}"/><stop offset="100%" stop-color="${c.skinDark}"/>
+            </linearGradient>
+            <linearGradient id="shirt-${id}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="${c.shirtLight}"/><stop offset="100%" stop-color="${c.shirt}"/>
+            </linearGradient>
+            <radialGradient id="cheek-${id}" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="${c.blush}" stop-opacity="0.6"/><stop offset="100%" stop-color="${c.blush}" stop-opacity="0"/>
+            </radialGradient>
+        </defs>
+        <!-- Ground shadow -->
+        <g class="chibi-shadow"><ellipse cx="30" cy="93" rx="20" ry="4" fill="rgba(0,0,0,0.2)"/></g>
+        <!-- Shoes -->
+        <g class="chibi-leg chibi-leg-l">
+            <rect x="19" y="0" width="9" height="16" rx="3" fill="${c.pants}"/>
+            <ellipse cx="22" cy="16" rx="7" ry="4" fill="${c.shoes}"/>
+            <ellipse cx="22" cy="15" rx="5" ry="2.5" fill="${c.shoes}" opacity="0.7"/>
+        </g>
+        <g class="chibi-leg chibi-leg-r">
+            <rect x="32" y="0" width="9" height="16" rx="3" fill="${c.pants}"/>
+            <ellipse cx="38" cy="16" rx="7" ry="4" fill="${c.shoes}"/>
+            <ellipse cx="38" cy="15" rx="5" ry="2.5" fill="${c.shoes}" opacity="0.7"/>
+        </g>
+        <!-- Body (overalls style) -->
+        <g class="chibi-body">
+            <rect x="14" y="36" width="32" height="26" rx="8" fill="url(#shirt-${id})"/>
+            <!-- Overall straps -->
+            <rect x="18" y="36" width="4" height="12" rx="1" fill="${c.pants}" opacity="0.7"/>
+            <rect x="38" y="36" width="4" height="12" rx="1" fill="${c.pants}" opacity="0.7"/>
+            <!-- Buttons -->
+            <circle cx="20" cy="48" r="2" fill="${c.pants}" opacity="0.5"/>
+            <circle cx="40" cy="48" r="2" fill="${c.pants}" opacity="0.5"/>
+            <!-- Belt/waist -->
+            <rect x="14" y="54" width="32" height="4" rx="2" fill="${c.pants}" opacity="0.4"/>
+            ${accessorySvg}
+        </g>
+        <!-- Arms with gloved hands -->
+        <g class="chibi-arm chibi-arm-l">
+            <rect x="6" y="0" width="9" height="22" rx="4.5" fill="${c.shirtLight}"/>
+            <circle cx="10" cy="22" r="5" fill="${c.skin}" opacity="0.95"/>
+        </g>
+        <g class="chibi-arm chibi-arm-r">
+            <rect x="45" y="0" width="9" height="22" rx="4.5" fill="${c.shirtLight}"/>
+            <circle cx="50" cy="22" r="5" fill="${c.skin}" opacity="0.95"/>
+        </g>
+        <!-- HEAD — big Mario-style -->
+        <g class="chibi-head">
+            <!-- Face -->
+            <circle cx="30" cy="20" r="20" fill="url(#skin-${id})"/>
+            <!-- Ears -->
+            <circle cx="11" cy="20" r="4" fill="url(#skin-${id})"/>
+            <circle cx="11" cy="20" r="2.5" fill="${c.skinDark}" opacity="0.3"/>
+            <circle cx="49" cy="20" r="4" fill="url(#skin-${id})"/>
+            <circle cx="49" cy="20" r="2.5" fill="${c.skinDark}" opacity="0.3"/>
+            <!-- Eyebrows -->
+            <rect x="18" y="13" width="8" height="2.5" rx="1" fill="${c.hair}" opacity="0.8"/>
+            <rect x="34" y="13" width="8" height="2.5" rx="1" fill="${c.hair}" opacity="0.8"/>
+            <!-- Eyes (big, expressive) -->
+            <ellipse cx="23" cy="20" rx="5" ry="5.5" fill="#fff"/>
+            <circle cx="24" cy="20" r="3" fill="${c.eyeColor}"/>
+            <circle cx="25" cy="19" r="1.3" fill="#fff" opacity="0.9"/>
+            <ellipse cx="37" cy="20" rx="5" ry="5.5" fill="#fff"/>
+            <circle cx="36" cy="20" r="3" fill="${c.eyeColor}"/>
+            <circle cx="37" cy="19" r="1.3" fill="#fff" opacity="0.9"/>
+            <!-- Nose -->
+            <ellipse cx="30" cy="24" rx="3" ry="2.5" fill="${c.skinDark}"/>
+            <ellipse cx="30" cy="23.5" rx="2" ry="1.5" fill="${c.skin}" opacity="0.5"/>
+            <!-- Mouth -->
+            <path d="M26 28 Q30 32 34 28" stroke="#a0522d" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <!-- Cheek blush -->
+            <circle cx="15" cy="24" r="4" fill="url(#cheek-${id})"/>
+            <circle cx="45" cy="24" r="4" fill="url(#cheek-${id})"/>
+            <!-- Hair / Cap -->
+            ${c.capStyle !== 'none' ? capSvg : `<path d="M12 12 Q18 -4 30 2 Q42 -4 48 12 Q44 6 30 8 Q16 6 12 12Z" fill="${c.hair}"/>`}
+        </g>
+    </svg>`;
+}
+
 // ═══ OFFICE INIT — Agent'ları ofiste masalarına yerleştir ═══
 function initOfficeAgents() {
     document.querySelectorAll('.meeting-seat').forEach(seat => {
         seat.classList.add('at-desk', 'idle');
+
+        // Generate premium Mario-style SVG character
+        const agentName = seat.dataset.agent;
+        const avatarDiv = seat.querySelector('.agent-avatar');
+        if (avatarDiv && agentName) {
+            avatarDiv.innerHTML = generateMarioCharacter(agentName);
+        }
+
         // Apply initial depth scaling
         setTimeout(() => applyDepthScaling(seat), 100);
 
