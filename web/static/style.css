@@ -872,8 +872,8 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .meeting-office {
     position: relative;
     width: 100%;
-    height: 700px;
-    background: linear-gradient(180deg, #0d1117 0%, #161b22 100%);
+    height: 800px;
+    background: linear-gradient(180deg, #0b0e18 0%, #111827 100%);
     border-radius: var(--radius-sm);
     border: 1px solid var(--border);
     overflow: hidden;
@@ -886,9 +886,51 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0.6;
+    opacity: 0.75;
     pointer-events: none;
     z-index: 0;
+}
+
+/* Isometric floor grid overlay for depth */
+.meeting-office::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        linear-gradient(rgba(124,92,252,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(124,92,252,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+    transform: perspective(600px) rotateX(45deg);
+    transform-origin: center bottom;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.4;
+}
+
+/* Floating particle container */
+.office-particles {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    overflow: hidden;
+}
+
+.particle {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: rgba(124,92,252,0.5);
+    border-radius: 50%;
+    animation: floatParticle 8s linear infinite;
+    opacity: 0;
+}
+
+@keyframes floatParticle {
+    0% { opacity: 0; transform: translateY(0) scale(0.5); }
+    20% { opacity: 0.7; }
+    80% { opacity: 0.3; }
+    100% { opacity: 0; transform: translateY(-200px) scale(1.2); }
 }
 
 .meeting-office::before {
@@ -1002,26 +1044,74 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 }
 
 /* Masada çalışma efekti — mini monitör glow */
+.meeting-seat.idle::before {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    width: 50px;
+    height: 12px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.5) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: -1;
+    animation: shadowPulse 3s ease-in-out infinite;
+}
+
+@keyframes shadowPulse {
+    0%, 100% { transform: scaleX(1); opacity: 0.5; }
+    50% { transform: scaleX(1.15); opacity: 0.7; }
+}
+
 .meeting-seat.idle::after {
     content: '💻';
     position: absolute;
-    bottom: -8px;
-    font-size: 14px;
-    opacity: 0.6;
+    bottom: -22px;
+    font-size: 16px;
+    opacity: 0.7;
     animation: screenGlow 2s ease-in-out infinite alternate;
+    filter: drop-shadow(0 0 4px rgba(100,149,237,0.5));
 }
 
 @keyframes screenGlow {
-    0% { opacity: 0.4; filter: brightness(0.8); }
-    100% { opacity: 0.8; filter: brightness(1.2); }
+    0% { opacity: 0.5; filter: drop-shadow(0 0 2px rgba(100,149,237,0.3)); }
+    100% { opacity: 0.9; filter: drop-shadow(0 0 8px rgba(100,149,237,0.7)); }
+}
+
+/* Walking ground shadow */
+.meeting-seat.walking::before {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    width: 40px;
+    height: 10px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: -1;
+    animation: walkShadow 0.4s ease-in-out infinite;
+}
+
+@keyframes walkShadow {
+    0%, 100% { transform: scaleX(1); }
+    50% { transform: scaleX(0.7); }
+}
+
+/* At table ground shadow */
+.meeting-seat.at-table::before {
+    content: '';
+    position: absolute;
+    bottom: -10px;
+    width: 45px;
+    height: 10px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: -1;
 }
 
 /* Toplantıda — monitör kaldır */
 .meeting-seat.at-table::after { display: none; }
 
 .agent-avatar {
-    width: 64px;
-    height: 64px;
+    width: 68px;
+    height: 68px;
     border-radius: 50%;
     background: linear-gradient(135deg, #1e1e3f, #2a2a50);
     border: 2px solid var(--border-hover);
@@ -1030,8 +1120,9 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     justify-content: center;
     font-size: 22px;
     transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.3s var(--ease);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4), 0 0 15px rgba(124,92,252,0.1);
     overflow: hidden;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
 }
 
 .agent-avatar img {
@@ -1039,13 +1130,19 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     height: 100%;
     object-fit: cover;
     border-radius: 50%;
+    transition: transform 0.3s var(--ease);
+}
+
+.meeting-seat:hover .agent-avatar img {
+    transform: scale(1.1);
 }
 
 .agent-avatar.boss {
-    width: 76px;
-    height: 76px;
+    width: 80px;
+    height: 80px;
     border: 3px solid #ffd700;
-    box-shadow: 0 0 20px rgba(255,215,0,0.4), 0 0 40px rgba(255,215,0,0.15);
+    box-shadow: 0 0 25px rgba(255,215,0,0.5), 0 0 50px rgba(255,215,0,0.15), 0 4px 15px rgba(0,0,0,0.4);
+    filter: drop-shadow(0 0 8px rgba(255,215,0,0.3));
 }
 
 .boss-name {
@@ -1053,45 +1150,50 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     font-size: 10px !important;
     font-weight: 800 !important;
     letter-spacing: 1px !important;
+    text-shadow: 0 0 10px rgba(255,215,0,0.4) !important;
 }
 
 .agent-seat-name {
     font-size: 9px;
     font-weight: 700;
-    color: var(--text-3);
+    color: rgba(255,255,255,0.85);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     text-align: center;
     max-width: 70px;
     white-space: nowrap;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+    text-shadow: 0 1px 6px rgba(0,0,0,0.9), 0 0 10px rgba(124,92,252,0.3);
+    background: rgba(0,0,0,0.4);
+    padding: 2px 6px;
+    border-radius: 4px;
+    backdrop-filter: blur(4px);
 }
 
 /* ═══ DESK POSITIONS — agent'lar ofiste dağılmış çalışıyor ═══ */
-.seat-0.at-desk  { top: 30px;  left: 50%;  }
-.seat-1.at-desk  { top: 80px;  left: 12%; }
-.seat-2.at-desk  { top: 80px;  left: 85%; }
-.seat-3.at-desk  { top: 200px; left: 5%; }
-.seat-4.at-desk  { top: 200px; left: 92%; }
-.seat-5.at-desk  { top: 350px; left: 8%; }
-.seat-6.at-desk  { top: 350px; left: 88%; }
-.seat-7.at-desk  { top: 500px; left: 15%; }
-.seat-8.at-desk  { top: 500px; left: 80%; }
-.seat-9.at-desk  { top: 600px; left: 35%; }
-.seat-10.at-desk { top: 600px; left: 60%; }
+.seat-0.at-desk  { top: 25px;  left: 48%;  }
+.seat-1.at-desk  { top: 100px; left: 10%; }
+.seat-2.at-desk  { top: 100px; left: 86%; }
+.seat-3.at-desk  { top: 220px; left: 4%; }
+.seat-4.at-desk  { top: 220px; left: 93%; }
+.seat-5.at-desk  { top: 380px; left: 6%; }
+.seat-6.at-desk  { top: 380px; left: 90%; }
+.seat-7.at-desk  { top: 540px; left: 12%; }
+.seat-8.at-desk  { top: 540px; left: 82%; }
+.seat-9.at-desk  { top: 680px; left: 32%; }
+.seat-10.at-desk { top: 680px; left: 62%; }
 
 /* ═══ MEETING POSITIONS — toplantı masası etrafında ═══ */
-.seat-0.at-table  { top: 180px; left: 50%;  transform: translateX(-50%); z-index: 8; }
-.seat-1.at-table  { top: 230px; left: 72%; }
-.seat-2.at-table  { top: 230px; left: 24%; }
-.seat-3.at-table  { top: 320px; left: 80%; }
-.seat-4.at-table  { top: 320px; left: 14%; }
-.seat-5.at-table  { top: 420px; left: 78%; }
-.seat-6.at-table  { top: 420px; left: 18%; }
-.seat-7.at-table  { top: 500px; left: 68%; }
-.seat-8.at-table  { top: 500px; left: 28%; }
-.seat-9.at-table  { top: 540px; left: 55%; }
-.seat-10.at-table { top: 540px; left: 40%; }
+.seat-0.at-table  { top: 230px; left: 48%;  transform: translateX(-50%); z-index: 8; }
+.seat-1.at-table  { top: 285px; left: 72%; }
+.seat-2.at-table  { top: 285px; left: 22%; }
+.seat-3.at-table  { top: 370px; left: 80%; }
+.seat-4.at-table  { top: 370px; left: 14%; }
+.seat-5.at-table  { top: 470px; left: 78%; }
+.seat-6.at-table  { top: 470px; left: 16%; }
+.seat-7.at-table  { top: 560px; left: 70%; }
+.seat-8.at-table  { top: 560px; left: 25%; }
+.seat-9.at-table  { top: 620px; left: 56%; }
+.seat-10.at-table { top: 620px; left: 38%; }
 
 /* ─── Status indicator dot ─── */
 .agent-status-dot {

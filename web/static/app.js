@@ -1266,6 +1266,37 @@ function initOfficeAgents() {
     document.querySelectorAll('.meeting-seat').forEach(seat => {
         seat.classList.add('at-desk', 'idle');
     });
+
+    // Spawn ambient floating particles
+    const particleContainer = document.getElementById('office-particles');
+    if (particleContainer) {
+        for (let i = 0; i < 20; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.bottom = Math.random() * 30 + '%';
+            p.style.animationDelay = Math.random() * 8 + 's';
+            p.style.animationDuration = (6 + Math.random() * 6) + 's';
+            const colors = ['rgba(124,92,252,0.5)', 'rgba(0,214,143,0.4)', 'rgba(100,149,237,0.4)'];
+            p.style.background = colors[Math.floor(Math.random() * colors.length)];
+            p.style.width = (2 + Math.random() * 3) + 'px';
+            p.style.height = p.style.width;
+            particleContainer.appendChild(p);
+        }
+    }
+
+    // Random subtle idle movements — agents fidget at desks
+    setInterval(() => {
+        if (meetingActive) return;
+        const seats = document.querySelectorAll('.meeting-seat.idle');
+        const randomSeat = seats[Math.floor(Math.random() * seats.length)];
+        if (randomSeat) {
+            const jitterX = (Math.random() - 0.5) * 6;
+            const jitterY = (Math.random() - 0.5) * 4;
+            randomSeat.style.transform = `translate(${jitterX}px, ${jitterY}px)`;
+            setTimeout(() => { randomSeat.style.transform = ''; }, 2000);
+        }
+    }, 3000);
 }
 
 // ═══ INIT ═══
