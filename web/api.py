@@ -1535,11 +1535,27 @@ def _automation_loop():
                                     if db.is_duplicate_email(email_addr):
                                         continue
 
+                                    _automation_state["last_action"] = f"Phase 3: {company or email_addr} — istihbarat toplaniyor..."
+                                    _auto_log(f"🔍 Recon: {company or email_addr}")
+
+                                    # 0. ReconAgent — Derinlemesine araştırma
+                                    intel_context = ""
+                                    try:
+                                        from agents.recon_agent import recon_agent
+                                        intel = recon_agent.investigate(lead_data)
+                                        if intel:
+                                            intel_context = recon_agent.format_for_copywriter(intel)
+                                            profile_type = intel.get("psychological_profile", {}).get("type", "?")
+                                            strategy = intel.get("persuasion_strategy", {}).get("primary_cialdini", "?")
+                                            _auto_log(f"🧠 Intel: profil={profile_type}, strateji={strategy}")
+                                    except Exception as recon_err:
+                                        _auto_log(f"⚠️ Recon hatası (devam): {recon_err}")
+
                                     _automation_state["last_action"] = f"Phase 3: {company or email_addr} — email yazılıyor..."
                                     _auto_log(f"✍️ Email yazılıyor: {company or email_addr}")
 
-                                    # 1. Copywriter — EmailDraft dataclass döner
-                                    draft = copywriter.write(lead_data)
+                                    # 1. Copywriter — EmailDraft dataclass döner (+ intel context)
+                                    draft = copywriter.write(lead_data, intel_context=intel_context)
                                     if not draft:
                                         _auto_log(f"⚠️ Draft boş: {company}")
                                         continue

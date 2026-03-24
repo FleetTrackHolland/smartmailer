@@ -159,7 +159,7 @@ class CopywriterAgent:
         }
         log.debug("Copywriter ajani hazır (v2 — Pro Marketing Edition).")
 
-    def write(self, lead: dict) -> EmailDraft:
+    def write(self, lead: dict, intel_context: str = "") -> EmailDraft:
         company  = lead.get("Company", lead.get("company", "uw bedrijf"))
         sector   = (lead.get("Sector") or lead.get("sector") or "transport").lower()
         location = lead.get("Location", lead.get("location", "Nederland"))
@@ -178,6 +178,23 @@ class CopywriterAgent:
         else:
             price_hint = "Vanaf €9,99 per voertuig per maand — alles inclusief."
 
+        # Intel context varsa, bunu prompt'a ekle
+        intel_section = ""
+        if intel_context:
+            intel_section = f"""
+
+═══ DEEP INTELLIGENCE (ReconAgent raporu — KULLAN!) ═══
+{intel_context}
+═══════════════════════════════════════════════════════
+
+⚠️ CRUCIAAL: Gebruik de bovenstaande intelligence om de e-mail EXTREEM te personaliseren.
+- Gebruik de ECHTE pijnpunten van dit specifieke bedrijf
+- Pas je toon aan op het psychologische profiel
+- Gebruik de aanbevolen overtuigingsstrategie
+- Kies een van de gepersonaliseerde hooks als openingszin
+- Volg het toon-advies exact
+"""
+
         user_prompt = f"""Schrijf een professionele, visueel aantrekkelijke koude e-mail voor:
 
 Bedrijf: {company}
@@ -190,7 +207,7 @@ Hooks: {ctx['hook_hint']}
 Urgentie: {ctx['urgency']}
 Prijs: {price_hint}
 Visuele suggestie: {ctx.get('visual_suggestion', '')}
-
+{intel_section}
 Contactgegevens (voor ondertekening):
 FleetTrack Holland Team
 sales@fleettrackholland.nl
