@@ -939,6 +939,101 @@ def get_all_followups():
     return jsonify({"followups": followups, "stats": stats})
 
 
+
+# ─── BREVO WEBHOOK — OPEN / CLICK / BOUNCE / UNSUB ──────────
+@app.route("/webhook/brevo", methods=["POST"])
+def brevo_webhook():
+    """Brevo email event webhook — açılma, tıklama, bounce, unsub."""
+    try:
+        data = request.get_json(silent=True) or {}
+        event = data.get("event", "").lower()
+        email = (data.get("email") or "").strip().lower()
+        message_id = data.get("message-id") or data.get("msg-id") or ""
+
+        if not email or not event:
+            return jsonify({"ok": False, "error": "missing data"}), 400
+
+        # Event'i kaydet
+        db.record_event(
+            email=email,
+            event_type=event,
+            message_id=str(message_id),
+            metadata={
+                "ts": data.get("ts"),
+                "tag": data.get("tag"),
+                "ip": data.get("ip"),
+                "link": data.get("link"),
+                "reason": data.get("reason"),
+            }
+        )
+
+        # Event türüne göre aksiyon
+        if event in ("opened", "open", "unique_opened"):
+            # Kaç kez açıldı?
+            open_count = len(db.get_events_by_email_and_type(email, "opened")) + \
+                         len(db.get_events_by_email_and_type(email, "open")) + \
+                         len(db.get_events_by_email_and_type(email, "unique_opened"))
+            if open_count >= 2:
+                db.flag_lead_hot(email)
+                log.info(f"[WEBHOOK] 🔥 Hot lead (2+ opens): {email}")
+
+        elif event in ("click",):
+            # Link tıklayan → hot lead
+            db.flag_lead_hot(email)
+            log.info(f"[WEBHOOK] 🔥 Hot lead (click): {email}")
+
+        elif event in ("hard_bounce", "soft_bounce", "blocked"):
+            db.mark_lead_invalid(email)
+            db.cancel_pending_followups(email)
+            log.info(f"[WEBHOOK] ❌ Bounce: {email} ({event})")
+
+        elif event in ("unsubscribe", "complaint", "spam"):
+            db.add_opt_out(email, reason=f"brevo_{event}")
+            db.cancel_pending_followups(email)
+            log.info(f"[WEBHOOK] 🚫 Opt-out: {email} ({event})")
+
+        log.info(f"[WEBHOOK] {event}: {email}")
+        return jsonify({"ok": True, "event": event})
+
+    except Exception as e:
+        log.error(f"[WEBHOOK] Hata: {e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+# ─── TRACKING STATS ──────────────────────────────────────────
+@app.route("/api/tracking/stats", methods=["GET"])
+def get_tracking_stats():
+    """Email açılma, tıklama ve hot lead istatistikleri."""
+    try:
+        total_sent = db.get_sent_count()
+        opens = len(db.get_events_by_type("opened", limit=10000)) + \
+                len(db.get_events_by_type("open", limit=10000)) + \
+                len(db.get_events_by_type("unique_opened", limit=10000))
+        clicks = len(db.get_events_by_type("click", limit=10000))
+
+        # Unique opens
+        with db._conn() as conn:
+            unique_opens = conn.execute(
+                "SELECT COUNT(DISTINCT email) FROM events WHERE event_type IN ('opened','open','unique_opened')"
+            ).fetchone()[0]
+            hot_leads = conn.execute(
+                "SELECT COUNT(*) FROM leads WHERE is_hot = 1"
+            ).fetchone()[0]
+
+        open_rate = round(unique_opens / total_sent * 100, 1) if total_sent > 0 else 0
+
+        return jsonify({
+            "total_sent": total_sent,
+            "total_opens": opens,
+            "unique_opens": unique_opens,
+            "clicks": clicks,
+            "hot_leads": hot_leads,
+            "open_rate": open_rate,
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 # ─── TÜM GİDEN MAİLLER ──────────────────────────────────────
 @app.route("/api/sent/all", methods=["GET"])
 def get_all_sent():
@@ -2512,6 +2607,75 @@ def cron_run_cycle():
     except Exception as e:
         _auto_log(f"❌ Phase 4 HATA: {e}", "error")
         results["phase_4_followup"] = {"error": str(e)}
+
+    # ═══ PHASE 5: EVENT TRACKING & HOT LEAD DETECTION ═══
+    try:
+        _automation_state["last_action"] = f"Cron Cycle {cycle}: Phase 5 — Event Tracking"
+        _auto_log("📊 Phase 5: Brevo event polling + hot lead detection")
+
+        # Brevo Transactional Events API'den son event'leri çek
+        phase5_results = {"events_fetched": 0, "hot_leads_detected": 0}
+        try:
+            import requests as req
+            brevo_key = config.BREVO_API_KEY
+            if brevo_key:
+                headers = {"api-key": brevo_key, "accept": "application/json"}
+                # Son 24 saatteki event'leri çek
+                for event_type in ["opens", "clicks", "hardBounces", "softBounces", "unsubscriptions"]:
+                    try:
+                        resp = req.get(
+                            f"https://api.brevo.com/v3/smtp/statistics/events?event={event_type}&days=1&limit=100",
+                            headers=headers, timeout=15
+                        )
+                        if resp.ok:
+                            events_data = resp.json().get("events", [])
+                            for ev in events_data:
+                                ev_email = (ev.get("email") or "").strip().lower()
+                                ev_msg_id = ev.get("messageId") or ""
+                                if not ev_email:
+                                    continue
+                                # Event tipi mapping
+                                type_map = {
+                                    "opens": "opened", "clicks": "click",
+                                    "hardBounces": "hard_bounce", "softBounces": "soft_bounce",
+                                    "unsubscriptions": "unsubscribe"
+                                }
+                                mapped_type = type_map.get(event_type, event_type)
+                                # Duplicate check — aynı email+event+message_id varsa atla
+                                existing = db.get_events_by_email_and_type(ev_email, mapped_type)
+                                already_logged = any(
+                                    e.get("message_id") == str(ev_msg_id) for e in existing
+                                ) if ev_msg_id else False
+                                if not already_logged:
+                                    db.record_event(
+                                        email=ev_email,
+                                        event_type=mapped_type,
+                                        message_id=str(ev_msg_id),
+                                        metadata={"source": "brevo_api", "date": ev.get("date")}
+                                    )
+                                    phase5_results["events_fetched"] += 1
+
+                                    # Bounce/unsub aksiyonları
+                                    if mapped_type in ("hard_bounce", "soft_bounce"):
+                                        db.mark_lead_invalid(ev_email)
+                                        db.cancel_pending_followups(ev_email)
+                                    elif mapped_type == "unsubscribe":
+                                        db.add_opt_out(ev_email, reason="brevo_api")
+                                        db.cancel_pending_followups(ev_email)
+                    except Exception as ev_err:
+                        _auto_log(f"⚠️ Brevo {event_type} çekme hatası: {ev_err}", "warning")
+        except Exception as brevo_err:
+            _auto_log(f"⚠️ Brevo API erişim hatası: {brevo_err}", "warning")
+
+        # Hot lead otomatik tespiti
+        hot_count = db.auto_detect_hot_leads()
+        phase5_results["hot_leads_detected"] = hot_count
+
+        results["phase_5_tracking"] = phase5_results
+        _auto_log(f"✅ Phase 5: {phase5_results['events_fetched']} event, {hot_count} hot lead")
+    except Exception as e:
+        _auto_log(f"❌ Phase 5 HATA: {e}", "error")
+        results["phase_5_tracking"] = {"error": str(e)}
 
     # Finalize
     _automation_state["last_action"] = f"Cron Cycle {cycle} tamamlandı"

@@ -912,14 +912,14 @@ class Database:
         """Bu email açılmış mı?"""
         with self._conn() as conn:
             row = conn.execute(
-                "SELECT 1 FROM events WHERE email = ? AND event_type = 'open'",
+                "SELECT 1 FROM events WHERE email = ? AND event_type IN ('open','opened','unique_opened') LIMIT 1",
                 (email.strip().lower(),)
             ).fetchone()
             return row is not None
 
-    def add_opt_out(self, email: str):
+    def add_opt_out(self, email: str, reason: str = "response"):
         """Opt-out işle + event kaydet."""
-        self.record_event(email, "unsubscribe", metadata={"source": "response"})
+        self.record_event(email, "unsubscribe", metadata={"source": reason})
         with self._conn() as conn:
             conn.execute("""
                 UPDATE leads SET status = 'opted_out', updated_at = datetime('now')
@@ -953,6 +953,55 @@ class Database:
                 ORDER BY r.classified_at DESC
             """).fetchall()
             return [dict(r) for r in rows]
+
+    def get_events_by_email_and_type(self, email: str, event_type: str) -> list[dict]:
+        """Belirli email ve event türü için event'leri getir."""
+        with self._conn() as conn:
+            rows = conn.execute("""
+                SELECT * FROM events WHERE email = ? AND event_type = ?
+                ORDER BY received_at DESC
+            """, (email.strip().lower(), event_type)).fetchall()
+            return [dict(r) for r in rows]
+
+    def auto_detect_hot_leads(self) -> int:
+        """2+ kez açan veya link tıklayan lead'leri otomatik hot yap."""
+        count = 0
+        with self._conn() as conn:
+            # 2+ kez açan lead'ler
+            rows = conn.execute("""
+                SELECT e.email, COUNT(*) as open_count
+                FROM events e
+                JOIN leads l ON e.email = l.email
+                WHERE e.event_type IN ('open','opened','unique_opened')
+                  AND l.is_hot = 0
+                GROUP BY e.email
+                HAVING COUNT(*) >= 2
+            """).fetchall()
+            for row in rows:
+                conn.execute(
+                    "UPDATE leads SET is_hot = 1, status = 'hot', updated_at = datetime('now') WHERE email = ?",
+                    (row["email"],)
+                )
+                count += 1
+
+            # Link tıklayan lead'ler
+            click_rows = conn.execute("""
+                SELECT DISTINCT e.email
+                FROM events e
+                JOIN leads l ON e.email = l.email
+                WHERE e.event_type = 'click'
+                  AND l.is_hot = 0
+            """).fetchall()
+            for row in click_rows:
+                conn.execute(
+                    "UPDATE leads SET is_hot = 1, status = 'hot', updated_at = datetime('now') WHERE email = ?",
+                    (row["email"],)
+                )
+                count += 1
+
+        if count > 0:
+            log.info(f"[DB] 🔥 {count} yeni hot lead tespit edildi")
+        return count
 
     # ─── STATS ────────────────────────────────────────────────────
 
