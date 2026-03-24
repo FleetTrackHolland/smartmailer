@@ -759,22 +759,38 @@ async function refreshAutomation() {
     const data = await api('/api/automation/status');
     if (!data) return;
 
+    // Cron-based activity detection: last cycle within 15 min = active
+    let cronActive = false;
+    if (data.last_cycle_at) {
+        const lastCycleTime = new Date(data.last_cycle_at).getTime();
+        const now = Date.now();
+        cronActive = (now - lastCycleTime) < 15 * 60 * 1000; // 15 dakika
+    }
+    const isActive = data.running || cronActive;
+
     // Status text
     const statusEl = document.getElementById('auto-status-text');
     const actionEl = document.getElementById('auto-action-text');
     const indEl = document.getElementById('auto-indicator');
-    if (statusEl) statusEl.textContent = data.running ? 'Çalışıyor' : 'Durdurulmuş';
-    if (actionEl) actionEl.textContent = data.current_step || '—';
-    if (indEl) { indEl.className = 'auto-indicator ' + (data.running ? 'running' : 'stopped'); }
+    if (statusEl) statusEl.textContent = data.running ? 'Çalışıyor' : (cronActive ? 'Cron Aktif' : 'Durdurulmuş');
+    if (actionEl) actionEl.textContent = data.last_action || data.current_step || '—';
+    if (indEl) { indEl.className = 'auto-indicator ' + (isActive ? 'running' : 'stopped'); }
 
     // Cycle info
     const cycleBadge = document.getElementById('cycle-badge');
     const lastCycle = document.getElementById('auto-last-cycle');
     if (cycleBadge) cycleBadge.textContent = 'Cycle ' + (data.cycle || 0);
-    if (lastCycle) lastCycle.textContent = 'Son: ' + (data.last_cycle ? fmtDate(data.last_cycle) : '—');
+    if (lastCycle) lastCycle.textContent = 'Son: ' + (data.last_cycle_at ? fmtDate(data.last_cycle_at) : (data.last_cycle ? fmtDate(data.last_cycle) : '—'));
 
     // Pipeline step indicators
-    const stepNum = parseInt((data.current_step || '0').charAt(0)) || 0;
+    const action = (data.last_action || data.current_step || '').toLowerCase();
+    let stepNum = 0;
+    if (action.includes('phase 1') || action.includes('keşf') || action.includes('lead')) stepNum = 1;
+    else if (action.includes('phase 2') || action.includes('puanl') || action.includes('scor')) stepNum = 2;
+    else if (action.includes('phase 3') || action.includes('email') || action.includes('yaz')) stepNum = 3;
+    else if (action.includes('gönder') || action.includes('send')) stepNum = 4;
+    else if (action.includes('phase 4') || action.includes('follow')) stepNum = 5;
+    else if (action.includes('tamamla')) stepNum = 6;
     for (let i = 1; i <= 6; i++) {
         const el = document.getElementById('pipe-step-' + i);
         if (el) {
@@ -783,7 +799,7 @@ async function refreshAutomation() {
     }
 
     // Buttons
-    if (data.running) {
+    if (isActive) {
         document.getElementById('btn-start-auto').style.display = 'none';
         document.getElementById('btn-stop-auto').style.display = '';
     } else {
@@ -799,18 +815,18 @@ async function refreshAutomation() {
     }
 
     // Mode badge
-    updateModeBadge(data.running);
+    updateModeBadge(isActive, cronActive);
 
     // Stats in sidebar
     const stats = data.stats || {};
     setText('stat-leads', (stats.leads_found || 0) + ' keşfedildi');
 }
 
-function updateModeBadge(running) {
+function updateModeBadge(running, cronActive) {
     const badge = document.getElementById('mode-badge');
     const text = document.getElementById('mode-text');
     if (badge) badge.className = 'mode-badge ' + (running ? 'live' : '');
-    if (text) text.textContent = running ? 'CANLI — AKTİF' : 'DURDURULMUŞ';
+    if (text) text.textContent = running ? (cronActive ? 'CRON AKTİF' : 'CANLI — AKTİF') : 'DURDURULMUŞ';
 }
 
 function toggleSystemMode() {
