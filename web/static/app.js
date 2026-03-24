@@ -1303,204 +1303,292 @@ function displayMeetingMessages(messages) {
     });
 }
 
-// ═══ SUPER MARIO STYLE CHARACTER GENERATOR ═══
+// ═══ PREMIUM 3D CHIBI CHARACTER GENERATOR ═══
+// Matches polished 3D-rendered chibi style with voluminous hair, soft shadows
 function generateMarioCharacter(agentName) {
     const chars = {
         Orchestrator: {
-            capColor: '#1a237e', capDark: '#0d1b5e', shirt: '#283593', shirtLight: '#3949ab',
-            pants: '#1a237e', shoes: '#4e342e', skin: '#ffcc99', skinDark: '#f0b87a',
-            hair: '#2c3e50', eyeColor: '#1a237e', blush: '#ffab91',
-            capStyle: 'crown', accessory: 'tie', tieColor: '#ffd700',
+            shirt: '#283593', shirtLight: '#3949ab', logo: '#ffd700',
+            pants: '#1a237e', shoes: '#4e342e', shoesLight: '#6d4c41',
+            skin: '#fddcb5', skinMid: '#f5c5a3', skinDark: '#e8ae8c',
+            hairBase: '#2c3e50', hairMid: '#34495e', hairLight: '#4a6074',
+            eyeColor: '#1a237e', blush: '#f4a7a0',
+            hairStyle: 'slick', accessory: 'crown',
         },
         Copywriter: {
-            capColor: '#7b1fa2', capDark: '#4a148c', shirt: '#9c27b0', shirtLight: '#ba68c8',
-            pants: '#4a148c', shoes: '#3e2723', skin: '#ffe0bd', skinDark: '#f5c5a3',
-            hair: '#7b1fa2', eyeColor: '#4a148c', blush: '#f48fb1',
-            capStyle: 'beret', accessory: 'pencil',
+            shirt: '#9c27b0', shirtLight: '#ce93d8', logo: '#f48fb1',
+            pants: '#4a148c', shoes: '#3e2723', shoesLight: '#5d4037',
+            skin: '#fde2c8', skinMid: '#f8d0ae', skinDark: '#ebb894',
+            hairBase: '#6a1b9a', hairMid: '#8e24aa', hairLight: '#ab47bc',
+            eyeColor: '#6a1b9a', blush: '#f48fb1',
+            hairStyle: 'wavy', accessory: 'beret',
         },
         QualityControl: {
-            capColor: '#eceff1', capDark: '#b0bec5', shirt: '#eceff1', shirtLight: '#fafafa',
-            pants: '#37474f', shoes: '#212121', skin: '#ffcc99', skinDark: '#f0b87a',
-            hair: '#5d4037', eyeColor: '#1a1a2e', blush: '#ffccbc',
-            capStyle: 'none', accessory: 'glasses',
+            shirt: '#eceff1', shirtLight: '#fafafa', logo: '#78909c',
+            pants: '#37474f', shoes: '#212121', shoesLight: '#424242',
+            skin: '#fddcb5', skinMid: '#f5c5a3', skinDark: '#e8ae8c',
+            hairBase: '#4e342e', hairMid: '#6d4c41', hairLight: '#8d6e63',
+            eyeColor: '#37474f', blush: '#ffccbc',
+            hairStyle: 'short', accessory: 'glasses',
         },
         Scorer: {
-            capColor: '#1565c0', capDark: '#0d47a1', shirt: '#1976d2', shirtLight: '#42a5f5',
-            pants: '#0d47a1', shoes: '#3e2723', skin: '#ffe0bd', skinDark: '#f5c5a3',
-            hair: '#ffb74d', eyeColor: '#0d47a1', blush: '#ffab91',
-            capStyle: 'cap', accessory: 'none',
+            shirt: '#1976d2', shirtLight: '#64b5f6', logo: '#bbdefb',
+            pants: '#0d47a1', shoes: '#3e2723', shoesLight: '#5d4037',
+            skin: '#fde2c8', skinMid: '#f8d0ae', skinDark: '#ebb894',
+            hairBase: '#e65100', hairMid: '#ff9800', hairLight: '#ffb74d',
+            eyeColor: '#0d47a1', blush: '#ffab91',
+            hairStyle: 'spiky', accessory: 'cap',
         },
         Recon: {
-            capColor: '#263238', capDark: '#1a1a1a', shirt: '#37474f', shirtLight: '#546e7a',
-            pants: '#263238', shoes: '#212121', skin: '#d7a87e', skinDark: '#c49066',
-            hair: '#1a1a1a', eyeColor: '#263238', blush: '#e0a98f',
-            capStyle: 'fedora', accessory: 'none',
+            shirt: '#37474f', shirtLight: '#607d8b', logo: '#90a4ae',
+            pants: '#263238', shoes: '#1a1a1a', shoesLight: '#333333',
+            skin: '#d7a87e', skinMid: '#c49066', skinDark: '#b07a52',
+            hairBase: '#1a1a1a', hairMid: '#333333', hairLight: '#4a4a4a',
+            eyeColor: '#263238', blush: '#dba08f',
+            hairStyle: 'slick', accessory: 'fedora',
         },
         Finder: {
-            capColor: '#c62828', capDark: '#8e0000', shirt: '#388e3c', shirtLight: '#4caf50',
-            pants: '#1b5e20', shoes: '#4e342e', skin: '#ffcc99', skinDark: '#f0b87a',
-            hair: '#c62828', eyeColor: '#1b5e20', blush: '#ffab91',
-            capStyle: 'cap', accessory: 'none',
+            shirt: '#388e3c', shirtLight: '#66bb6a', logo: '#a5d6a7',
+            pants: '#1b5e20', shoes: '#4e342e', shoesLight: '#6d4c41',
+            skin: '#fddcb5', skinMid: '#f5c5a3', skinDark: '#e8ae8c',
+            hairBase: '#b71c1c', hairMid: '#e53935', hairLight: '#ef5350',
+            eyeColor: '#1b5e20', blush: '#ffab91',
+            hairStyle: 'spiky', accessory: 'cap',
         },
         FollowUp: {
-            capColor: '#004d40', capDark: '#00251a', shirt: '#00897b', shirtLight: '#26a69a',
-            pants: '#004d40', shoes: '#3e2723', skin: '#d7a87e', skinDark: '#c49066',
-            hair: '#3e2723', eyeColor: '#004d40', blush: '#e0a98f',
-            capStyle: 'beanie', accessory: 'none',
+            shirt: '#00897b', shirtLight: '#4db6ac', logo: '#80cbc4',
+            pants: '#004d40', shoes: '#3e2723', shoesLight: '#5d4037',
+            skin: '#d7a87e', skinMid: '#c49066', skinDark: '#b07a52',
+            hairBase: '#3e2723', hairMid: '#5d4037', hairLight: '#795548',
+            eyeColor: '#00695c', blush: '#dba08f',
+            hairStyle: 'wavy', accessory: 'beanie',
         },
         Tracker: {
-            capColor: '#283593', capDark: '#1a237e', shirt: '#3949ab', shirtLight: '#5c6bc0',
-            pants: '#1a237e', shoes: '#3e2723', skin: '#ffe0bd', skinDark: '#f5c5a3',
-            hair: '#1a237e', eyeColor: '#1a237e', blush: '#ffccbc',
-            capStyle: 'cap', accessory: 'headphones',
+            shirt: '#3949ab', shirtLight: '#7986cb', logo: '#9fa8da',
+            pants: '#1a237e', shoes: '#3e2723', shoesLight: '#5d4037',
+            skin: '#fde2c8', skinMid: '#f8d0ae', skinDark: '#ebb894',
+            hairBase: '#1a237e', hairMid: '#283593', hairLight: '#3949ab',
+            eyeColor: '#283593', blush: '#ffccbc',
+            hairStyle: 'short', accessory: 'headphones',
         },
         Watchdog: {
-            capColor: '#b71c1c', capDark: '#7f0000', shirt: '#c62828', shirtLight: '#ef5350',
-            pants: '#8e0000', shoes: '#212121', skin: '#ffcc99', skinDark: '#f0b87a',
-            hair: '#4e342e', eyeColor: '#b71c1c', blush: '#ffab91',
-            capStyle: 'none', accessory: 'shield',
+            shirt: '#c62828', shirtLight: '#ef5350', logo: '#ffcdd2',
+            pants: '#8e0000', shoes: '#212121', shoesLight: '#424242',
+            skin: '#fddcb5', skinMid: '#f5c5a3', skinDark: '#e8ae8c',
+            hairBase: '#3e2723', hairMid: '#5d4037', hairLight: '#795548',
+            eyeColor: '#b71c1c', blush: '#ffab91',
+            hairStyle: 'spiky', accessory: 'none',
         },
         Compliance: {
-            capColor: '#3e2723', capDark: '#1b0f0a', shirt: '#5d4037', shirtLight: '#795548',
-            pants: '#3e2723', shoes: '#212121', skin: '#d7a87e', skinDark: '#c49066',
-            hair: '#1a1a2e', eyeColor: '#3e2723', blush: '#e0a98f',
-            capStyle: 'none', accessory: 'tie', tieColor: '#455a64',
+            shirt: '#5d4037', shirtLight: '#8d6e63', logo: '#a1887f',
+            pants: '#3e2723', shoes: '#212121', shoesLight: '#424242',
+            skin: '#d7a87e', skinMid: '#c49066', skinDark: '#b07a52',
+            hairBase: '#1a1a2e', hairMid: '#2c2c42', hairLight: '#3e3e56',
+            eyeColor: '#3e2723', blush: '#dba08f',
+            hairStyle: 'slick', accessory: 'tie',
         },
         ABTest: {
-            capColor: '#e65100', capDark: '#bf360c', shirt: '#ef6c00', shirtLight: '#ff9800',
-            pants: '#bf360c', shoes: '#3e2723', skin: '#ffe0bd', skinDark: '#f5c5a3',
-            hair: '#212121', eyeColor: '#e65100', blush: '#ffccbc',
-            capStyle: 'cap', accessory: 'none',
+            shirt: '#ef6c00', shirtLight: '#ff9800', logo: '#ffe0b2',
+            pants: '#bf360c', shoes: '#3e2723', shoesLight: '#5d4037',
+            skin: '#fde2c8', skinMid: '#f8d0ae', skinDark: '#ebb894',
+            hairBase: '#212121', hairMid: '#424242', hairLight: '#616161',
+            eyeColor: '#e65100', blush: '#ffccbc',
+            hairStyle: 'short', accessory: 'cap',
         },
     };
 
     const c = chars[agentName] || chars.Orchestrator;
     const id = agentName.replace(/[^a-zA-Z]/g, '');
 
-    let capSvg = '';
-    if (c.capStyle === 'cap') {
-        capSvg = `
-            <ellipse cx="30" cy="6" rx="20" ry="8" fill="${c.capColor}"/>
-            <rect x="10" y="4" width="40" height="10" rx="5" fill="${c.capColor}"/>
-            <rect x="6" y="12" width="22" height="4" rx="2" fill="${c.capDark}"/>
-            <circle cx="30" cy="7" r="4" fill="${c.capDark}" opacity="0.6"/>`;
-    } else if (c.capStyle === 'crown') {
-        capSvg = `
-            <polygon points="18,10 22,0 26,8 30,-2 34,8 38,0 42,10" fill="#ffd700" stroke="#e6ac00" stroke-width="0.5"/>
-            <rect x="18" y="8" width="24" height="5" rx="1" fill="#ffd700"/>
-            <circle cx="26" cy="10" r="1.5" fill="#e53935"/><circle cx="30" cy="10" r="1.5" fill="#2196f3"/><circle cx="34" cy="10" r="1.5" fill="#4caf50"/>`;
-    } else if (c.capStyle === 'fedora') {
-        capSvg = `
-            <ellipse cx="30" cy="10" rx="24" ry="5" fill="${c.capColor}"/>
-            <ellipse cx="30" cy="6" rx="16" ry="8" fill="${c.capColor}"/>
-            <rect x="20" y="7" width="20" height="3" rx="1" fill="${c.capDark}"/>`;
-    } else if (c.capStyle === 'beanie') {
-        capSvg = `
-            <ellipse cx="30" cy="8" rx="18" ry="12" fill="${c.capColor}"/>
-            <rect x="12" y="10" width="36" height="4" rx="2" fill="${c.capDark}"/>
-            <circle cx="30" cy="-2" r="3" fill="${c.capColor}"/>`;
-    } else if (c.capStyle === 'beret') {
-        capSvg = `
-            <ellipse cx="26" cy="6" rx="18" ry="9" fill="${c.capColor}"/>
-            <circle cx="20" cy="2" r="2" fill="${c.capDark}"/>`;
+    // Voluminous hair paths based on style
+    let hairSvg = '';
+    if (c.hairStyle === 'spiky') {
+        hairSvg = `
+            <path d="M8 18 Q8 -2 30 -6 Q52 -2 52 18 Q48 10 42 8 Q36 4 30 2 Q24 4 18 8 Q12 10 8 18Z" fill="${c.hairBase}"/>
+            <path d="M12 16 Q14 2 30 -2 Q46 2 48 16 Q44 8 30 5 Q16 8 12 16Z" fill="${c.hairMid}"/>
+            <path d="M18 12 Q22 0 30 -1 Q38 0 42 12 Q38 6 30 4 Q22 6 18 12Z" fill="${c.hairLight}" opacity="0.7"/>
+            <ellipse cx="22" cy="-1" rx="4" ry="6" fill="${c.hairBase}" transform="rotate(-15 22 -1)"/>
+            <ellipse cx="38" cy="-1" rx="4" ry="6" fill="${c.hairBase}" transform="rotate(15 38 -1)"/>
+            <ellipse cx="30" cy="-4" rx="5" ry="7" fill="${c.hairMid}" transform="rotate(0 30 -4)"/>`;
+    } else if (c.hairStyle === 'wavy') {
+        hairSvg = `
+            <path d="M6 20 Q4 4 18 -2 Q26 -6 30 -4 Q34 -6 42 -2 Q56 4 54 20 Q50 12 42 6 Q34 2 30 0 Q26 2 18 6 Q10 12 6 20Z" fill="${c.hairBase}"/>
+            <path d="M10 18 Q10 4 22 0 Q30 -3 38 0 Q50 4 50 18 Q46 10 38 5 Q30 1 22 5 Q14 10 10 18Z" fill="${c.hairMid}"/>
+            <path d="M16 14 Q20 2 30 0 Q40 2 44 14 Q40 8 30 4 Q20 8 16 14Z" fill="${c.hairLight}" opacity="0.6"/>
+            <ellipse cx="14" cy="8" rx="6" ry="8" fill="${c.hairBase}" transform="rotate(-20 14 8)"/>
+            <ellipse cx="46" cy="8" rx="6" ry="8" fill="${c.hairBase}" transform="rotate(20 46 8)"/>`;
+    } else if (c.hairStyle === 'short') {
+        hairSvg = `
+            <path d="M10 18 Q10 2 30 -2 Q50 2 50 18 Q46 10 30 6 Q14 10 10 18Z" fill="${c.hairBase}"/>
+            <path d="M14 16 Q16 4 30 0 Q44 4 46 16 Q42 8 30 4 Q18 8 14 16Z" fill="${c.hairMid}"/>
+            <path d="M20 12 Q24 2 30 1 Q36 2 40 12 Q36 6 30 4 Q24 6 20 12Z" fill="${c.hairLight}" opacity="0.5"/>`;
+    } else { // slick
+        hairSvg = `
+            <path d="M8 20 Q6 0 30 -4 Q54 0 52 20 Q48 8 30 4 Q12 8 8 20Z" fill="${c.hairBase}"/>
+            <path d="M12 18 Q12 2 30 -1 Q48 2 48 18 Q44 8 30 3 Q16 8 12 18Z" fill="${c.hairMid}"/>
+            <path d="M18 14 Q22 2 30 0 Q38 2 42 14 Q38 6 30 3 Q22 6 18 14Z" fill="${c.hairLight}" opacity="0.5"/>`;
     }
 
+    // Accessories
     let accessorySvg = '';
     if (c.accessory === 'glasses') {
         accessorySvg = `
-            <rect x="17" y="17" width="10" height="7" rx="3" fill="none" stroke="#78909c" stroke-width="1.5"/>
-            <rect x="33" y="17" width="10" height="7" rx="3" fill="none" stroke="#78909c" stroke-width="1.5"/>
-            <line x1="27" y1="20" x2="33" y2="20" stroke="#78909c" stroke-width="1"/>`;
-    } else if (c.accessory === 'tie') {
-        accessorySvg = `<polygon points="28,42 30,38 32,42 30,52" fill="${c.tieColor || '#c62828'}"/>`;
+            <rect x="15" y="18" width="12" height="9" rx="4" fill="none" stroke="#546e7a" stroke-width="2"/>
+            <rect x="33" y="18" width="12" height="9" rx="4" fill="none" stroke="#546e7a" stroke-width="2"/>
+            <line x1="27" y1="22" x2="33" y2="22" stroke="#546e7a" stroke-width="1.5"/>
+            <line x1="15" y1="22" x2="10" y2="20" stroke="#546e7a" stroke-width="1.2"/>
+            <line x1="45" y1="22" x2="50" y2="20" stroke="#546e7a" stroke-width="1.2"/>`;
     } else if (c.accessory === 'headphones') {
         accessorySvg = `
-            <path d="M12 14 Q12 3 30 3 Q48 3 48 14" fill="none" stroke="#333" stroke-width="2.5"/>
-            <rect x="9" y="12" width="5" height="8" rx="2" fill="#333"/>
-            <rect x="46" y="12" width="5" height="8" rx="2" fill="#333"/>`;
-    } else if (c.accessory === 'shield') {
-        accessorySvg = `<path d="M42 44 L48 42 L48 50 Q48 55 42 57 Q36 55 36 50 L36 42Z" fill="#ffd700" stroke="#e6ac00" stroke-width="0.5"/>`;
-    } else if (c.accessory === 'pencil') {
-        accessorySvg = `<rect x="48" y="38" width="3" height="16" rx="1" fill="#ffeb3b" transform="rotate(15 49 46)"/>
-            <polygon points="49,54 50,58 51,54" fill="#616161" transform="rotate(15 49 46)"/>`;
+            <path d="M10 16 Q10 2 30 2 Q50 2 50 16" fill="none" stroke="#424242" stroke-width="3" stroke-linecap="round"/>
+            <rect x="6" y="14" width="7" height="10" rx="3" fill="#616161"/>
+            <rect x="47" y="14" width="7" height="10" rx="3" fill="#616161"/>
+            <rect x="7" y="15" width="5" height="8" rx="2" fill="#424242"/>
+            <rect x="48" y="15" width="5" height="8" rx="2" fill="#424242"/>`;
+    } else if (c.accessory === 'crown') {
+        accessorySvg = `
+            <polygon points="16,12 20,0 24,8 30,-4 36,8 40,0 44,12" fill="#ffd700" stroke="#daa520" stroke-width="0.8"/>
+            <rect x="16" y="10" width="28" height="5" rx="1" fill="#ffd700"/>
+            <circle cx="24" cy="12" r="2" fill="#e53935"/><circle cx="30" cy="12" r="2" fill="#1e88e5"/><circle cx="36" cy="12" r="2" fill="#43a047"/>`;
+    } else if (c.accessory === 'cap') {
+        accessorySvg = `
+            <ellipse cx="30" cy="8" rx="22" ry="10" fill="${c.hairBase}"/>
+            <rect x="8" y="6" width="44" height="8" rx="4" fill="${c.hairBase}"/>
+            <rect x="4" y="13" width="24" height="5" rx="2.5" fill="${c.hairMid}"/>
+            <ellipse cx="30" cy="8" rx="6" ry="5" fill="${c.hairLight}" opacity="0.4"/>`;
+    } else if (c.accessory === 'fedora') {
+        accessorySvg = `
+            <ellipse cx="30" cy="12" rx="26" ry="6" fill="${c.hairBase}"/>
+            <ellipse cx="30" cy="6" rx="18" ry="10" fill="${c.hairBase}"/>
+            <rect x="18" y="8" width="24" height="4" rx="2" fill="${c.hairMid}"/>
+            <ellipse cx="30" cy="4" rx="12" ry="6" fill="${c.hairLight}" opacity="0.3"/>`;
+    } else if (c.accessory === 'beanie') {
+        accessorySvg = `
+            <ellipse cx="30" cy="10" rx="20" ry="14" fill="${c.hairBase}"/>
+            <rect x="10" y="12" width="40" height="5" rx="2.5" fill="${c.hairMid}"/>
+            <circle cx="30" cy="-2" r="4" fill="${c.hairLight}"/>
+            <path d="M12 14 Q20 8 30 6 Q40 8 48 14" fill="${c.hairLight}" opacity="0.3"/>`;
+    } else if (c.accessory === 'beret') {
+        accessorySvg = `
+            <ellipse cx="24" cy="8" rx="20" ry="10" fill="${c.hairBase}"/>
+            <circle cx="18" cy="2" r="3" fill="${c.hairMid}"/>
+            <ellipse cx="24" cy="6" rx="14" ry="7" fill="${c.hairLight}" opacity="0.3"/>`;
+    } else if (c.accessory === 'tie') {
+        // Tie rendered on body
     }
 
-    return `<svg class="chibi-svg" viewBox="0 0 60 95" xmlns="http://www.w3.org/2000/svg">
+    let bodySvg = '';
+    if (c.accessory === 'tie') {
+        bodySvg = `<polygon points="29,40 31,40 33,52 30,56 27,52" fill="#c62828"/>`;
+    }
+
+    return `<svg class="chibi-svg" viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">
         <defs>
-            <linearGradient id="skin-${id}" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="${c.skin}"/><stop offset="100%" stop-color="${c.skinDark}"/>
+            <linearGradient id="sk-${id}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="${c.skin}"/><stop offset="50%" stop-color="${c.skinMid}"/><stop offset="100%" stop-color="${c.skinDark}"/>
             </linearGradient>
-            <linearGradient id="shirt-${id}" x1="0" y1="0" x2="0" y2="1">
+            <linearGradient id="sh-${id}" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stop-color="${c.shirtLight}"/><stop offset="100%" stop-color="${c.shirt}"/>
             </linearGradient>
-            <radialGradient id="cheek-${id}" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="${c.blush}" stop-opacity="0.6"/><stop offset="100%" stop-color="${c.blush}" stop-opacity="0"/>
+            <radialGradient id="bl-${id}" cx="50%" cy="50%" r="50%">
+                <stop offset="0%" stop-color="${c.blush}" stop-opacity="0.55"/><stop offset="100%" stop-color="${c.blush}" stop-opacity="0"/>
             </radialGradient>
+            <filter id="sd-${id}" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+                <feOffset dx="0" dy="2" result="offset"/>
+                <feFlood flood-color="rgba(0,0,0,0.18)" result="color"/>
+                <feComposite in="color" in2="offset" operator="in" result="shadow"/>
+                <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
         </defs>
+
         <!-- Ground shadow -->
-        <g class="chibi-shadow"><ellipse cx="30" cy="93" rx="20" ry="4" fill="rgba(0,0,0,0.2)"/></g>
-        <!-- Shoes -->
+        <ellipse cx="30" cy="97" rx="22" ry="4" fill="rgba(0,0,0,0.15)"/>
+
+        <!-- LEGS + SHOES -->
         <g class="chibi-leg chibi-leg-l">
-            <rect x="19" y="0" width="9" height="16" rx="3" fill="${c.pants}"/>
-            <ellipse cx="22" cy="16" rx="7" ry="4" fill="${c.shoes}"/>
-            <ellipse cx="22" cy="15" rx="5" ry="2.5" fill="${c.shoes}" opacity="0.7"/>
+            <rect x="18" y="0" width="10" height="18" rx="4" fill="${c.pants}"/>
+            <ellipse cx="22" cy="18" rx="8" ry="5" fill="${c.shoes}"/>
+            <ellipse cx="20" cy="17" rx="5" ry="3" fill="${c.shoesLight}" opacity="0.5"/>
         </g>
         <g class="chibi-leg chibi-leg-r">
-            <rect x="32" y="0" width="9" height="16" rx="3" fill="${c.pants}"/>
-            <ellipse cx="38" cy="16" rx="7" ry="4" fill="${c.shoes}"/>
-            <ellipse cx="38" cy="15" rx="5" ry="2.5" fill="${c.shoes}" opacity="0.7"/>
+            <rect x="32" y="0" width="10" height="18" rx="4" fill="${c.pants}"/>
+            <ellipse cx="38" cy="18" rx="8" ry="5" fill="${c.shoes}"/>
+            <ellipse cx="40" cy="17" rx="5" ry="3" fill="${c.shoesLight}" opacity="0.5"/>
         </g>
-        <!-- Body (overalls style) -->
-        <g class="chibi-body">
-            <rect x="14" y="36" width="32" height="26" rx="8" fill="url(#shirt-${id})"/>
-            <!-- Overall straps -->
-            <rect x="18" y="36" width="4" height="12" rx="1" fill="${c.pants}" opacity="0.7"/>
-            <rect x="38" y="36" width="4" height="12" rx="1" fill="${c.pants}" opacity="0.7"/>
-            <!-- Buttons -->
-            <circle cx="20" cy="48" r="2" fill="${c.pants}" opacity="0.5"/>
-            <circle cx="40" cy="48" r="2" fill="${c.pants}" opacity="0.5"/>
-            <!-- Belt/waist -->
-            <rect x="14" y="54" width="32" height="4" rx="2" fill="${c.pants}" opacity="0.4"/>
-            ${accessorySvg}
+
+        <!-- BODY -->
+        <g class="chibi-body" filter="url(#sd-${id})">
+            <rect x="12" y="38" width="36" height="28" rx="10" fill="url(#sh-${id})"/>
+            <!-- Shirt highlight -->
+            <rect x="14" y="40" width="32" height="12" rx="8" fill="${c.shirtLight}" opacity="0.3"/>
+            <!-- Logo circle on shirt -->
+            <circle cx="30" cy="52" r="6" fill="${c.logo}" opacity="0.7"/>
+            <circle cx="30" cy="52" r="3.5" fill="${c.shirt}" opacity="0.6"/>
+            ${bodySvg}
         </g>
-        <!-- Arms with gloved hands -->
+
+        <!-- ARMS with round hands -->
         <g class="chibi-arm chibi-arm-l">
-            <rect x="6" y="0" width="9" height="22" rx="4.5" fill="${c.shirtLight}"/>
-            <circle cx="10" cy="22" r="5" fill="${c.skin}" opacity="0.95"/>
+            <rect x="4" y="2" width="10" height="24" rx="5" fill="url(#sh-${id})"/>
+            <circle cx="9" cy="26" r="6" fill="${c.skin}"/>
+            <circle cx="9" cy="25" r="4" fill="${c.skinMid}" opacity="0.4"/>
         </g>
         <g class="chibi-arm chibi-arm-r">
-            <rect x="45" y="0" width="9" height="22" rx="4.5" fill="${c.shirtLight}"/>
-            <circle cx="50" cy="22" r="5" fill="${c.skin}" opacity="0.95"/>
+            <rect x="46" y="2" width="10" height="24" rx="5" fill="url(#sh-${id})"/>
+            <circle cx="51" cy="26" r="6" fill="${c.skin}"/>
+            <circle cx="51" cy="25" r="4" fill="${c.skinMid}" opacity="0.4"/>
         </g>
-        <!-- HEAD — big Mario-style -->
-        <g class="chibi-head">
+
+        <!-- HEAD -->
+        <g class="chibi-head" filter="url(#sd-${id})">
             <!-- Face -->
-            <circle cx="30" cy="20" r="20" fill="url(#skin-${id})"/>
+            <circle cx="30" cy="22" r="22" fill="url(#sk-${id})"/>
+            <!-- Face highlight (3D effect) -->
+            <ellipse cx="26" cy="16" rx="12" ry="10" fill="${c.skin}" opacity="0.4"/>
+
             <!-- Ears -->
-            <circle cx="11" cy="20" r="4" fill="url(#skin-${id})"/>
-            <circle cx="11" cy="20" r="2.5" fill="${c.skinDark}" opacity="0.3"/>
-            <circle cx="49" cy="20" r="4" fill="url(#skin-${id})"/>
-            <circle cx="49" cy="20" r="2.5" fill="${c.skinDark}" opacity="0.3"/>
+            <circle cx="8" cy="22" r="5" fill="url(#sk-${id})"/>
+            <circle cx="8" cy="22" r="3" fill="${c.skinDark}" opacity="0.25"/>
+            <circle cx="52" cy="22" r="5" fill="url(#sk-${id})"/>
+            <circle cx="52" cy="22" r="3" fill="${c.skinDark}" opacity="0.25"/>
+
             <!-- Eyebrows -->
-            <rect x="18" y="13" width="8" height="2.5" rx="1" fill="${c.hair}" opacity="0.8"/>
-            <rect x="34" y="13" width="8" height="2.5" rx="1" fill="${c.hair}" opacity="0.8"/>
-            <!-- Eyes (big, expressive) -->
-            <ellipse cx="23" cy="20" rx="5" ry="5.5" fill="#fff"/>
-            <circle cx="24" cy="20" r="3" fill="${c.eyeColor}"/>
-            <circle cx="25" cy="19" r="1.3" fill="#fff" opacity="0.9"/>
-            <ellipse cx="37" cy="20" rx="5" ry="5.5" fill="#fff"/>
-            <circle cx="36" cy="20" r="3" fill="${c.eyeColor}"/>
-            <circle cx="37" cy="19" r="1.3" fill="#fff" opacity="0.9"/>
+            <path d="M17 16 Q21 13 25 15" stroke="${c.hairBase}" stroke-width="2" fill="none" stroke-linecap="round"/>
+            <path d="M35 15 Q39 13 43 16" stroke="${c.hairBase}" stroke-width="2" fill="none" stroke-linecap="round"/>
+
+            <!-- Eyes (large, expressive) -->
+            <ellipse cx="22" cy="22" rx="6" ry="6.5" fill="#fff"/>
+            <ellipse cx="22" cy="22" rx="5" ry="5.5" fill="#fff" stroke="#ccc" stroke-width="0.3"/>
+            <circle cx="23" cy="22" r="3.5" fill="${c.eyeColor}"/>
+            <circle cx="23" cy="22" r="2" fill="#1a1a2e"/>
+            <circle cx="24.5" cy="20.5" r="1.5" fill="#fff" opacity="0.95"/>
+            <circle cx="21.5" cy="23.5" r="0.8" fill="#fff" opacity="0.6"/>
+
+            <ellipse cx="38" cy="22" rx="6" ry="6.5" fill="#fff"/>
+            <ellipse cx="38" cy="22" rx="5" ry="5.5" fill="#fff" stroke="#ccc" stroke-width="0.3"/>
+            <circle cx="37" cy="22" r="3.5" fill="${c.eyeColor}"/>
+            <circle cx="37" cy="22" r="2" fill="#1a1a2e"/>
+            <circle cx="38.5" cy="20.5" r="1.5" fill="#fff" opacity="0.95"/>
+            <circle cx="35.5" cy="23.5" r="0.8" fill="#fff" opacity="0.6"/>
+
             <!-- Nose -->
-            <ellipse cx="30" cy="24" rx="3" ry="2.5" fill="${c.skinDark}"/>
-            <ellipse cx="30" cy="23.5" rx="2" ry="1.5" fill="${c.skin}" opacity="0.5"/>
-            <!-- Mouth -->
-            <path d="M26 28 Q30 32 34 28" stroke="#a0522d" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+            <ellipse cx="30" cy="28" rx="3.5" ry="2.8" fill="${c.skinDark}" opacity="0.7"/>
+            <ellipse cx="29" cy="27" rx="2" ry="1.5" fill="${c.skin}" opacity="0.6"/>
+
+            <!-- Mouth (wide smile) -->
+            <path d="M24 32 Q27 36 30 36 Q33 36 36 32" stroke="#a0522d" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+            <path d="M26 33 Q30 35.5 34 33" fill="#c0392b" opacity="0.3"/>
+
             <!-- Cheek blush -->
-            <circle cx="15" cy="24" r="4" fill="url(#cheek-${id})"/>
-            <circle cx="45" cy="24" r="4" fill="url(#cheek-${id})"/>
-            <!-- Hair / Cap -->
-            ${c.capStyle !== 'none' ? capSvg : `<path d="M12 12 Q18 -4 30 2 Q42 -4 48 12 Q44 6 30 8 Q16 6 12 12Z" fill="${c.hair}"/>`}
+            <ellipse cx="13" cy="28" rx="5" ry="3.5" fill="url(#bl-${id})"/>
+            <ellipse cx="47" cy="28" rx="5" ry="3.5" fill="url(#bl-${id})"/>
+
+            <!-- Hair (voluminous, layered) -->
+            ${hairSvg}
+
+            <!-- Accessory (on top of hair) -->
+            ${accessorySvg}
         </g>
     </svg>`;
 }
@@ -1662,10 +1750,10 @@ function initOfficeAgents() {
             bubble.textContent = msg;
             bubble.classList.add('visible');
 
-            // Hide after 5 seconds
+            // Hide after 8 seconds
             setTimeout(() => {
                 bubble.classList.remove('visible');
-            }, 5000);
+            }, 8000);
         });
     }, 4000);
 }
