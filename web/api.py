@@ -1558,13 +1558,42 @@ def get_discovery_stats():
 
 
 # ─── TAM OTOMASYON (v5.0 — Full Pipeline) ────────────────────
+_STATE_FILE = os.path.join(PROJECT_ROOT, "data", "automation_state.json")
+
+def _load_persisted_state():
+    """Disk'ten kaydedilmiş otomasyon durumunu yükle."""
+    try:
+        if os.path.exists(_STATE_FILE):
+            with open(_STATE_FILE, "r", encoding="utf-8") as f:
+                return json.loads(f.read())
+    except Exception:
+        pass
+    return {}
+
+def _save_persisted_state(state_dict):
+    """Otomasyon durumunu disk'e kaydet (Passenger process sıfırlanması için)."""
+    try:
+        os.makedirs(os.path.dirname(_STATE_FILE), exist_ok=True)
+        save_data = {
+            "cycle": state_dict.get("cycle", 0),
+            "last_action": state_dict.get("last_action", ""),
+            "last_cycle_at": state_dict.get("last_cycle_at", ""),
+            "stats": state_dict.get("stats", {}),
+            "running": state_dict.get("running", False),
+        }
+        with open(_STATE_FILE, "w", encoding="utf-8") as f:
+            f.write(json.dumps(save_data, ensure_ascii=False, indent=2))
+    except Exception as e:
+        log.warning(f"[STATE] Kaydet hatası: {e}")
+
+_persisted = _load_persisted_state()
 _automation_state = {
-    "running": False,
+    "running": _persisted.get("running", False),
     "thread": None,
-    "cycle": 0,
-    "last_action": "",
-    "last_cycle_at": "",
-    "stats": {},
+    "cycle": _persisted.get("cycle", 0),
+    "last_action": _persisted.get("last_action", ""),
+    "last_cycle_at": _persisted.get("last_cycle_at", ""),
+    "stats": _persisted.get("stats", {}),
     "logs": [],
 }
 
@@ -2038,13 +2067,28 @@ def stop_automation():
 
 @app.route("/api/automation/status", methods=["GET"])
 def get_automation_status():
-    """Otomasyon durumunu dondur."""
+    """Otomasyon durumunu dondur (disk'ten de oku)."""
+    # Memory'de state varsa onu kullan, yoksa disk'ten oku
+    cycle = _automation_state["cycle"]
+    last_cycle_at = _automation_state["last_cycle_at"]
+    last_action = _automation_state["last_action"]
+    stats = _automation_state["stats"]
+    running = _automation_state["running"]
+
+    if cycle == 0 and not last_cycle_at:
+        persisted = _load_persisted_state()
+        cycle = persisted.get("cycle", 0)
+        last_cycle_at = persisted.get("last_cycle_at", "")
+        last_action = persisted.get("last_action", "")
+        stats = persisted.get("stats", {})
+        running = persisted.get("running", False)
+
     return jsonify({
-        "running": _automation_state["running"],
-        "cycle": _automation_state["cycle"],
-        "last_action": _automation_state["last_action"],
-        "last_cycle_at": _automation_state["last_cycle_at"],
-        "stats": _automation_state["stats"],
+        "running": running,
+        "cycle": cycle,
+        "last_action": last_action,
+        "last_cycle_at": last_cycle_at,
+        "stats": stats,
         "logs": _automation_state.get("logs", [])[-50:],
     })
 
@@ -2445,6 +2489,9 @@ def cron_run_cycle():
 
     # Running durumunu göster (cron çalıştığını göstermek için)
     _automation_state["running"] = True
+
+    # State'i diske kaydet (Passenger process sıfırlamasına karşı)
+    _save_persisted_state(_automation_state)
 
     return jsonify(results)
 
