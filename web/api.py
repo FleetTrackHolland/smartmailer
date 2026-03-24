@@ -2134,7 +2134,7 @@ def get_automation_status():
     """Otomasyon durumunu dondur — heartbeat dosyasından kontrol et."""
     _HEARTBEAT = os.path.join(PROJECT_ROOT, "data", "heartbeat.txt")
 
-    # Heartbeat kontrolü: cron son 15 dk'da çalıştı mı?
+    # Heartbeat kontrolü: cron son 30 dk'da çalıştı mı?
     running = False
     last_cycle_at = ""
     try:
@@ -2147,15 +2147,34 @@ def get_automation_status():
                 try:
                     hb_dt = _dt.fromisoformat(hb_time)
                     diff = (_dt.now() - hb_dt).total_seconds()
-                    if diff < 900:  # 15 dakika = 900 saniye
+                    if diff < 1800:  # 30 dakika = 1800 saniye
                         running = True
                 except Exception:
                     pass
     except Exception:
         pass
 
-    # Disk state'ten cycle ve action bilgisi
+    # Fallback: persisted state veya in-memory state running ise
     persisted = _load_persisted_state()
+    if not running and persisted.get("running"):
+        # Persisted state'te de son cycle zamanını kontrol et
+        p_cycle_at = persisted.get("last_cycle_at", "")
+        if p_cycle_at:
+            try:
+                from datetime import datetime as _dt2
+                p_dt = _dt2.fromisoformat(p_cycle_at)
+                if (_dt2.now() - p_dt).total_seconds() < 1800:
+                    running = True
+                    if not last_cycle_at:
+                        last_cycle_at = p_cycle_at
+            except Exception:
+                pass
+
+    # In-memory state
+    if _automation_state.get("running"):
+        running = True
+
+    # Disk state'ten cycle ve action bilgisi
     cycle = persisted.get("cycle", 0) or _automation_state.get("cycle", 0)
     last_action = persisted.get("last_action", "") or _automation_state.get("last_action", "")
     stats = persisted.get("stats", {}) or _automation_state.get("stats", {})
