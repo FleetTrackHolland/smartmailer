@@ -1180,86 +1180,121 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .meeting-seat.depth-mid   { transform: scale(0.9);  z-index: 5; }
 .meeting-seat.depth-near  { transform: scale(1.1);  z-index: 7; }
 .meeting-seat.depth-front { transform: scale(1.2);  z-index: 9; }
-
 /* ═══════════════════════════════════════════ */
-/* ═══ CODE-BUILT 3D CHARACTER SYSTEM ═══════ */
+/* ═══ CODE-BUILT 3D CHIBI CHARACTERS ═══════ */
 /* ═══════════════════════════════════════════ */
 
 .agent-avatar {
-    width: 60px;
-    height: 75px;
+    width: 80px;
+    height: 95px;
     background: transparent;
     border: none;
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: center;
     overflow: visible;
     position: relative;
 }
 
 .agent-avatar.boss {
-    width: 65px;
-    height: 80px;
-    filter: drop-shadow(0 0 8px rgba(255,215,0,0.4));
+    width: 85px;
+    height: 100px;
+    filter: drop-shadow(0 0 10px rgba(255,215,0,0.5));
 }
 
-/* ─── 3D Character Container ─── */
+/* ─── 3D Chibi Container ─── */
 .char3d {
     position: relative;
-    width: 40px;
-    height: 65px;
+    width: 56px;
+    height: 85px;
     transform-style: preserve-3d;
-    transform: perspective(300px) rotateX(5deg);
+    transform: perspective(400px) rotateX(5deg);
 }
 
-/* ─── HEAD ─── */
+/* ─── HEAD (chibi = büyük kafa ~%40) ─── */
 .char3d-head {
     position: absolute;
     top: 0;
     left: 50%;
     transform: translateX(-50%);
-    width: 18px;
-    height: 18px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     z-index: 10;
-    box-shadow: inset -3px -2px 5px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.3);
+    box-shadow: inset -4px -3px 6px rgba(0,0,0,0.25), 0 2px 4px rgba(0,0,0,0.3);
 }
 
 /* ─── HAIR ─── */
 .char3d-hair {
     position: absolute;
-    top: -1px;
+    top: -3px;
     left: 50%;
     transform: translateX(-50%);
-    width: 20px;
-    height: 10px;
-    border-radius: 10px 10px 0 0;
+    width: 36px;
+    height: 16px;
+    border-radius: 18px 18px 0 0;
     z-index: 11;
 }
 
-/* ─── EYES ─── */
+/* ─── EYES (chibi = büyük parlak gözler) ─── */
 .char3d-eye-l, .char3d-eye-r {
     position: absolute;
-    top: 8px;
-    width: 3px;
-    height: 3px;
+    top: 14px;
+    width: 6px;
+    height: 7px;
     border-radius: 50%;
     background: #fff;
     z-index: 12;
-    box-shadow: 0 0 2px rgba(255,255,255,0.8);
+    box-shadow: 0 0 3px rgba(255,255,255,0.9);
 }
-.char3d-eye-l { left: 14px; }
-.char3d-eye-r { left: 23px; }
-
-/* ─── BODY/TORSO ─── */
-.char3d-body {
+/* İris (pupil) */
+.char3d-eye-l::after, .char3d-eye-r::after {
+    content: '';
     position: absolute;
-    top: 17px;
+    top: 2px;
+    left: 2px;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #1a1a2e;
+}
+/* Parıltı (sparkle) */
+.char3d-eye-l::before, .char3d-eye-r::before {
+    content: '';
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.9);
+    z-index: 13;
+}
+.char3d-eye-l { left: 17px; }
+.char3d-eye-r { left: 33px; }
+
+/* ─── KÜÇÜK AĞIZ ─── */
+.char3d-head::after {
+    content: '';
+    position: absolute;
+    bottom: 6px;
     left: 50%;
     transform: translateX(-50%);
-    width: 16px;
-    height: 22px;
-    border-radius: 3px 3px 2px 2px;
+    width: 6px;
+    height: 3px;
+    border-radius: 0 0 6px 6px;
+    background: rgba(0,0,0,0.15);
+}
+
+/* ─── BODY/TORSO (chibi = küçük gövde) ─── */
+.char3d-body {
+    position: absolute;
+    top: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 22px;
+    height: 20px;
+    border-radius: 5px 5px 3px 3px;
     z-index: 5;
     box-shadow: inset -3px -2px 5px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.2);
 }
@@ -1267,11 +1302,11 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 /* ─── TIE (Orchestrator only) ─── */
 .char3d-tie {
     position: absolute;
-    top: 18px;
+    top: 31px;
     left: 50%;
     transform: translateX(-50%);
-    width: 4px;
-    height: 12px;
+    width: 5px;
+    height: 14px;
     z-index: 6;
     clip-path: polygon(30% 0, 70% 0, 100% 100%, 0 100%);
 }
@@ -1279,60 +1314,100 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 /* ─── ARMS ─── */
 .char3d-arm-l, .char3d-arm-r {
     position: absolute;
-    top: 18px;
-    width: 6px;
-    height: 20px;
-    border-radius: 3px;
+    top: 31px;
+    width: 8px;
+    height: 18px;
+    border-radius: 4px;
     z-index: 4;
     transform-origin: top center;
     box-shadow: inset -2px 0 3px rgba(0,0,0,0.2);
 }
-.char3d-arm-l { left: 5px; }
-.char3d-arm-r { right: 5px; }
+.char3d-arm-l { left: 6px; }
+.char3d-arm-r { right: 6px; }
 
 /* ─── LEGS ─── */
 .char3d-leg-l, .char3d-leg-r {
     position: absolute;
-    top: 38px;
-    width: 7px;
-    height: 22px;
-    border-radius: 2px 2px 3px 3px;
+    top: 49px;
+    width: 9px;
+    height: 20px;
+    border-radius: 3px 3px 4px 4px;
     z-index: 3;
     transform-origin: top center;
     box-shadow: inset -2px 0 3px rgba(0,0,0,0.2);
+    transition: transform 0.4s ease;
 }
-.char3d-leg-l { left: 10px; }
-.char3d-leg-r { right: 10px; }
+.char3d-leg-l { left: 14px; }
+.char3d-leg-r { right: 14px; }
+
+/* ─── SHOES (ayakkabı uçları) ─── */
+.char3d-leg-l::after, .char3d-leg-r::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    border-radius: 2px;
+    background: inherit;
+    filter: brightness(0.7);
+}
 
 /* ─── GROUND SHADOW ─── */
 .char3d-shadow {
     position: absolute;
-    bottom: -4px;
+    bottom: -5px;
     left: 50%;
     transform: translateX(-50%);
-    width: 30px;
-    height: 8px;
-    background: radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, transparent 70%);
+    width: 40px;
+    height: 10px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.3) 0%, transparent 70%);
     border-radius: 50%;
     z-index: 1;
-    filter: blur(1px);
+    filter: blur(2px);
 }
 
-/* ═══ IDLE — masada çalışma (kollar yazı yazıyor) ═══ */
+/* ═══ SITTING POSE — masada oturma (bacaklar 90° bükülü) ═══ */
+.meeting-seat.idle .char3d-leg-l,
+.meeting-seat.at-desk .char3d-leg-l {
+    transform: rotateX(-85deg);
+}
+.meeting-seat.idle .char3d-leg-r,
+.meeting-seat.at-desk .char3d-leg-r {
+    transform: rotateX(-85deg);
+}
+
+/* At-table da oturma */
+.meeting-seat.at-table .char3d-leg-l,
+.meeting-seat.at-table .char3d-leg-r {
+    transform: rotateX(-85deg);
+}
+
+/* Masada oturma — kollar öne uzanmış (klavye/tablet) */
+.meeting-seat.idle .char3d-arm-l,
+.meeting-seat.at-desk .char3d-arm-l {
+    transform: rotateX(-60deg);
+}
+.meeting-seat.idle .char3d-arm-r,
+.meeting-seat.at-desk .char3d-arm-r {
+    transform: rotateX(-60deg);
+}
+
+/* ═══ IDLE — oturarak yazı yazma (kollar öne uzanmış, hafif hareket) ═══ */
 .meeting-seat.idle .char3d-arm-l {
-    animation: idleArmL 1.2s ease-in-out infinite;
+    animation: idleTypingL 1.2s ease-in-out infinite;
 }
 .meeting-seat.idle .char3d-arm-r {
-    animation: idleArmR 1.2s ease-in-out infinite 0.6s;
+    animation: idleTypingR 1.2s ease-in-out infinite 0.6s;
 }
 
-@keyframes idleArmL {
-    0%, 100% { transform: rotateX(0deg); }
-    50% { transform: rotateX(-15deg); }
+@keyframes idleTypingL {
+    0%, 100% { transform: rotateX(-55deg); }
+    50% { transform: rotateX(-70deg); }
 }
-@keyframes idleArmR {
-    0%, 100% { transform: rotateX(0deg); }
-    50% { transform: rotateX(-15deg); }
+@keyframes idleTypingR {
+    0%, 100% { transform: rotateX(-55deg); }
+    50% { transform: rotateX(-70deg); }
 }
 
 /* Hafif nefes alma efekti */
@@ -1340,8 +1415,8 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     animation: idleBreathe 3s ease-in-out infinite;
 }
 @keyframes idleBreathe {
-    0%, 100% { transform: perspective(300px) rotateX(5deg) translateY(0); }
-    50% { transform: perspective(300px) rotateX(5deg) translateY(-2px); }
+    0%, 100% { transform: perspective(400px) rotateX(5deg) translateY(0); }
+    50% { transform: perspective(400px) rotateX(5deg) translateY(-2px); }
 }
 
 /* ═══ WALKING — kollar ve bacaklar sallanıyor ═══ */
@@ -1380,10 +1455,10 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     animation: walkBounce3D 0.4s ease-in-out infinite !important;
 }
 @keyframes walkBounce3D {
-    0%, 100% { transform: perspective(300px) rotateX(5deg) translateY(0) rotateZ(0deg); }
-    25% { transform: perspective(300px) rotateX(8deg) translateY(-6px) rotateZ(-2deg); }
-    50% { transform: perspective(300px) rotateX(5deg) translateY(0) rotateZ(0deg); }
-    75% { transform: perspective(300px) rotateX(8deg) translateY(-6px) rotateZ(2deg); }
+    0%, 100% { transform: perspective(400px) rotateX(5deg) translateY(0) rotateZ(0deg); }
+    25% { transform: perspective(400px) rotateX(8deg) translateY(-6px) rotateZ(-2deg); }
+    50% { transform: perspective(400px) rotateX(5deg) translateY(0) rotateZ(0deg); }
+    75% { transform: perspective(400px) rotateX(8deg) translateY(-6px) rotateZ(2deg); }
 }
 
 /* Yürürken gölge nabız */
