@@ -2067,14 +2067,15 @@ def stop_automation():
 
 @app.route("/api/automation/status", methods=["GET"])
 def get_automation_status():
-    """Otomasyon durumunu dondur (disk'ten de oku)."""
-    # Memory'de state varsa onu kullan, yoksa disk'ten oku
+    """Otomasyon durumunu dondur — DB'den de kontrol et."""
+    # 1) Memory'den oku
     cycle = _automation_state["cycle"]
     last_cycle_at = _automation_state["last_cycle_at"]
     last_action = _automation_state["last_action"]
     stats = _automation_state["stats"]
     running = _automation_state["running"]
 
+    # 2) Memory boşsa disk'ten oku
     if cycle == 0 and not last_cycle_at:
         persisted = _load_persisted_state()
         cycle = persisted.get("cycle", 0)
@@ -2082,6 +2083,37 @@ def get_automation_status():
         last_action = persisted.get("last_action", "")
         stats = persisted.get("stats", {})
         running = persisted.get("running", False)
+
+    # 3) Hâlâ boşsa DB'den son gönderimi kontrol et
+    if not running and not last_cycle_at:
+        try:
+            sent_log = db.get_sent_emails()
+            if sent_log:
+                # En son gönderilen email'in tarihini bul
+                latest = sent_log[0] if isinstance(sent_log, list) else None
+                if latest:
+                    ts = latest.get("sent_at") or latest.get("date") or latest.get("timestamp") or ""
+                    if ts:
+                        from datetime import datetime as _dt
+                        try:
+                            last_time = _dt.fromisoformat(str(ts).replace("Z", "+00:00"))
+                            now = _dt.now(last_time.tzinfo) if last_time.tzinfo else _dt.now()
+                            diff_min = (now - last_time).total_seconds() / 60
+                            if diff_min < 20:
+                                running = True
+                                last_cycle_at = str(ts)
+                                last_action = "Cron pipeline aktif (son gönderimden tespit)"
+                        except Exception:
+                            pass
+                # Bugün gönderim varsa en azından cycle=1 göster
+                today_str = datetime.now().strftime("%Y-%m-%d")
+                today_count = sum(1 for s in sent_log if str(s.get("sent_at", s.get("date", ""))).startswith(today_str))
+                if today_count > 0 and cycle == 0:
+                    cycle = today_count
+                    if not running:
+                        last_action = f"Bugün {today_count} email gönderildi"
+        except Exception as e:
+            log.warning(f"[STATUS] DB kontrol hatası: {e}")
 
     return jsonify({
         "running": running,
