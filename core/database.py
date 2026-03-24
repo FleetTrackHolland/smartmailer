@@ -609,7 +609,7 @@ class Database:
                        CASE WHEN r.id IS NOT NULL THEN 1 ELSE 0 END as replied
                 FROM sent_log s
                 LEFT JOIN drafts d ON s.email = d.email
-                LEFT JOIN events e_open ON s.email = e_open.email AND e_open.event_type = 'open'
+                LEFT JOIN events e_open ON s.email = e_open.email AND e_open.event_type IN ('open','opened','unique_opened')
                 LEFT JOIN responses r ON s.email = r.email
                 GROUP BY s.id
                 ORDER BY s.sent_at DESC
@@ -741,7 +741,7 @@ class Database:
                 opened = conn.execute("""
                     SELECT COUNT(DISTINCT e.email) FROM events e
                     INNER JOIN sent_log s ON e.email = s.email
-                    WHERE s.ab_variant = ? AND e.event_type = 'open'
+                    WHERE s.ab_variant = ? AND e.event_type IN ('open','opened','unique_opened')
                 """, (variant,)).fetchone()[0]
                 if sent > 0:
                     variants[variant] = {
@@ -1013,10 +1013,10 @@ class Database:
                 "SELECT COUNT(DISTINCT email) FROM drafts"
             ).fetchone()[0]
             bounces = conn.execute(
-                "SELECT COUNT(*) FROM events WHERE event_type = 'bounce'"
+                "SELECT COUNT(*) FROM events WHERE event_type IN ('bounce','hard_bounce','soft_bounce')"
             ).fetchone()[0]
             opens = conn.execute(
-                "SELECT COUNT(*) FROM events WHERE event_type = 'open'"
+                "SELECT COUNT(*) FROM events WHERE event_type IN ('open','opened','unique_opened')"
             ).fetchone()[0]
             hot_leads = conn.execute(
                 "SELECT COUNT(*) FROM responses WHERE classification = 'interested'"
