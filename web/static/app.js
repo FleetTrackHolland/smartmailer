@@ -1113,6 +1113,44 @@ const AGENT_ICONS = {
     'A/B Test Engine': '/img/agent_abtest.png'
 };
 
+// ═══ 3D DEPTH SCALING — Y pozisyonuna göre boyut ayarla ═══
+function applyDepthScaling(seat) {
+    const top = parseInt(seat.style.top || getComputedStyle(seat).top) || 0;
+    seat.classList.remove('depth-far', 'depth-mid', 'depth-near', 'depth-front');
+    if (top < 150)      seat.classList.add('depth-far');
+    else if (top < 350) seat.classList.add('depth-mid');
+    else if (top < 550) seat.classList.add('depth-near');
+    else                seat.classList.add('depth-front');
+}
+
+// ═══ DIRECTION DETECTION — yürürken hangi yöne bak ═══
+function detectDirection(seat, targetClass) {
+    // Get current position
+    const rect = seat.getBoundingClientRect();
+    const currentLeft = rect.left;
+
+    // Determine target side (table is in the center ~48%)
+    const office = document.getElementById('meeting-office');
+    const officeCenter = office ? office.getBoundingClientRect().width / 2 : 600;
+
+    seat.classList.remove('facing-left', 'facing-right');
+    if (targetClass === 'at-table') {
+        // Walking to table — face toward center
+        if (currentLeft > officeCenter) {
+            seat.classList.add('facing-left');
+        } else {
+            seat.classList.add('facing-right');
+        }
+    } else {
+        // Walking back to desk — face away from center
+        if (currentLeft > officeCenter) {
+            seat.classList.add('facing-right');
+        } else {
+            seat.classList.add('facing-left');
+        }
+    }
+}
+
 async function startAgentMeeting() {
     showToast('Agent toplantısı başlatılıyor...', 'info');
     const d = await api('/api/agents/meeting', 'POST', { action: 'start' });
@@ -1128,26 +1166,28 @@ async function startAgentMeeting() {
         // ── Toplantı masasını aktifleştir
         document.querySelector('.meeting-table')?.classList.add('active');
 
-        // ── Agent'ları sırayla masaya yürüt
+        // ── Agent'ları sırayla masaya yürüt (3D aware)
         const seats = document.querySelectorAll('.meeting-seat');
         seats.forEach((seat, i) => {
-            // Önce yürüme animasyonu başlat
+            // 1) Direction detection — önce yönü belirle
             setTimeout(() => {
+                detectDirection(seat, 'at-table');
                 seat.classList.remove('idle', 'at-desk');
                 seat.classList.add('walking');
-            }, i * 300);
+            }, i * 350);
 
-            // Sonra masaya oturt
+            // 2) Masaya otur — walking dur, depth güncelle
             setTimeout(() => {
-                seat.classList.remove('walking');
+                seat.classList.remove('walking', 'facing-left', 'facing-right');
                 seat.classList.add('at-table');
-            }, i * 300 + 1800);
+                applyDepthScaling(seat);
+            }, i * 350 + 2000);
         });
 
         showToast('Toplantı başladı — agent\'lar toplanıyor...', 'success');
 
         // Tüm agent'lar oturduktan sonra mesajları göster
-        const totalWalkTime = seats.length * 300 + 2500;
+        const totalWalkTime = seats.length * 350 + 2800;
         setTimeout(() => {
             if (d.messages && d.messages.length > 0) {
                 displayMeetingMessages(d.messages);
@@ -1176,18 +1216,20 @@ function stopAgentMeeting() {
     // ── Toplantı masasını deaktif et
     document.querySelector('.meeting-table')?.classList.remove('active');
 
-    // ── Agent'ları sırayla masalarına geri yürüt
+    // ── Agent'ları sırayla masalarına geri yürüt (3D aware)
     const seats = document.querySelectorAll('.meeting-seat');
     seats.forEach((seat, i) => {
         setTimeout(() => {
+            detectDirection(seat, 'at-desk');
             seat.classList.remove('at-table');
             seat.classList.add('walking');
-        }, i * 200);
+        }, i * 250);
 
         setTimeout(() => {
-            seat.classList.remove('walking');
+            seat.classList.remove('walking', 'facing-left', 'facing-right');
             seat.classList.add('at-desk', 'idle');
-        }, i * 200 + 1800);
+            applyDepthScaling(seat);
+        }, i * 250 + 2000);
     });
 
     showToast('Toplantı sona erdi — agent\'lar masalarına dönüyor', 'info');
@@ -1265,6 +1307,8 @@ function displayMeetingMessages(messages) {
 function initOfficeAgents() {
     document.querySelectorAll('.meeting-seat').forEach(seat => {
         seat.classList.add('at-desk', 'idle');
+        // Apply initial depth scaling
+        setTimeout(() => applyDepthScaling(seat), 100);
     });
 
     // Spawn ambient floating particles

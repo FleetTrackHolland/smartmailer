@@ -991,7 +991,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     letter-spacing: 1px;
 }
 
-/* ─── Agent Koltukları — artık animasyonlu ─── */
+/* ─── Agent Koltukları — 3D Karakter Sistemi ─── */
 .meeting-seat {
     position: absolute;
     display: flex;
@@ -1000,115 +1000,186 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     gap: 4px;
     z-index: 5;
     cursor: pointer;
+    transform-style: preserve-3d;
     /* Smooth walking transition */
     transition: top 2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                left 2s cubic-bezier(0.25, 0.46, 0.45, 0.94),
-                transform 2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+                left 2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .meeting-seat:hover { z-index: 20; }
-.meeting-seat:hover .agent-avatar { transform: scale(1.15) translateY(-3px); }
+.meeting-seat:hover .agent-avatar { transform: scale(1.15) translateY(-5px); }
 
-/* Idle — masada çalışırken hafif sallanma */
-.meeting-seat.idle {
-    animation: idleBob 3s ease-in-out infinite;
+/* ═══ 3D CHARACTER BASE — perspective standing ═══ */
+.meeting-seat .agent-avatar {
+    transform-style: preserve-3d;
+    transform: perspective(400px) rotateX(5deg) rotateY(0deg);
+    transition: transform 0.4s var(--ease);
 }
 
-@keyframes idleBob {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-4px); }
+/* Direction awareness — character faces movement direction */
+.meeting-seat.facing-left .agent-avatar {
+    transform: perspective(400px) rotateX(5deg) rotateY(15deg) scaleX(-1);
+}
+.meeting-seat.facing-right .agent-avatar {
+    transform: perspective(400px) rotateX(5deg) rotateY(-15deg);
 }
 
-/* Yürüme animasyonu — toplantıya giderken zıplama */
+/* ═══ IDLE — masada çalışırken (öne eğik, yazıyor) ═══ */
+.meeting-seat.idle .agent-avatar {
+    animation: idleWork 3s ease-in-out infinite;
+    transform-origin: bottom center;
+}
+
+@keyframes idleWork {
+    0%, 100% {
+        transform: perspective(400px) rotateX(8deg) rotateY(-3deg) translateY(0);
+    }
+    30% {
+        transform: perspective(400px) rotateX(12deg) rotateY(0deg) translateY(-2px);
+    }
+    60% {
+        transform: perspective(400px) rotateX(8deg) rotateY(3deg) translateY(0);
+    }
+}
+
+/* ═══ WALKING — 3D adım atma animasyonu ═══ */
 .meeting-seat.walking .agent-avatar {
-    animation: walkBounce 0.4s ease-in-out infinite;
+    animation: walk3D 0.5s ease-in-out infinite !important;
+    transform-origin: bottom center;
 }
 
-@keyframes walkBounce {
-    0%, 100% { transform: translateY(0) scaleX(1); }
-    25% { transform: translateY(-8px) scaleX(0.95); }
-    50% { transform: translateY(0) scaleX(1.02); }
-    75% { transform: translateY(-6px) scaleX(0.97); }
+@keyframes walk3D {
+    0% {
+        transform: perspective(400px) rotateX(5deg) rotateZ(0deg) translateY(0) scaleY(1);
+    }
+    15% {
+        transform: perspective(400px) rotateX(8deg) rotateZ(-5deg) translateY(-12px) scaleY(1.03);
+    }
+    30% {
+        transform: perspective(400px) rotateX(3deg) rotateZ(0deg) translateY(-2px) scaleY(0.97);
+    }
+    50% {
+        transform: perspective(400px) rotateX(5deg) rotateZ(0deg) translateY(0) scaleY(1);
+    }
+    65% {
+        transform: perspective(400px) rotateX(8deg) rotateZ(5deg) translateY(-12px) scaleY(1.03);
+    }
+    80% {
+        transform: perspective(400px) rotateX(3deg) rotateZ(0deg) translateY(-2px) scaleY(0.97);
+    }
+    100% {
+        transform: perspective(400px) rotateX(5deg) rotateZ(0deg) translateY(0) scaleY(1);
+    }
 }
 
-/* Konuşma efekti */
+/* Walking with direction */
+.meeting-seat.walking.facing-left .agent-avatar {
+    animation: walk3DLeft 0.5s ease-in-out infinite !important;
+}
+
+@keyframes walk3DLeft {
+    0% {
+        transform: perspective(400px) rotateX(5deg) rotateY(15deg) scaleX(-1) translateY(0);
+    }
+    15% {
+        transform: perspective(400px) rotateX(8deg) rotateY(20deg) rotateZ(5deg) scaleX(-1) translateY(-12px);
+    }
+    30% {
+        transform: perspective(400px) rotateX(3deg) rotateY(12deg) scaleX(-1) translateY(-2px) scaleY(0.97);
+    }
+    50% {
+        transform: perspective(400px) rotateX(5deg) rotateY(15deg) scaleX(-1) translateY(0);
+    }
+    65% {
+        transform: perspective(400px) rotateX(8deg) rotateY(20deg) rotateZ(-5deg) scaleX(-1) translateY(-12px);
+    }
+    80% {
+        transform: perspective(400px) rotateX(3deg) rotateY(12deg) scaleX(-1) translateY(-2px) scaleY(0.97);
+    }
+    100% {
+        transform: perspective(400px) rotateX(5deg) rotateY(15deg) scaleX(-1) translateY(0);
+    }
+}
+
+/* ═══ SPEAKING — konuşma efekti (yeşil halka + titreme) ═══ */
 .meeting-seat.speaking .agent-avatar {
-    box-shadow: 0 0 20px rgba(0,214,143,0.5), 0 0 40px rgba(0,214,143,0.2);
-    border-color: var(--green);
-    animation: speakPulse 1.2s ease-in-out infinite;
+    animation: speakAnim 0.8s ease-in-out infinite !important;
+    filter: drop-shadow(0 0 12px rgba(0,214,143,0.5)) drop-shadow(0 4px 8px rgba(0,0,0,0.3));
 }
 
-@keyframes speakPulse {
-    0%, 100% { box-shadow: 0 0 15px rgba(0,214,143,0.4); }
-    50% { box-shadow: 0 0 30px rgba(0,214,143,0.7), 0 0 60px rgba(0,214,143,0.2); }
+@keyframes speakAnim {
+    0%, 100% {
+        transform: perspective(400px) rotateX(5deg) translateY(0) scale(1);
+    }
+    25% {
+        transform: perspective(400px) rotateX(5deg) translateY(-3px) scale(1.04);
+    }
+    50% {
+        transform: perspective(400px) rotateX(8deg) translateY(0) scale(1);
+    }
+    75% {
+        transform: perspective(400px) rotateX(5deg) translateY(-2px) scale(1.02);
+    }
 }
 
-/* Masada çalışma efekti — mini monitör glow */
-.meeting-seat.idle::before {
+/* ═══ GROUND SHADOW — 3D gölge (her durum için) ═══ */
+.meeting-seat::before {
     content: '';
     position: absolute;
-    bottom: -12px;
-    width: 50px;
-    height: 12px;
-    background: radial-gradient(ellipse, rgba(0,0,0,0.5) 0%, transparent 70%);
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%) rotateX(60deg);
+    width: 55px;
+    height: 20px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, transparent 70%);
     border-radius: 50%;
     z-index: -1;
-    animation: shadowPulse 3s ease-in-out infinite;
+    filter: blur(2px);
 }
 
-@keyframes shadowPulse {
-    0%, 100% { transform: scaleX(1); opacity: 0.5; }
-    50% { transform: scaleX(1.15); opacity: 0.7; }
+/* Shadow reacts to states */
+.meeting-seat.walking::before {
+    animation: shadowStep 0.5s ease-in-out infinite;
 }
 
+@keyframes shadowStep {
+    0%, 50%, 100% { transform: translateX(-50%) rotateX(60deg) scaleX(1); opacity: 0.8; }
+    25% { transform: translateX(-50%) rotateX(60deg) scaleX(0.7); opacity: 0.5; }
+    75% { transform: translateX(-50%) rotateX(60deg) scaleX(0.7); opacity: 0.5; }
+}
+
+.meeting-seat.idle::before {
+    animation: shadowIdle 3s ease-in-out infinite;
+}
+
+@keyframes shadowIdle {
+    0%, 100% { transform: translateX(-50%) rotateX(60deg) scaleX(1); }
+    50% { transform: translateX(-50%) rotateX(60deg) scaleX(1.1); }
+}
+
+/* ═══ DESK INDICATOR — laptop emoji at desk ═══ */
 .meeting-seat.idle::after {
     content: '💻';
     position: absolute;
     bottom: -22px;
     font-size: 16px;
     opacity: 0.7;
-    animation: screenGlow 2s ease-in-out infinite alternate;
-    filter: drop-shadow(0 0 4px rgba(100,149,237,0.5));
+    animation: typing 0.8s ease-in-out infinite;
 }
 
-@keyframes screenGlow {
-    0% { opacity: 0.5; filter: drop-shadow(0 0 2px rgba(100,149,237,0.3)); }
-    100% { opacity: 0.9; filter: drop-shadow(0 0 8px rgba(100,149,237,0.7)); }
+@keyframes typing {
+    0%, 100% { transform: translateY(0); opacity: 0.6; }
+    50% { transform: translateY(-2px); opacity: 0.9; }
 }
 
-/* Walking ground shadow */
-.meeting-seat.walking::before {
-    content: '';
-    position: absolute;
-    bottom: -12px;
-    width: 40px;
-    height: 10px;
-    background: radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, transparent 70%);
-    border-radius: 50%;
-    z-index: -1;
-    animation: walkShadow 0.4s ease-in-out infinite;
-}
-
-@keyframes walkShadow {
-    0%, 100% { transform: scaleX(1); }
-    50% { transform: scaleX(0.7); }
-}
-
-/* At table ground shadow */
-.meeting-seat.at-table::before {
-    content: '';
-    position: absolute;
-    bottom: -10px;
-    width: 45px;
-    height: 10px;
-    background: radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, transparent 70%);
-    border-radius: 50%;
-    z-index: -1;
-}
-
-/* Toplantıda — monitör kaldır */
+/* Toplantıda laptop kaldır */
 .meeting-seat.at-table::after { display: none; }
 
+/* ═══ DEPTH SCALING — uzaktakiler küçük, yakındakiler büyük ═══ */
+.meeting-seat.depth-far   { transform: scale(0.7);  z-index: 3; }
+.meeting-seat.depth-mid   { transform: scale(0.9);  z-index: 5; }
+.meeting-seat.depth-near  { transform: scale(1.1);  z-index: 7; }
+.meeting-seat.depth-front { transform: scale(1.2);  z-index: 9; }
 .agent-avatar {
     width: 80px;
     height: 80px;
