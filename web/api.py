@@ -2186,6 +2186,269 @@ def auto_determine_winner():
                     "winner": winner, "stats": variant_stats})
 
 
+# ─── CRON-TRIGGERED PIPELINE (Shared Hosting Uyumlu) ─────────
+@app.route("/cron/run-cycle", methods=["GET", "POST"])
+def cron_run_cycle():
+    """
+    CRON JOB İLE TETİKLENEN PİPELİNE.
+    Passenger WSGI'da background threadler ölüyor, bu yüzden
+    pipeline her 10 dakikada bir cron job ile çağrılır.
+    
+    Kullanım: curl https://app.fleettrackholland.nl/cron/run-cycle?secret=fleettrack2026
+    """
+    import gc
+    import traceback
+
+    # Güvenlik kontrolü
+    deploy_secret = getattr(config, 'DEPLOY_SECRET', 'fleettrack2026')
+    req_secret = request.args.get("secret", "")
+    if not req_secret:
+        req_secret = (request.json or {}).get("secret", "") if request.is_json else ""
+    if req_secret != deploy_secret:
+        return jsonify({"error": "Unauthorized"}), 403
+
+    results = {
+        "started_at": datetime.now().isoformat(),
+        "phase_1_discover": {},
+        "phase_2_score": {},
+        "phase_3_send": {},
+        "phase_4_followup": {},
+    }
+
+    _automation_state["cycle"] += 1
+    _automation_state["running"] = True
+    cycle = _automation_state["cycle"]
+    _auto_log(f"═══ CRON Cycle {cycle} BAŞLADI ═══")
+
+    # ═══ PHASE 1: AI LEAD KEŞFİ ═══
+    total_discovered = 0
+    try:
+        _automation_state["last_action"] = f"Cron Cycle {cycle}: Phase 1 — AI lead keşfi"
+        _auto_log("🔍 Phase 1: AI lead keşfi başlıyor")
+
+        sectors_to_search = list(config.SECTORS)
+        for sector in sectors_to_search:
+            sector = sector.strip()
+            if not sector:
+                continue
+
+            try:
+                _auto_log(f"🔍 AI arama: {sector}")
+                _automation_state["last_action"] = f"Phase 1: {sector} — AI aranıyor"
+                ai_leads = lead_finder._ai_bulk_lead_search(sector)
+
+                if ai_leads:
+                    saved = 0
+                    for nl in ai_leads:
+                        email = nl.get("email", "")
+                        if email and not db.lead_exists(email):
+                            try:
+                                db.add_discovered_lead(
+                                    email=email,
+                                    company=nl.get("company_name", ""),
+                                    sector=sector,
+                                    location=nl.get("city", "Nederland"),
+                                    vehicles=str(nl.get("estimated_vehicles", "")),
+                                    website=nl.get("website", ""),
+                                    phone=nl.get("phone", ""),
+                                    source="ai_discovery",
+                                )
+                                saved += 1
+                            except Exception:
+                                pass
+                    total_discovered += saved
+                    _auto_log(f"✅ {sector}: {saved} yeni lead (toplam: {total_discovered})")
+                else:
+                    _auto_log(f"⚠️ {sector}: lead bulunamadı")
+            except Exception as e:
+                _auto_log(f"❌ {sector} hatası: {e}", "error")
+
+            time.sleep(5)  # Rate limit koruması
+
+        results["phase_1_discover"] = {"total_discovered": total_discovered}
+        _auto_log(f"📊 Phase 1 TAMAM: {total_discovered} lead keşfedildi")
+    except Exception as e:
+        _auto_log(f"❌ Phase 1 HATA: {e}", "error")
+        results["phase_1_discover"] = {"error": str(e)}
+
+    gc.collect()
+
+    # ═══ PHASE 2: LEAD PUANLAMA ═══
+    try:
+        _automation_state["last_action"] = f"Cron Cycle {cycle}: Phase 2 — Lead puanlama"
+        _auto_log("📊 Phase 2: Lead puanlama başlıyor")
+        unscored = db.get_all_leads()
+        unscored_leads = [l for l in unscored if not l.get("ai_score") or l.get("ai_score", 0) == 0]
+        scored_count = 0
+        if unscored_leads:
+            batch = unscored_leads[:20]
+            scores = lead_scorer.score_batch(batch)
+            for s in scores:
+                db.update_lead_ai_score(s["email"], s.get("score", 50), s.get("reason", ""))
+            scored_count = len(scores)
+            _auto_log(f"✅ {scored_count} lead puanlandı")
+        else:
+            _auto_log("ℹ️ Puanlanacak lead yok")
+        results["phase_2_score"] = {"scored": scored_count}
+    except Exception as e:
+        _auto_log(f"❌ Phase 2 HATA: {e}", "error")
+        results["phase_2_score"] = {"error": str(e)}
+
+    gc.collect()
+
+    # ═══ PHASE 3: EMAIL YAZ + GÖNDER ═══
+    sent_count = 0
+    try:
+        _automation_state["last_action"] = f"Cron Cycle {cycle}: Phase 3 — Email yazma ve gönderme"
+        _auto_log("✉️ Phase 3: Email yazma & gönderme")
+
+        # SendEngine
+        send_engine = None
+        try:
+            from core.send_engine import SendEngine, EmailMessage
+            send_engine = SendEngine()
+        except Exception as se:
+            _auto_log(f"⚠️ SendEngine yüklenemedi: {se}", "warning")
+
+        today_sent = db.get_today_sent_count()
+        remaining = max(0, config.DAILY_SEND_LIMIT - today_sent)
+        batch_size = min(10, remaining)
+        _auto_log(f"📊 Bugün gönderilen: {today_sent}/{config.DAILY_SEND_LIMIT}, kalan: {remaining}")
+
+        if batch_size > 0:
+            unsent = db.get_unsent_leads(limit=batch_size)
+            if unsent:
+                _auto_log(f"📋 {len(unsent)} gönderilmemiş lead bulundu")
+                for lead_data in unsent:
+                    try:
+                        email_addr = lead_data.get("email", "")
+                        company = lead_data.get("company", "")
+                        sector = lead_data.get("sector", "")
+                        if not email_addr:
+                            continue
+
+                        if db.is_duplicate_email(email_addr):
+                            continue
+
+                        # ReconAgent
+                        intel_context = ""
+                        try:
+                            from agents.recon_agent import recon_agent
+                            intel = recon_agent.investigate(lead_data)
+                            if intel:
+                                intel_context = recon_agent.format_for_copywriter(intel)
+                        except Exception:
+                            pass
+
+                        # Copywriter
+                        _auto_log(f"✍️ Email yazılıyor: {company or email_addr}")
+                        draft = copywriter.write(lead_data, intel_context=intel_context)
+                        if not draft:
+                            continue
+
+                        subject = draft.chosen_subject
+                        body_html = draft.body_html
+                        body_text = draft.body_text
+                        if not subject or not body_html:
+                            continue
+
+                        # QC
+                        qc_score = 50
+                        try:
+                            qc_result = quality.check(
+                                subject=subject, body_text=body_text,
+                                company_name=company, body_html=body_html
+                            )
+                            qc_score = qc_result.score
+                            if not qc_result.passed and qc_score < 40:
+                                _auto_log(f"⚠️ QC çok düşük ({qc_score}), atlanıyor: {company}")
+                                continue
+                        except Exception:
+                            pass
+
+                        # Draft kaydet
+                        try:
+                            db.save_draft(email_addr, {
+                                "subject_a": draft.subject_a, "subject_b": draft.subject_b,
+                                "subject_c": draft.subject_c, "chosen_subject": subject,
+                                "body_html": body_html, "body_text": body_text, "qc_score": qc_score,
+                            })
+                        except Exception:
+                            pass
+
+                        # Gönder
+                        if send_engine:
+                            msg = EmailMessage(
+                                to_email=email_addr, to_name=company,
+                                subject=subject, html_body=body_html,
+                                text_body=body_text, lead_id=email_addr,
+                            )
+                            result = send_engine.send(msg)
+                            success = result.get("success") if isinstance(result, dict) else getattr(result, "success", False)
+                            if success:
+                                method = result.get("method", "smtp") if isinstance(result, dict) else getattr(result, "method", "smtp")
+                                msg_id = result.get("message_id", "") if isinstance(result, dict) else getattr(result, "message_id", "")
+                                db.log_sent(email=email_addr, company=company, sector=sector,
+                                            subject=subject, method=method, message_id=msg_id, ab_variant="A")
+                                sent_count += 1
+                                _auto_log(f"✅ Email gönderildi: {company} ({email_addr})")
+
+                                try:
+                                    follow_up.schedule_followups(
+                                        email=email_addr, original_subject=subject,
+                                        company=company, sector=sector,
+                                        vehicles=str(lead_data.get("vehicles", "")),
+                                    )
+                                except Exception:
+                                    pass
+                            else:
+                                err_msg = result.get("error", "?") if isinstance(result, dict) else getattr(result, "error", "?")
+                                _auto_log(f"❌ Gönderim başarısız: {email_addr} — {err_msg}")
+                    except Exception as e:
+                        _auto_log(f"❌ Email işleme hatası: {e}", "error")
+                    time.sleep(2)
+            else:
+                _auto_log("ℹ️ Gönderilecek yeni lead yok")
+        else:
+            _auto_log(f"⚠️ Günlük limit doldu: {today_sent}/{config.DAILY_SEND_LIMIT}")
+
+        results["phase_3_send"] = {"sent": sent_count, "today_total": today_sent + sent_count}
+        _auto_log(f"📧 Phase 3 TAMAM: {sent_count} email gönderildi")
+    except Exception as e:
+        _auto_log(f"❌ Phase 3 HATA: {e}", "error")
+        results["phase_3_send"] = {"error": str(e)}
+
+    gc.collect()
+
+    # ═══ PHASE 4: FOLLOW-UP ═══
+    try:
+        _automation_state["last_action"] = f"Cron Cycle {cycle}: Phase 4 — Follow-up"
+        _auto_log("📬 Phase 4: Follow-up işleniyor")
+        processed = follow_up.process_pending()
+        results["phase_4_followup"] = {"processed": len(processed)}
+        _auto_log(f"✅ {len(processed)} follow-up işlendi")
+    except Exception as e:
+        _auto_log(f"❌ Phase 4 HATA: {e}", "error")
+        results["phase_4_followup"] = {"error": str(e)}
+
+    # Finalize
+    _automation_state["last_action"] = f"Cron Cycle {cycle} tamamlandı"
+    _automation_state["last_cycle_at"] = datetime.now().isoformat()
+    try:
+        _automation_state["stats"] = db.get_stats()
+    except Exception:
+        pass
+
+    results["finished_at"] = datetime.now().isoformat()
+    results["cycle"] = cycle
+    _auto_log(f"✅ ═══ CRON Cycle {cycle} TAMAMLANDI ═══")
+
+    # Running durumunu göster (cron çalıştığını göstermek için)
+    _automation_state["running"] = True
+
+    return jsonify(results)
+
+
 # ─── SOCKET.IO EVENTS ─────────────────────────────────────────
 if HAS_SOCKETIO:
     @socketio.on("connect")
