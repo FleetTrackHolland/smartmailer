@@ -1180,42 +1180,239 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .meeting-seat.depth-mid   { transform: scale(0.9);  z-index: 5; }
 .meeting-seat.depth-near  { transform: scale(1.1);  z-index: 7; }
 .meeting-seat.depth-front { transform: scale(1.2);  z-index: 9; }
+
+/* ═══════════════════════════════════════════ */
+/* ═══ CODE-BUILT 3D CHARACTER SYSTEM ═══════ */
+/* ═══════════════════════════════════════════ */
+
 .agent-avatar {
-    width: 80px;
-    height: 80px;
-    border-radius: 8px;
+    width: 60px;
+    height: 75px;
     background: transparent;
     border: none;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
-    transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.3s var(--ease);
-    box-shadow: none;
     overflow: visible;
-    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
-}
-
-.agent-avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: contain;
-    border-radius: 0;
-    transition: transform 0.3s var(--ease);
-}
-
-.meeting-seat:hover .agent-avatar img {
-    transform: scale(1.15) translateY(-4px);
+    position: relative;
 }
 
 .agent-avatar.boss {
-    width: 90px;
-    height: 90px;
-    border: none;
-    box-shadow: none;
-    filter: drop-shadow(0 0 12px rgba(255,215,0,0.5)) drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    width: 65px;
+    height: 80px;
+    filter: drop-shadow(0 0 8px rgba(255,215,0,0.4));
 }
 
+/* ─── 3D Character Container ─── */
+.char3d {
+    position: relative;
+    width: 40px;
+    height: 65px;
+    transform-style: preserve-3d;
+    transform: perspective(300px) rotateX(5deg);
+}
+
+/* ─── HEAD ─── */
+.char3d-head {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    z-index: 10;
+    box-shadow: inset -3px -2px 5px rgba(0,0,0,0.25), 0 1px 3px rgba(0,0,0,0.3);
+}
+
+/* ─── HAIR ─── */
+.char3d-hair {
+    position: absolute;
+    top: -1px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 10px;
+    border-radius: 10px 10px 0 0;
+    z-index: 11;
+}
+
+/* ─── EYES ─── */
+.char3d-eye-l, .char3d-eye-r {
+    position: absolute;
+    top: 8px;
+    width: 3px;
+    height: 3px;
+    border-radius: 50%;
+    background: #fff;
+    z-index: 12;
+    box-shadow: 0 0 2px rgba(255,255,255,0.8);
+}
+.char3d-eye-l { left: 14px; }
+.char3d-eye-r { left: 23px; }
+
+/* ─── BODY/TORSO ─── */
+.char3d-body {
+    position: absolute;
+    top: 17px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 22px;
+    border-radius: 3px 3px 2px 2px;
+    z-index: 5;
+    box-shadow: inset -3px -2px 5px rgba(0,0,0,0.2), 0 1px 3px rgba(0,0,0,0.2);
+}
+
+/* ─── TIE (Orchestrator only) ─── */
+.char3d-tie {
+    position: absolute;
+    top: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 12px;
+    z-index: 6;
+    clip-path: polygon(30% 0, 70% 0, 100% 100%, 0 100%);
+}
+
+/* ─── ARMS ─── */
+.char3d-arm-l, .char3d-arm-r {
+    position: absolute;
+    top: 18px;
+    width: 6px;
+    height: 20px;
+    border-radius: 3px;
+    z-index: 4;
+    transform-origin: top center;
+    box-shadow: inset -2px 0 3px rgba(0,0,0,0.2);
+}
+.char3d-arm-l { left: 5px; }
+.char3d-arm-r { right: 5px; }
+
+/* ─── LEGS ─── */
+.char3d-leg-l, .char3d-leg-r {
+    position: absolute;
+    top: 38px;
+    width: 7px;
+    height: 22px;
+    border-radius: 2px 2px 3px 3px;
+    z-index: 3;
+    transform-origin: top center;
+    box-shadow: inset -2px 0 3px rgba(0,0,0,0.2);
+}
+.char3d-leg-l { left: 10px; }
+.char3d-leg-r { right: 10px; }
+
+/* ─── GROUND SHADOW ─── */
+.char3d-shadow {
+    position: absolute;
+    bottom: -4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 8px;
+    background: radial-gradient(ellipse, rgba(0,0,0,0.35) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: 1;
+    filter: blur(1px);
+}
+
+/* ═══ IDLE — masada çalışma (kollar yazı yazıyor) ═══ */
+.meeting-seat.idle .char3d-arm-l {
+    animation: idleArmL 1.2s ease-in-out infinite;
+}
+.meeting-seat.idle .char3d-arm-r {
+    animation: idleArmR 1.2s ease-in-out infinite 0.6s;
+}
+
+@keyframes idleArmL {
+    0%, 100% { transform: rotateX(0deg); }
+    50% { transform: rotateX(-15deg); }
+}
+@keyframes idleArmR {
+    0%, 100% { transform: rotateX(0deg); }
+    50% { transform: rotateX(-15deg); }
+}
+
+/* Hafif nefes alma efekti */
+.meeting-seat.idle .char3d {
+    animation: idleBreathe 3s ease-in-out infinite;
+}
+@keyframes idleBreathe {
+    0%, 100% { transform: perspective(300px) rotateX(5deg) translateY(0); }
+    50% { transform: perspective(300px) rotateX(5deg) translateY(-2px); }
+}
+
+/* ═══ WALKING — kollar ve bacaklar sallanıyor ═══ */
+.meeting-seat.walking .char3d-arm-l {
+    animation: walkArmL 0.4s ease-in-out infinite !important;
+}
+.meeting-seat.walking .char3d-arm-r {
+    animation: walkArmR 0.4s ease-in-out infinite !important;
+}
+.meeting-seat.walking .char3d-leg-l {
+    animation: walkLegL 0.4s ease-in-out infinite !important;
+}
+.meeting-seat.walking .char3d-leg-r {
+    animation: walkLegR 0.4s ease-in-out infinite !important;
+}
+
+@keyframes walkArmL {
+    0%, 100% { transform: rotateX(40deg); }
+    50% { transform: rotateX(-40deg); }
+}
+@keyframes walkArmR {
+    0%, 100% { transform: rotateX(-40deg); }
+    50% { transform: rotateX(40deg); }
+}
+@keyframes walkLegL {
+    0%, 100% { transform: rotateX(-35deg); }
+    50% { transform: rotateX(35deg); }
+}
+@keyframes walkLegR {
+    0%, 100% { transform: rotateX(35deg); }
+    50% { transform: rotateX(-35deg); }
+}
+
+/* Yürürken vücut hafif zıplama */
+.meeting-seat.walking .char3d {
+    animation: walkBounce3D 0.4s ease-in-out infinite !important;
+}
+@keyframes walkBounce3D {
+    0%, 100% { transform: perspective(300px) rotateX(5deg) translateY(0) rotateZ(0deg); }
+    25% { transform: perspective(300px) rotateX(8deg) translateY(-6px) rotateZ(-2deg); }
+    50% { transform: perspective(300px) rotateX(5deg) translateY(0) rotateZ(0deg); }
+    75% { transform: perspective(300px) rotateX(8deg) translateY(-6px) rotateZ(2deg); }
+}
+
+/* Yürürken gölge nabız */
+.meeting-seat.walking .char3d-shadow {
+    animation: walkShadow3D 0.4s ease-in-out infinite;
+}
+@keyframes walkShadow3D {
+    0%, 100% { transform: translateX(-50%) scaleX(1); opacity: 0.8; }
+    25%, 75% { transform: translateX(-50%) scaleX(0.6); opacity: 0.4; }
+}
+
+/* ═══ SPEAKING — konuşma efekti ═══ */
+.meeting-seat.speaking .char3d {
+    animation: speakBounce 0.6s ease-in-out infinite !important;
+}
+.meeting-seat.speaking .char3d-head {
+    box-shadow: inset -3px -2px 5px rgba(0,0,0,0.25), 0 0 12px rgba(0,214,143,0.6);
+}
+@keyframes speakBounce {
+    0%, 100% { transform: perspective(300px) rotateX(5deg) translateY(0) scale(1); }
+    50% { transform: perspective(300px) rotateX(5deg) translateY(-3px) scale(1.05); }
+}
+
+/* ═══ BOSS AURA ═══ */
+.agent-avatar.boss .char3d-head {
+    box-shadow: inset -3px -2px 5px rgba(0,0,0,0.25), 0 0 10px rgba(255,215,0,0.5);
+}
+
+/* ─── Name tags ─── */
 .boss-name {
     color: #d4a017 !important;
     font-size: 10px !important;
