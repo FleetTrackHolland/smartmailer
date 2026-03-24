@@ -586,27 +586,23 @@ async function loadAutomationStatus() {
     const startBtn = document.getElementById('btn-start-auto');
     const stopBtn = document.getElementById('btn-stop-auto');
 
-    // Cron activity detection
-    let cronActive = false;
-    if (data.last_cycle_at) {
-        cronActive = (Date.now() - new Date(data.last_cycle_at).getTime()) < 15 * 60 * 1000;
-    }
-    const isActive = data.running || cronActive;
+    // API sunucudan gelen running flag'i kullan — JS hesaplama YOK
+    const isActive = !!data.running;
 
     if (isActive) {
         indicator.className = 'auto-indicator running';
-        statusText.textContent = data.running ? 'Çalışıyor — Aktif' : 'Cron Aktif';
+        statusText.textContent = 'Cron Aktif';
         actionText.textContent = data.last_action || '...';
         startBtn.style.display = 'none'; stopBtn.style.display = 'inline-flex';
         setText('cycle-badge', `Cycle ${data.cycle || 0}`);
         setText('auto-last-cycle', data.last_cycle_at ? `Son: ${fmtDate(data.last_cycle_at)}` : 'Son: —');
         updatePipelineViz(data.last_action || '');
-        updateModeBadge(true, cronActive);
+        updateModeBadge(true);
     } else {
         indicator.className = 'auto-indicator stopped'; statusText.textContent = 'Durdurulmuş';
         actionText.textContent = data.last_action || '—';
         startBtn.style.display = 'inline-flex'; stopBtn.style.display = 'none';
-        updateModeBadge(false, false);
+        updateModeBadge(false);
     }
 }
 function updatePipelineViz(action) {
@@ -770,20 +766,14 @@ async function refreshAutomation() {
     const data = await api('/api/automation/status');
     if (!data) return;
 
-    // Cron-based activity detection: last cycle within 15 min = active
-    let cronActive = false;
-    if (data.last_cycle_at) {
-        const lastCycleTime = new Date(data.last_cycle_at).getTime();
-        const now = Date.now();
-        cronActive = (now - lastCycleTime) < 15 * 60 * 1000; // 15 dakika
-    }
-    const isActive = data.running || cronActive;
+    // API sunucudan gelen running flag'i kullan — JS hesaplama YOK
+    const isActive = !!data.running;
 
     // Status text
     const statusEl = document.getElementById('auto-status-text');
     const actionEl = document.getElementById('auto-action-text');
     const indEl = document.getElementById('auto-indicator');
-    if (statusEl) statusEl.textContent = data.running ? 'Çalışıyor' : (cronActive ? 'Cron Aktif' : 'Durdurulmuş');
+    if (statusEl) statusEl.textContent = isActive ? 'Cron Aktif' : 'Durdurulmuş';
     if (actionEl) actionEl.textContent = data.last_action || data.current_step || '—';
     if (indEl) { indEl.className = 'auto-indicator ' + (isActive ? 'running' : 'stopped'); }
 
@@ -825,29 +815,24 @@ async function refreshAutomation() {
         logEl.scrollTop = logEl.scrollHeight;
     }
 
-    // Mode badge
-    updateModeBadge(isActive, cronActive);
+    // Mode badge — API'dan gelen running flag'i direkt kullan
+    updateModeBadge(isActive);
 
     // Stats in sidebar
     const stats = data.stats || {};
     setText('stat-leads', (stats.leads_found || 0) + ' keşfedildi');
 }
 
-function updateModeBadge(running, cronActive) {
+function updateModeBadge(running) {
     const badge = document.getElementById('mode-badge');
     const text = document.getElementById('mode-text');
     if (badge) badge.className = 'mode-badge ' + (running ? 'live' : '');
-    if (text) text.textContent = running ? (cronActive ? 'CRON AKTİF' : 'CANLI — AKTİF') : 'DURDURULMUŞ';
+    if (text) text.textContent = running ? 'CRON AKTİF' : 'DURDURULMUŞ';
 }
 
 function toggleSystemMode() {
-    // Mode badge'e tıklayınca automation toggle
-    const data = document.getElementById('auto-status-text');
-    if (data && data.textContent === 'Çalışıyor') {
-        stopAutomation();
-    } else {
-        startAutomation();
-    }
+    // Cron modunda badge sadece bilgi amaçlı, tıklama devre dışı
+    showToast('Sistem cron ile otomatik çalışıyor — manuel başlat/durdur devre dışı', 'info');
 }
 
 // Load automation status on page load
