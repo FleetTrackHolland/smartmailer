@@ -121,15 +121,8 @@ async function refreshAll() {
         if (fill) fill.style.width = `${Math.min(daily.percentage || 0, 100)}%`;
     }
     if (dupStats) { setText('stat-dup-prevented', dupStats.duplicates_prevented || 0); }
-    if (config) updateModeBadge();
+    // Badge güncelleme burada YAPILMAZ — sadece loadAutomationStatus/refreshAutomation yapar
     setText('last-update', `Son: ${new Date().toLocaleTimeString('tr-TR')}`);
-}
-
-function updateModeBadge() {
-    const badge = document.getElementById('mode-badge');
-    const text = document.getElementById('mode-text');
-    if (badge) badge.className = 'mode-badge live';
-    if (text) text.textContent = 'CANLI — AKTİF';
 }
 
 function renderSourceStats(dist) {
@@ -707,7 +700,7 @@ async function saveSettings() {
     const result = await api('/api/config', 'PUT', data);
     if (result?.success) {
         showToast('Ayarlar kaydedildi ✅', 'success');
-        updateModeBadge();
+        // Badge güncelleme burada YAPILMAZ
     }
     else showToast('Ayarlar kaydedilemedi', 'error');
 }
