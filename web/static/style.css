@@ -873,9 +873,9 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     position: relative;
     width: 100%;
     height: 800px;
-    background: linear-gradient(180deg, #0b0e18 0%, #111827 100%);
+    background: linear-gradient(180deg, #e8ecf1 0%, #d1d8e0 100%);
     border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
+    border: 1px solid rgba(0,0,0,0.1);
     overflow: hidden;
     margin-bottom: 16px;
 }
@@ -886,7 +886,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     width: 100%;
     height: 100%;
     object-fit: cover;
-    opacity: 0.75;
+    opacity: 0.85;
     pointer-events: none;
     z-index: 0;
 }
@@ -897,14 +897,14 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     position: absolute;
     inset: 0;
     background:
-        linear-gradient(rgba(124,92,252,0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(124,92,252,0.03) 1px, transparent 1px);
+        linear-gradient(rgba(100,120,180,0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(100,120,180,0.06) 1px, transparent 1px);
     background-size: 60px 60px;
     transform: perspective(600px) rotateX(45deg);
     transform-origin: center bottom;
     pointer-events: none;
     z-index: 1;
-    opacity: 0.4;
+    opacity: 0.5;
 }
 
 /* Floating particle container */
@@ -937,7 +937,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     content: '';
     position: absolute;
     inset: 0;
-    background: radial-gradient(ellipse at center, rgba(124,92,252,0.04) 0%, transparent 70%);
+    background: radial-gradient(ellipse at center, rgba(100,149,237,0.04) 0%, transparent 70%);
     pointer-events: none;
     z-index: 1;
 }
@@ -1110,61 +1110,61 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .meeting-seat.at-table::after { display: none; }
 
 .agent-avatar {
-    width: 68px;
-    height: 68px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #1e1e3f, #2a2a50);
-    border: 2px solid var(--border-hover);
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    background: transparent;
+    border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 22px;
     transition: transform 0.3s var(--ease), box-shadow 0.3s var(--ease), border-color 0.3s var(--ease);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4), 0 0 15px rgba(124,92,252,0.1);
-    overflow: hidden;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    box-shadow: none;
+    overflow: visible;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
 }
 
 .agent-avatar img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    border-radius: 50%;
+    object-fit: contain;
+    border-radius: 0;
     transition: transform 0.3s var(--ease);
 }
 
 .meeting-seat:hover .agent-avatar img {
-    transform: scale(1.1);
+    transform: scale(1.15) translateY(-4px);
 }
 
 .agent-avatar.boss {
-    width: 80px;
-    height: 80px;
-    border: 3px solid #ffd700;
-    box-shadow: 0 0 25px rgba(255,215,0,0.5), 0 0 50px rgba(255,215,0,0.15), 0 4px 15px rgba(0,0,0,0.4);
-    filter: drop-shadow(0 0 8px rgba(255,215,0,0.3));
+    width: 90px;
+    height: 90px;
+    border: none;
+    box-shadow: none;
+    filter: drop-shadow(0 0 12px rgba(255,215,0,0.5)) drop-shadow(0 4px 8px rgba(0,0,0,0.3));
 }
 
 .boss-name {
-    color: #ffd700 !important;
+    color: #d4a017 !important;
     font-size: 10px !important;
     font-weight: 800 !important;
     letter-spacing: 1px !important;
-    text-shadow: 0 0 10px rgba(255,215,0,0.4) !important;
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5) !important;
 }
 
 .agent-seat-name {
     font-size: 9px;
     font-weight: 700;
-    color: rgba(255,255,255,0.85);
+    color: rgba(30,30,60,0.9);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     text-align: center;
-    max-width: 70px;
+    max-width: 80px;
     white-space: nowrap;
-    text-shadow: 0 1px 6px rgba(0,0,0,0.9), 0 0 10px rgba(124,92,252,0.3);
-    background: rgba(0,0,0,0.4);
-    padding: 2px 6px;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.8);
+    background: rgba(255,255,255,0.6);
+    padding: 2px 8px;
     border-radius: 4px;
     backdrop-filter: blur(4px);
 }
