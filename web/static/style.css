@@ -173,17 +173,17 @@ body {
     letter-spacing: 0.5px;
     cursor: pointer;
     transition: all 0.2s var(--ease);
-    background: var(--green-glow);
-    color: var(--green);
-    border: 1px solid rgba(0, 214, 143, 0.15);
+    background: var(--red-glow);
+    color: var(--red);
+    border: 1px solid rgba(255, 82, 82, 0.15);
 }
 
 .mode-badge:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
 
 .mode-badge.live {
-    background: var(--red-glow);
-    color: var(--red);
-    border-color: rgba(255, 82, 82, 0.15);
+    background: var(--green-glow);
+    color: var(--green);
+    border-color: rgba(0, 214, 143, 0.15);
 }
 
 .mode-dot {
