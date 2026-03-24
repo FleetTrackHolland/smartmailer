@@ -13,6 +13,7 @@ let logRefreshInterval = null;
 let currentLeadFilter = 'all';
 
 const AGENT_DESC = {
+    'Orchestrator': 'Tüm agent ekosistemini yöneten başkomutan. Otomasyon pipeline\'ını koordine eder, agent\'lar arası iletişimi sağlar, toplantıları yönetir. Her cycle sonunda performans analizi yapar ve stratejik kararlar alır. Sistem genelindeki optimizasyonu sağlar.',
     'AI Copywriter': 'Claude AI ile her lead için kişiselleştirilmiş, profesyonel email yazar. Şirket adı, sektörü ve detaylarına göre özgün içerik oluşturur. 3 farklı konu başlığı (A/B/C) üretir. ReconAgent istihbaratını kullanarak her emaili hedefin psikolojik profiline göre yazar.',
     'AI Quality Control': 'Yazılan emailleri 15+ kriterde puanlar (konu uzunluğu, spam kelimeleri, kişiselleştirme, CTA, dil hatası, vb). ≥90 puan geçer, altında otomatik revize edilir. Her revizeden sonra puanı neden düştüğünü öğrenir ve gelecekte aynı hatayı yapmaktan kaçınır.',
     'Compliance (AVG)': 'GDPR/AVG uyumluluğunu kontrol eder. Unsubscribe listesi, bounce listesi ve opt-out kayıtlarını yönetir. Her emailde yasal bilgi footeri ekler.',
@@ -1099,10 +1100,17 @@ let meetingPollInterval = null;
 let meetingMessages = [];
 
 const AGENT_ICONS = {
-    'AI Copywriter': '✍️', 'AI Quality Control': '🧠', 'Lead Scorer': '🔮',
-    'Recon Agent': '🕵️', 'Lead Finder': '🔍', 'Follow-Up Engine': '🔄',
-    'Response Tracker': '💬', 'Watchdog': '🛡️', 'Compliance (AVG)': '⚖️',
-    'A/B Test Engine': '🎯'
+    'Orchestrator': '/static/img/agent_orchestrator.png',
+    'AI Copywriter': '/static/img/agent_copywriter.png',
+    'AI Quality Control': '/static/img/agent_quality.png',
+    'Lead Scorer': '/static/img/agent_scorer.png',
+    'Recon Agent': '/static/img/agent_recon.png',
+    'Lead Finder': '/static/img/agent_finder.png',
+    'Follow-Up Engine': '/static/img/agent_followup.png',
+    'Response Tracker': '/static/img/agent_tracker.png',
+    'Watchdog': '/static/img/agent_watchdog.png',
+    'Compliance (AVG)': '/static/img/agent_compliance.png',
+    'A/B Test Engine': '/static/img/agent_abtest.png'
 };
 
 async function startAgentMeeting() {
@@ -1167,10 +1175,11 @@ function displayMeetingMessages(messages) {
             // 1. Chat stream message
             const chatEl = document.createElement('div');
             chatEl.className = 'chat-msg';
-            const icon = AGENT_ICONS[msg.agent] || '🤖';
+            const iconSrc = AGENT_ICONS[msg.agent] || '';
+            const avatarHtml = iconSrc ? `<img src="${iconSrc}" alt="${esc(msg.agent)}">` : '🤖';
             const time = new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
             chatEl.innerHTML = `
-                <div class="chat-msg-avatar">${icon}</div>
+                <div class="chat-msg-avatar">${avatarHtml}</div>
                 <div class="chat-msg-content">
                     <div class="chat-msg-header">
                         <span class="chat-msg-name">${esc(msg.agent)}</span>

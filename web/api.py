@@ -362,6 +362,7 @@ def edit_draft():
 @app.route("/api/agents/status", methods=["GET"])
 def get_agent_status():
     agents_info = [
+        {"name": "Orchestrator", "icon": "👔", "obj": None},
         {"name": "AI Copywriter", "icon": "✍️", "obj": copywriter},
         {"name": "AI Quality Control", "icon": "🧠", "obj": quality},
         {"name": "Compliance (AVG)", "icon": "⚖️", "obj": compliance},
@@ -407,6 +408,8 @@ def get_agent_status():
             extra = " | Web scraping"
         elif a["name"] == "Recon Agent":
             extra = " | OSINT + Psikolojik profil"
+        elif a["name"] == "Orchestrator":
+            extra = " | Koordinasyon merkezi"
 
         result.append({
             "name": a["name"],
@@ -554,7 +557,8 @@ def _generate_fallback_meeting(stats, fu_stats, resp_stats):
     responses = resp_stats.get('total_responses', 0) if isinstance(resp_stats, dict) else 0
 
     return [
-        {"agent": "Watchdog", "text": f"Sistem durumu raporu: {total_leads} lead veritabanında, {total_sent} mail gönderildi. Genel sağlık durumu stabil. API bağlantıları aktif."},
+        {"agent": "Orchestrator", "text": f"Toplantıyı açıyorum. Mevcut durum: {total_leads} lead veritabanında, {total_sent} mail gönderildi, {responses} yanıt aldık. Her agent kendi bölgesinden rapor versin ve önerilerini sunsun."},
+        {"agent": "Watchdog", "text": f"Sistem durumu raporu: Genel sağlık durumu stabil. API bağlantıları aktif. Uptime %99.8. Herhangi bir kritik alarm yok."},
         {"agent": "Lead Finder", "text": f"Şu ana kadar toplam {total_leads} lead bulundu. Daha fazla sektör ve şehir taraması yapılabilir. Özellikle Hollanda dışı Belçika ve Almanya pazarlarına açılmayı öneriyorum."},
         {"agent": "Recon Agent", "text": "OSINT araştırmalarımda fark ettim ki, web sitesi olan şirketler %40 daha yüksek yanıt oranı veriyor. LinkedIn profili olan kişilere yönelik maillerde dönüşüm 2x daha yüksek."},
         {"agent": "AI Copywriter", "text": "Recon Agent'ın verilerine katılıyorum. Psikolojik profilleme sayesinde email kalitemiz arttı. Ancak sektöre özel dil kullanımını daha da geliştirebiliriz — nakliye sektörü için farklı, lojistik için farklı ton kullanmalıyız."},

@@ -872,12 +872,23 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .meeting-office {
     position: relative;
     width: 100%;
-    height: 440px;
+    height: 500px;
     background: linear-gradient(180deg, #0a0a1a 0%, #0d0d22 100%);
     border-radius: var(--radius-sm);
     border: 1px solid var(--border);
     overflow: hidden;
     margin-bottom: 16px;
+}
+
+.office-bg-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 0;
 }
 
 .meeting-office::before {
@@ -944,8 +955,8 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 }
 
 .agent-avatar {
-    width: 50px;
-    height: 50px;
+    width: 64px;
+    height: 64px;
     border-radius: 50%;
     background: linear-gradient(135deg, #1e1e3f, #2a2a50);
     border: 2px solid var(--border-hover);
@@ -955,6 +966,28 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     font-size: 22px;
     transition: all 0.3s var(--ease);
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    overflow: hidden;
+}
+
+.agent-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.agent-avatar.boss {
+    width: 76px;
+    height: 76px;
+    border: 3px solid #ffd700;
+    box-shadow: 0 0 20px rgba(255,215,0,0.4), 0 0 40px rgba(255,215,0,0.15);
+}
+
+.boss-name {
+    color: #ffd700 !important;
+    font-size: 10px !important;
+    font-weight: 800 !important;
+    letter-spacing: 1px !important;
 }
 
 .agent-seat-name {
@@ -969,16 +1002,17 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 }
 
 /* Seat positions — elliptical around the table */
-.seat-1  { top: 35px;  left: 50%;  transform: translateX(-50%); }
-.seat-2  { top: 60px;  left: 78%; }
+.seat-0  { top: 10px;  left: 50%;  transform: translateX(-50%); z-index: 8; }
+.seat-1  { top: 55px;  left: 78%; }
+.seat-2  { top: 55px;  left: 20%; }
 .seat-3  { top: 160px; left: 90%; }
-.seat-4  { top: 280px; left: 85%; }
-.seat-5  { top: 350px; left: 68%; }
-.seat-6  { top: 360px; left: 50%; transform: translateX(-50%); }
-.seat-7  { top: 350px; left: 18%; }
-.seat-8  { top: 280px; left: 2%; }
-.seat-9  { top: 160px; left: -2%; }
-.seat-10 { top: 60px;  left: 15%; }
+.seat-4  { top: 160px; left: 2%; }
+.seat-5  { top: 280px; left: 88%; }
+.seat-6  { top: 280px; left: 5%; }
+.seat-7  { top: 380px; left: 75%; }
+.seat-8  { top: 380px; left: 18%; }
+.seat-9  { top: 410px; left: 55%; }
+.seat-10 { top: 410px; left: 35%; }
 
 /* ─── Konuşma Baloncukları ─── */
 .speech-bubbles-overlay {
@@ -1071,8 +1105,8 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 }
 
 .chat-msg-avatar {
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     background: linear-gradient(135deg, #1e1e3f, #2a2a50);
     border: 1px solid var(--border-hover);
@@ -1081,6 +1115,14 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     justify-content: center;
     font-size: 14px;
     flex-shrink: 0;
+    overflow: hidden;
+}
+
+.chat-msg-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 }
 
 .chat-msg-content { flex: 1; min-width: 0; }
