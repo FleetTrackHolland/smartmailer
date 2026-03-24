@@ -16,10 +16,8 @@ build/
 venv/
 env/
 
-# Data (veritabanı + loglar)
-data/smartmailer_ultimate.db
+# Data (loglar)
 data/logs/
-*.db
 
 # IDE
 .vscode/
