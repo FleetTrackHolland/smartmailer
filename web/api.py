@@ -648,37 +648,6 @@ def reset_ab_test():
     return jsonify({"success": True, "message": "A/B test sıfırlandı"})
 
 
-# ─── BREVO WEBHOOK ─────────────────────────────────────────────
-@app.route("/webhook/brevo", methods=["POST"])
-def brevo_webhook():
-    """Brevo event webhook'u: open, click, bounce, unsubscribe."""
-    events = request.json
-    if not events:
-        return jsonify({"error": "Boş payload"}), 400
-
-    if not isinstance(events, list):
-        events = [events]
-
-    for event in events:
-        event_type = event.get("event", "unknown")
-        email = event.get("email", "")
-        message_id = event.get("message-id", "")
-
-        db.record_event(email, event_type, message_id, event)
-
-        if event_type == "unsubscribe" and email:
-            compliance.add_unsubscribe(email, "brevo_webhook")
-
-        emit_event("brevo_event", {"type": event_type, "email": email})
-
-    # A/B test kazanan kontrolü
-    variant_stats = db.get_open_rates_by_variant()
-    if variant_stats:
-        ab_test.determine_winner(variant_stats)
-
-    return jsonify({"received": len(events)})
-
-
 # ─── CAMPAIGN ──────────────────────────────────────────────────
 @app.route("/api/campaign/start", methods=["POST"])
 def start_campaign():
