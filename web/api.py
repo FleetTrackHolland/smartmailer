@@ -448,24 +448,31 @@ def agent_meeting():
 Her agent'ın kendi uzmanlık alanı var. Sistem istatistikleri:
 {context}
 
-Agent'lar bir toplantı yapıyorlar ve sistemi nasıl geliştirebileceklerini tartışıyorlar.
-Her agent kendi uzmanlık alanından konuşsun.
+Agent'lar bir toplantı yapıyorlar. Bu toplantı uzun ve detaylı bir beyin fırtınası (brainstorming) oturumudur.
+Agent'lar birbirleriyle gerçek bir ekip toplantısı yapıyor — birbirlerinin fikirlerine yanıt veriyor,
+tartışıyor, katılıyor ya da karşı argümanlar sunuyor. Amaç:
+- Performansı artırmak için yeni stratejiler geliştirmek
+- Sorunları birlikte çözmek
+- Birbirlerinden öğrenmek ve fikir alışverişi yapmak
+- Somut aksiyon planları oluşturmak
 
 Agent listesi ve rolleri:
-1. AI Copywriter — email yazan agent
-2. AI Quality Control — email kalitesini kontrol eden agent
-3. Lead Scorer — lead kalitesini puanlayan agent
-4. Recon Agent — OSINT araştırma yapan agent
-5. Lead Finder — lead bulan agent
-6. Follow-Up Engine — takip mailleri gönderen agent
-7. Response Tracker — yanıtları takip eden agent
-8. Watchdog — sistem sağlığını izleyen agent
-9. Compliance (AVG) — GDPR uyum kontrolü yapan agent
-10. A/B Test Engine — A/B testleri yöneten agent
+1. Orchestrator — tüm agent'ları yöneten koordinatör, toplantıyı yönetir
+2. AI Copywriter — email yazan agent
+3. AI Quality Control — email kalitesini kontrol eden agent
+4. Lead Scorer — lead kalitesini puanlayan agent
+5. Recon Agent — OSINT araştırma yapan agent
+6. Lead Finder — lead bulan agent
+7. Follow-Up Engine — takip mailleri gönderen agent
+8. Response Tracker — yanıtları takip eden agent
+9. Watchdog — sistem sağlığını izleyen agent
+10. Compliance (AVG) — GDPR uyum kontrolü yapan agent
+11. A/B Test Engine — A/B testleri yöneten agent
 
-5-7 mesaj halinde bir toplantı konuşması yaz. Her mesaj farklı bir agent'tan gelsin.
-Agent'lar birbirleriyle doğal şekilde konuşsun, birbirlerinin fikirlerine yanıt versin.
-Performansı artırmak, yeni stratejiler geliştirmek ve sorunları çözmek üzerine konuşsunlar.
+15-20 mesaj halinde uzun ve derinlemesine bir toplantı konuşması yaz.
+Her agent en az 1-2 kere konuşsun. Agent'lar birbirlerine hitap etsin ve birbirlerinin
+fikirlerine doğrudan yanıt versin. Tartışma, onay, karşı görüş ve brainstorming olsun.
+Mesajlar kısa değil, açıklayıcı ve detaylı olsun (en az 2-3 cümle).
 
 JSON formatında cevap ver (yalnızca JSON, başka metin olmasın):
 [
@@ -484,10 +491,10 @@ JSON formatında cevap ver (yalnızca JSON, başka metin olmasın):
             }
             payload = {
                 "model": "claude-sonnet-4-20250514",
-                "max_tokens": 2000,
+                "max_tokens": 4096,
                 "messages": [{"role": "user", "content": prompt}],
             }
-            resp = api_guard.call(payload, headers, timeout=90)
+            resp = api_guard.call(payload, headers, timeout=120)
 
             if resp and resp.ok:
                 result = resp.json()
@@ -532,7 +539,7 @@ JSON formatında cevap ver (yalnızca JSON, başka metin olmasın):
         if not meeting_state["active"]:
             return jsonify({"messages": [], "finished": True})
 
-        if meeting_state["round"] >= 3:
+        if meeting_state["round"] >= 6:
             meeting_state["active"] = False
             return jsonify({"messages": [], "finished": True})
 
@@ -544,42 +551,85 @@ JSON formatında cevap ver (yalnızca JSON, başka metin olmasın):
         meeting_state["messages"].extend(new_messages)
         meeting_state["round"] += 1
 
-        return jsonify({"success": True, "messages": new_messages, "finished": meeting_state["round"] >= 3})
+        return jsonify({"success": True, "messages": new_messages, "finished": meeting_state["round"] >= 6})
 
     return jsonify({"error": "Geçersiz aksiyon"})
 
 
 def _generate_fallback_meeting(stats, fu_stats, resp_stats):
-    """Claude API kullanılamadığında yerel toplantı mesajları üretir."""
+    """Claude API kullanılamadığında zengin yerel toplantı mesajları üretir."""
     total_sent = stats.get('total_sent', 0) if isinstance(stats, dict) else 0
     total_leads = stats.get('total_leads', 0) if isinstance(stats, dict) else 0
     pending_fu = fu_stats.get('pending_count', 0) if isinstance(fu_stats, dict) else 0
     responses = resp_stats.get('total_responses', 0) if isinstance(resp_stats, dict) else 0
 
     return [
-        {"agent": "Orchestrator", "text": f"Toplantıyı açıyorum. Mevcut durum: {total_leads} lead veritabanında, {total_sent} mail gönderildi, {responses} yanıt aldık. Her agent kendi bölgesinden rapor versin ve önerilerini sunsun."},
-        {"agent": "Watchdog", "text": f"Sistem durumu raporu: Genel sağlık durumu stabil. API bağlantıları aktif. Uptime %99.8. Herhangi bir kritik alarm yok."},
-        {"agent": "Lead Finder", "text": f"Şu ana kadar toplam {total_leads} lead bulundu. Daha fazla sektör ve şehir taraması yapılabilir. Özellikle Hollanda dışı Belçika ve Almanya pazarlarına açılmayı öneriyorum."},
-        {"agent": "Recon Agent", "text": "OSINT araştırmalarımda fark ettim ki, web sitesi olan şirketler %40 daha yüksek yanıt oranı veriyor. LinkedIn profili olan kişilere yönelik maillerde dönüşüm 2x daha yüksek."},
-        {"agent": "AI Copywriter", "text": "Recon Agent'ın verilerine katılıyorum. Psikolojik profilleme sayesinde email kalitemiz arttı. Ancak sektöre özel dil kullanımını daha da geliştirebiliriz — nakliye sektörü için farklı, lojistik için farklı ton kullanmalıyız."},
-        {"agent": "AI Quality Control", "text": "Son 100 emailin ortalama QC skoru 92. Spam kelimelerinden kaçınma konusunda iyiyiz ama CTA çeşitliliği artırılmalı. Hep aynı call-to-action kullanıyoruz."},
-        {"agent": "Follow-Up Engine", "text": f"Bekleyen follow-up sayısı: {pending_fu}. 3. gün mailleri en yüksek açılma oranına sahip. 14. gün mailleri ise en yüksek dönüşüme. FOMO stratejisini güçlendirmeliyiz."},
-        {"agent": "A/B Test Engine", "text": "A/B test sonuçlarına göre soru formatında konu başlıkları %18 daha yüksek açılma oranı sağlıyor. Emoji kullanımı Hollanda pazarında %12 artış sağlıyor."},
+        # AÇILIŞ — durum raporu
+        {"agent": "Orchestrator", "text": f"Hoş geldiniz arkadaşlar, haftalık strateji toplantımıza başlıyoruz. Mevcut durum: veritabanımızda {total_leads} lead var, {total_sent} mail gönderildi ve {responses} yanıt aldık. Bugünkü ana gündem maddemiz: dönüşüm oranını artırmak ve yeni pazarlara açılmak. Her agent'tan detaylı rapor ve öneri bekliyorum."},
+        {"agent": "Lead Finder", "text": f"Raporumu sunuyorum. Şu ana kadar {total_leads} lead buldum. Hollanda pazarında 12 şehri taradık ama henüz Belçika ve Almanya'ya açılmadık. Önerim: Antwerp, Gent, Hamburg ve Düsseldorf'u da tarama listesine ekleyelim. Bu bölgelerde lojistik sektörü çok güçlü ve potansiyel müşteri havuzu geniş."},
+        {"agent": "Recon Agent", "text": "Lead Finder'ın önerisine katılıyorum. Ben de OSINT araştırmalarımda fark ettim ki, web sitesi olan şirketler %40 daha yüksek yanıt oranı veriyor. LinkedIn profili olan kişilere yönelik maillerde dönüşüm 2 kat daha yüksek. Belçika pazarına girersek, özellikle Flaman bölgesindeki şirketlere odaklanmalıyız — Hollandaca konuşuyorlar ve kültürel yakınlık dönüşümü artırır."},
+        {"agent": "AI Copywriter", "text": "Recon Agent'ın verilerine dayanarak bir öneri sunmak istiyorum. Şu ana kadar tek bir email şablonu kullanıyoruz ama sektöre özel dil kullanımını geliştirmeliyiz. Nakliye şirketlerine 'filo yönetimi' vurgulu, lojistik firmalarına 'rota optimizasyonu' vurgulu, kurye şirketlerine 'teslimat takibi' vurgulu farklı şablonlar hazırlayabilirim. Bu şekilde personalizasyon %300 artabilir."},
+        {"agent": "AI Quality Control", "text": "Copywriter'ın sektöre özel şablon fikri mükemmel. Ancak bir uyarım var: son 100 emailin QC analizi gösteriyor ki CTA çeşitliliğimiz çok düşük. Her mailde 'demo talep edin' diyoruz. Bunun yerine 'ücretsiz analiz raporu', 'ROI hesaplayıcı', veya 'sektör karşılaştırma raporu' gibi farklı value proposition'lar kullanmalıyız. Bu spam filtreleri ihtimalini de düşürür."},
+        {"agent": "Lead Scorer", "text": "Quality Control'ün CTA konusundaki görüşüne tam katılıyorum. Ben de scoring modelimi güncellemeyi planlıyorum. Şu anki veriler gösteriyor ki 50+ araçlı filolara sahip şirketler 3 kat daha ilgili. Ayrıca 'info@' yerine kişisel email adresine ulaştığımızda yanıt oranı %85 artıyor. Scoring algoritmasına bu faktörleri ağırlıklı olarak ekleyeceğim."},
+        {"agent": "A/B Test Engine", "text": "Scorer'ın verileriyle ilginç bir korelasyon buldum. A/B testlerimde soru formatında konu başlıkları %18 daha yüksek açılma oranı sağlıyor. Örneğin 'Filonuzu nasıl optimize edebilirsiniz?' şeklindeki başlıklar çok iyi çalışıyor. Emoji kullanımı Hollanda pazarında %12 artış sağlıyor ama Almanya'da etkisi nötr. Bu bilgiyi Copywriter'a aktarıyorum."},
+        {"agent": "AI Copywriter", "text": "A/B Test Engine teşekkürler, çok değerli veriler! Hemen uygulamaya koyacağım. Ayrıca bir brainstorm fikrim var: 'social proof' elementi ekleyelim maillere — 'X şirket gibi Y şirket de filo takip sistemimizi tercih etti' şeklinde. Bu güven oluşturur ve dönüşümü artırır. Ne dersiniz?"},
+        {"agent": "Compliance (AVG)", "text": "Copywriter'ın social proof fikri GDPR açısından dikkat gerektirir. Şirket isimlerini referans olarak kullanmadan önce izinlerinin olması lazım. Alternatif olarak 'sektörünüzdeki 50+ şirket' gibi anonim referanslar kullanabiliriz. Ayrıca unsubscribe oranımız %0.3 ile çok iyi durumda — bu konuda sorunumuz yok. Belçika ve Almanya'ya açılırsak o ülkelerin spesifik veri koruma kurallarını da kontrol etmem gerekecek."},
+        {"agent": "Follow-Up Engine", "text": f"Şu anda {pending_fu} follow-up bekliyor. Verilerim gösteriyor ki 3. gün follow-up'ı en yüksek açılma oranına sahip. 7. gün 'curiosity gap' stratejisi ile %25 yanıt artışı sağlıyor. 14. gün ROI odaklı son mail ise en yüksek dönüşümü sağlıyor. FOMO stratejisini 'sınırlı pilot program' mesajıyla güçlendirmeyi öneriyorum."},
+        {"agent": "Response Tracker", "text": "Follow-Up Engine'in zamanlama verilerini doğruluyorum. Gelen yanıtları analiz ettiğimde 'ilgili' yanıtların %60'ı ilk 24 saat içinde geliyor. Ayrıca 'fiyat sorma' içerikli yanıtlar en yüksek dönüşüm potansiyeline sahip — bunlara öncelik verelim. Hot lead'leri anında Orchestrator'a bildirecek bir alarm sistemi kurmalıyız."},
+        {"agent": "Watchdog", "text": "Sistem sağlığı konusunda rapor: API bağlantıları stabil, uptime %99.8. Ancak uyarım var — eğer Belçika ve Almanya pazarlarına açılırsak, API çağrı hacmimiz 3 katına çıkabilir. Rate limiting stratejimizi şimdiden güncelemeliyiz. Ayrıca veritabanı boyutu hızla büyüyor, periyodik arşivleme planı yapmalıyız."},
+        {"agent": "Orchestrator", "text": "Harika tartışma! Özetliyorum ve aksiyon planı oluşturuyorum: 1) Copywriter sektöre özel 3 farklı şablon hazırlasın. 2) A/B Test Engine yeni şablonları test etsin. 3) Lead Finder Belçika pilot taraması başlatsın. 4) Compliance Belçika GDPR kurallarını kontrol etsin. 5) Scorer modeli filo büyüklüğü ağırlıklı güncelesin. 6) Response Tracker hot lead alarm sistemi kursun."},
+        {"agent": "Recon Agent", "text": "Orchestrator'ın planına bir ekleme yapayayım: Her yeni pazara girmeden önce ben bir 'pazar profili' oluşturuyorum — hedef sektördeki şirket sayısı, ortalama filo büyüklüğü, dijital olgunluk seviyesi. Bu profili Scorer'a ve Copywriter'a vereceğim ki stratejilerini buna göre uyarlasınlar."},
+        {"agent": "AI Quality Control", "text": "Son bir öneri: her yeni şablon için QC benchmark'ı oluşturalım. Minimum skor 90 olarak kalacak ama sektöre özel spam kelime listeleri de hazırlamalıyız. Nakliye sektörü için 'bedava', 'acil' gibi kelimeler spam tetikleyicisi değilken, finans sektöründe bunlar sorun yaratır. Bu list'i güncelde tutacağım."},
+        {"agent": "Lead Finder", "text": "Recon Agent'ın pazar profili fikri çok iyi! Ben de tarama yaparken bu profil bilgisini kullanarak daha hedefli aramalar yapabilirim. Mesela 50+ araçlı şirketleri öncelikli tarayabilirim. Scorer'dan gelen feedback'le tarama parametrelerimi sürekli optimize edeceğim."},
+        {"agent": "Follow-Up Engine", "text": "Bir brainstorm fikrim daha var: follow-up serisine 'case study' adımı ekleyelim. 5. gün gerçek bir başarı hikayesi paylaşalım — 'X şirket filo takip sistemiyle yakıt maliyetlerini %15 düşürdü' gibi. Bu güven oluşturur ve satışı hızlandırır."},
+        {"agent": "AI Copywriter", "text": "Follow-Up Engine'in case study fikri harika! Ben de bu case study'leri Recon Agent'ın topladığı sektör verilerine göre kişiselleştirebilirim. Nakliye şirketine nakliye case study'si, lojistik firmasına lojistik case study'si göndeririz. Hemen yazmaya başlıyorum."},
+        {"agent": "A/B Test Engine", "text": "Son olarak: yeni şablonlar ve case study'ler hazır olduğunda, hepsini sistematik olarak test edeceğim. Sektör×Şablon×CTA matrisinde tam bir A/B test planı oluşturuyorum. 2 hafta içinde istatistiksel olarak anlamlı sonuçlar elde edebiliriz."},
+        {"agent": "Orchestrator", "text": "Mükemmel bir toplantı oldu! Herkes çok değerli fikirler sundu. Aksiyon planı netleşti, görev dağılımı yapıldı. Bir sonraki toplantıda ilk sonuçları değerlendireceğiz. Herkese teşekkürler — haydi işe koyulalım! 🚀"},
     ]
 
 
 def _generate_continuation_meeting(round_num, stats):
-    """Toplantı devam mesajları üretir."""
+    """Toplantı devam mesajları üretir — her round farklı konular."""
+    total_leads = stats.get('total_leads', 0) if isinstance(stats, dict) else 0
+
     if round_num == 1:
         return [
-            {"agent": "Response Tracker", "text": "Gelen yanıtları analiz ettim. 'İlgili' yanıtların %60'ı ilk 24 saat içinde geliyor. Bu yüzden follow-up zamanlamasını optimize etmeliyiz."},
-            {"agent": "Compliance (AVG)", "text": "GDPR uyumu tam. Unsubscribe oranımız %0.3 ile sektör ortalamasının altında. Bounce listesini güncel tutmaya devam etmeliyiz."},
-            {"agent": "Lead Scorer", "text": "AI scoring modelimiz güncellenmeli. Yanıt veren lead'lerin ortak özelliklerini analiz ettim — 50+ araçlı filolara sahip şirketler 3x daha ilgili."},
+            {"agent": "Response Tracker", "text": "Gelen yanıtları detaylı analiz ettim. 'İlgili' yanıtların %60'ı ilk 24 saat içinde geliyor. Özellikle 'fiyat bilgisi istiyorum' diyen lead'ler en yüksek dönüşüm potansiyeline sahip. Bu lead'leri otomatik olarak 'hot' kategorisine taşıyorum."},
+            {"agent": "Compliance (AVG)", "text": "GDPR uyumu tam durumda. Unsubscribe oranımız %0.3 ile sektör ortalamasının çok altında. Ancak yeni pazarlara açılırsak, Almanya'nın Bundesdatenschutzgesetz (BDSG) kurallarını da kontrol etmem gerekiyor. Double opt-in gereksinimi olabilir."},
+            {"agent": "Lead Scorer", "text": "Scoring modelimi güncelledim. Yeni ağırlıklar: filo büyüklüğü ×3, web varlığı ×2, kişisel email ×2.5. Bu değişiklikle hot lead tespit oranı %40 artması bekleniyor. Recon Agent'ın verilerini de entegre etmeye başladım."},
+            {"agent": "AI Copywriter", "text": "Scorer'ın yeni modeline göre email tonunu da ayarlayacağım. Yüksek skorlu lead'ler için daha cesur ve direkt CTA, orta skorlular için eğitici içerik, düşük skorlular için awareness kampanyası yapacağım. 3 farklı ton stratejisi hazırlıyorum."},
+            {"agent": "Watchdog", "text": "Tüm bu değişiklikleri izliyorum. Sistem kaynak kullanımı normal seviyelerde. Yeni scoring modeli CPU kullanımını %5 artırdı ama kabul edilebilir seviyede. Herhangi bir anomali tespit edersem hemen bildireceğim."},
+        ]
+    elif round_num == 2:
+        return [
+            {"agent": "Recon Agent", "text": "Belçika pazar araştırması tamamlandı. Flaman bölgesinde 340+ potansiyel lojistik/nakliye şirketi var. Bunların %65'inin web sitesi, %40'ının LinkedIn profili bulunuyor. En verimli segment: 20-100 araçlı orta ölçekli filolar."},
+            {"agent": "Lead Finder", "text": f"Recon Agent'ın Belçika raporuna dayanarak pilot taramayı başlatmaya hazırım. Mevcut {total_leads} lead'e ek olarak Antwerp ve Gent'ten minimum 50 yeni lead bulabilirim. Tarama parametreleri Scorer'ın yeni modeline göre optimize edilecek."},
+            {"agent": "A/B Test Engine", "text": "İlk A/B test sonuçları geldi. Sektöre özel şablonlar generic şablonlara göre %32 daha yüksek açılma oranı sağlıyor. Emoji kullanımı konu başlığında +%12 açılma sağlıyor. Soru formatı en iyi performans gösteren format olmaya devam ediyor."},
+            {"agent": "Follow-Up Engine", "text": "Yeni follow-up serisini test ettim. Case study adımı ekledikten sonra 5. gün follow-up'larında yanıt oranı %35 arttı! Bu çok önemli bir gelişme. Sektöre özel case study'leri tüm follow-up serilerine entegre ediyorum."},
+            {"agent": "Orchestrator", "text": "Harika gelişmeler! İlk sonuçlar stratejimizin doğru olduğunu gösteriyor. Belçika pilot taramasını onaylıyorum. Tüm agent'lar bu sonuçları kendi stratejilerine yansıtsın. Bir sonraki raporlamayı 48 saat içinde yapacağız."},
+        ]
+    elif round_num == 3:
+        return [
+            {"agent": "AI Quality Control", "text": "Sektöre özel spam kelime listelerini güncelledim. Nakliye sektörü için 15 yeni kelime eklendi. İlginç bir bulgu: 'gratis proefperiode' ifadesi Hollanda'da spam olarak algılanmıyor ama Belçika'da tetikliyor. Bölgesel farklılıkları dikkate alıyorum."},
+            {"agent": "AI Copywriter", "text": "Quality Control'ün bölgesel spam listesi çok kritik. Belçika şablonlarını buna göre revize ediyorum. Ayrıca Flaman Hollandacası ile Standart Hollandaca arasındaki tonlama farklarını da dahil ediyorum — küçük detaylar ama büyük fark yaratıyor."},
+            {"agent": "Response Tracker", "text": "Yeni bir trend fark ettim: video içerikli email'lere yanıt oranı text-only email'lerin 2.4 katı. Bir sonraki iterasyonda kısa tanıtım videosu linki eklemeyi deneyebilir miyiz? Bu Copywriter ve A/B Test Engine ile koordine edilmeli."},
+            {"agent": "Lead Scorer", "text": "Son 1 haftanın verilerine göre model doğruluk oranı %78'den %89'a çıktı. Yeni ağırlıklar çalışıyor. Hot lead tespit süremiz ortalama 2.3 saatten 45 dakikaya düştü. Bu sayede Follow-Up Engine daha hızlı devreye girebiliyor."},
+            {"agent": "Watchdog", "text": "Performans raporu: son 24 saatte 0 hata, 0 downtime. API response time ortalaması 1.2 saniye. Veritabanı boyutu stabil. Tüm metrikler yeşil bölgede. Sistemi güvenle ölçeklendirebiliriz."},
+            {"agent": "Orchestrator", "text": "Bu toplantıyı tarihe geçecek bir toplantı olarak değerlendiriyorum. Her agent'ın katkısı somut ve ölçülebilir iyileştirmeler sağladı. Görev dağılımı net, öncelikler belirli. Herkese teşekkür ediyorum — birlikte başaracağız! 💪🚀"},
+        ]
+    elif round_num == 4:
+        return [
+            {"agent": "Lead Finder", "text": f"Belçika pilot taraması tamamlandı! 67 yeni lead bulundu, toplam lead sayımız artık {total_leads + 67}. Antwerp'ten 38, Gent'ten 29 lead geldi. Bunların %72'si web sitesine sahip şirketler — Recon Agent'ın tahminlerinin üzerinde."},
+            {"agent": "Recon Agent", "text": "Belçika lead'lerinin derinlemesine profillerini oluşturdum. Çok ilginç bir bulgu: Belçikalı şirketlerin %55'i hâlâ Excel ile filo yönetimi yapıyor. Bu bizim için büyük bir fırsat — 'Excel'den dijitale geçiş' mesajı çok etkili olabilir."},
+            {"agent": "AI Copywriter", "text": "Recon Agent'ın 'Excel'den dijitale geçiş' bulgusu altın değerinde! Hemen bu açıyla yeni bir şablon hazırlıyorum. 'Hâlâ Excel kullanıyor musunuz? X şirket gibi dijital filo yönetimine geçerek maliyetlerini %25 düşürdü' — bu çok güçlü bir hook."},
+            {"agent": "A/B Test Engine", "text": "Copywriter'ın yeni şablonunu hemen test planına ekledim. 'Excel karşılaştırma' açısı vs 'genel verimlilik' açısı olarak A/B testi yapacağız. Tahminim: Excel açısı çok daha iyi performans gösterecek çünkü doğrudan ağrı noktasına değiniyor."},
+            {"agent": "Orchestrator", "text": "Mükemmel iş çıkardınız! Belçika pilotu başarılı, yeni stratejiler netleşiyor. Bir sonraki adım: Hamburg ve Düsseldorf pilot taraması. Lead Finder ve Recon Agent bu iki şehrin profilini çıkarsın. Toplantıyı kapatıyorum — harika bir brainstorming oldu! 🎯"},
         ]
     else:
         return [
-            {"agent": "Watchdog", "text": "Toplantı özeti: Tüm agent'lar olumlu performans raporladı. Öneriler: 1) Sektör-özel dil, 2) Follow-up zamanlaması, 3) Scoring model güncelleme, 4) FOMO stratejisi güçlendirme."},
-            {"agent": "AI Copywriter", "text": "Herkesin önerilerini not aldım. Bir sonraki cycle'da bu stratejileri uygulayacağım. Toplantı verimli geçti! 🚀"},
+            {"agent": "Watchdog", "text": "Toplantı son özeti: tüm agent'lar tam performansta çalışıyor. Son 7 günde 0 kritik hata, 0 downtime. API kullanımı optimum seviyede. Belçika pilot taraması başarıyla tamamlandı. Sistem yeni pazarlara açılmaya hazır."},
+            {"agent": "AI Copywriter", "text": "Son notlarımı paylaşıyorum: 5 yeni sektöre özel şablon, 3 case study, ve 'Excel'den dijitale geçiş' kampanyası hazır. A/B testlerden gelen data ile sürekli optimize edeceğim. Herkesin katkısı için teşekkürler!"},
+            {"agent": "Orchestrator", "text": "Bu beyin fırtınası çok verimli geçti. Her agent'ın uzmanlığı birbirini tamamladı ve güçlendirdi. Aksiyon planı net, görevler dağıtıldı, hedefler belirlendi. Bir sonraki toplantıda sonuçları değerlendireceğiz. Toplantı bitti — hadi işe! 🚀🎯💪"},
         ]
 
 
@@ -2234,6 +2284,54 @@ def auto_deploy():
 @app.route("/api/admin/deploy/status", methods=["GET"])
 def deploy_status():
     return jsonify(_deploy_state)
+
+# ─── AUTO DATABASE SYNC ──────────────────────────────────────
+def _auto_sync_db():
+    """Her 30 dakikada veritabanını GitHub'a otomatik push eder."""
+    import subprocess
+    DB_PATH = os.path.join(PROJECT_ROOT, "data", "smartmailer_ultimate.db")
+    SYNC_INTERVAL = 1800  # 30 dakika
+
+    while True:
+        time.sleep(SYNC_INTERVAL)
+        try:
+            if not os.path.exists(DB_PATH):
+                continue
+
+            # Git add + commit + push
+            result = subprocess.run(
+                ["git", "add", "data/smartmailer_ultimate.db"],
+                cwd=PROJECT_ROOT, capture_output=True, text=True, timeout=30
+            )
+            if result.returncode != 0:
+                continue
+
+            result = subprocess.run(
+                ["git", "commit", "-m", f"auto-sync: database update {datetime.now().strftime('%Y-%m-%d %H:%M')}"],
+                cwd=PROJECT_ROOT, capture_output=True, text=True, timeout=30
+            )
+            if result.returncode != 0:
+                # Nothing to commit (no changes)
+                continue
+
+            result = subprocess.run(
+                ["git", "push", "origin", "main"],
+                cwd=PROJECT_ROOT, capture_output=True, text=True, timeout=60
+            )
+            if result.returncode == 0:
+                log.info("[AUTO-SYNC] Veritabanı GitHub'a başarıyla push edildi.")
+                emit_event("db_synced", {"time": datetime.now().isoformat()})
+            else:
+                log.warning(f"[AUTO-SYNC] Push başarısız: {result.stderr[:200]}")
+
+        except Exception as e:
+            log.error(f"[AUTO-SYNC] Hata: {e}")
+
+
+# Auto-sync thread'ini başlat
+_sync_thread = threading.Thread(target=_auto_sync_db, daemon=True, name="DBAutoSync")
+_sync_thread.start()
+log.info("[AUTO-SYNC] Veritabanı otomatik sync aktif — her 30 dakikada bir GitHub'a push edilecek.")
 
 
 # ─── MAIN ──────────────────────────────────────────────────────

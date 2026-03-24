@@ -1750,12 +1750,12 @@ function initOfficeAgents() {
             bubble.textContent = msg;
             bubble.classList.add('visible');
 
-            // Hide after 8 seconds
+            // Hide after 12 seconds
             setTimeout(() => {
                 bubble.classList.remove('visible');
-            }, 8000);
+            }, 12000);
         });
-    }, 4000);
+    }, 6000);
 }
 
 // ═══ INIT ═══
