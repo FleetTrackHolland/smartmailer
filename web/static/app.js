@@ -1309,6 +1309,14 @@ function initOfficeAgents() {
         seat.classList.add('at-desk', 'idle');
         // Apply initial depth scaling
         setTimeout(() => applyDepthScaling(seat), 100);
+
+        // Inject status bubble div
+        if (!seat.querySelector('.agent-status-bubble')) {
+            const bubble = document.createElement('div');
+            bubble.className = 'agent-status-bubble';
+            bubble.textContent = '';
+            seat.appendChild(bubble);
+        }
     });
 
     // Spawn ambient floating particles
@@ -1341,6 +1349,115 @@ function initOfficeAgents() {
             setTimeout(() => { randomSeat.style.transform = ''; }, 2000);
         }
     }, 3000);
+
+    // ═══ LIVE STATUS BUBBLE ROTATION ═══
+    const agentStatuses = {
+        'Orchestrator': [
+            '🎯 Pipeline koordine ediliyor...',
+            '📊 Agent performans analizi...',
+            '⚡ Görev dağılımı yapılıyor...',
+            '🔄 Sistem sağlığı kontrol...',
+            '📈 KPI metrikleri güncelleniyor...'
+        ],
+        'Copywriter': [
+            '✍️ E-posta şablonu yazılıyor...',
+            '🎨 Konu başlığı A/B testi...',
+            '📝 Kişiselleştirilmiş mesaj...',
+            '💡 Yaratıcı CTA tasarlanıyor...',
+            '🔤 Ton analizi yapılıyor...'
+        ],
+        'QualityControl': [
+            '🔍 Spam skoru kontrol ediliyor...',
+            '✅ GDPR uyumluluğu doğrulanıyor...',
+            '📏 E-posta uzunluğu optimize...',
+            '🛡️ Blacklist kontrolü...',
+            '⚖️ Kalite skoru: 92/100'
+        ],
+        'Scorer': [
+            '📊 Lead puanlama modeli çalışıyor...',
+            '🏢 Şirket büyüklüğü analizi...',
+            '🌐 Web varlığı değerlendirme...',
+            '💰 Potansiyel gelir tahmini...',
+            '📈 Sektör uyumu kontrolü...'
+        ],
+        'Recon': [
+            '🔎 OSINT araştırması yapılıyor...',
+            '🌐 Domain WHOIS sorgusu...',
+            '📡 Sosyal medya taranıyor...',
+            '🏗️ Şirket profili oluşturuluyor...',
+            '📊 Teknoloji stack analizi...'
+        ],
+        'Finder': [
+            '🔍 Yeni lead kaynakları taranıyor...',
+            '🗂️ Sektör veritabanı sorgusu...',
+            '📧 E-posta adresi doğrulanıyor...',
+            '🌍 Bölgesel arama genişletiliyor...',
+            '🔗 LinkedIn profili bulundu!'
+        ],
+        'FollowUp': [
+            '📬 Takip e-postası planlanıyor...',
+            '⏰ Gönderim zamanı optimize...',
+            '📊 Açılma oranı analiz ediliyor...',
+            '🔄 3. aşama follow-up hazır...',
+            '📈 Yanıt oranı: %18'
+        ],
+        'Tracker': [
+            '📨 Gelen yanıtlar analiz ediliyor...',
+            '🏷️ Yanıt sınıfı: İlgili',
+            '📊 Sentiment analizi yapılıyor...',
+            '🔔 Yeni sıcak yanıt tespit!',
+            '📋 CRM senkronizasyonu...'
+        ],
+        'Watchdog': [
+            '🛡️ API sağlığı kontrol ediliyor...',
+            '📊 Veritabanı bağlantısı: OK',
+            '⚡ Sistem performansı: %98',
+            '🔒 Güvenlik taraması yapılıyor...',
+            '📡 Sunucu yanıt süresi: 42ms'
+        ],
+        'ABTest': [
+            '📊 A/B test sonuçları analiz...',
+            '🎯 Kazanan varyant belirleniyor...',
+            '📈 Dönüşüm oranı: +23%',
+            '🔬 İstatistiksel anlamlılık: %95',
+            '💡 Yeni test hipotezi oluşturuluyor...'
+        ],
+        'Compliance': [
+            '🇪🇺 GDPR uyumluluk taraması...',
+            '📋 Opt-out listesi güncelleniyor...',
+            '⚖️ CAN-SPAM kontrolü...',
+            '🔐 Veri gizliliği doğrulaması...',
+            '✅ Uyumluluk skoru: 100%'
+        ]
+    };
+
+    setInterval(() => {
+        const seats = document.querySelectorAll('.meeting-seat');
+        // Pick 2-3 random agents to show status
+        const numToShow = 2 + Math.floor(Math.random() * 2);
+        const indices = [];
+        while (indices.length < numToShow && indices.length < seats.length) {
+            const idx = Math.floor(Math.random() * seats.length);
+            if (!indices.includes(idx)) indices.push(idx);
+        }
+
+        indices.forEach(idx => {
+            const seat = seats[idx];
+            const agentName = seat.dataset.agent;
+            const bubble = seat.querySelector('.agent-status-bubble');
+            if (!bubble || !agentName) return;
+
+            const statuses = agentStatuses[agentName] || ['💻 Çalışıyor...'];
+            const msg = statuses[Math.floor(Math.random() * statuses.length)];
+            bubble.textContent = msg;
+            bubble.classList.add('visible');
+
+            // Hide after 5 seconds
+            setTimeout(() => {
+                bubble.classList.remove('visible');
+            }, 5000);
+        });
+    }, 4000);
 }
 
 // ═══ INIT ═══

@@ -971,17 +971,231 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 }
 
 /* Monitor on desk */
-.css-desk .desk-monitor {
+.desk-monitor {
     position: absolute;
-    top: -28px;
+    top: -30px;
     left: 50%;
     transform: translateX(-50%);
-    width: 30px;
-    height: 22px;
-    background: linear-gradient(135deg, #37474f, #263238);
+    width: 34px;
+    height: 24px;
+    background: linear-gradient(145deg, #263238, #1a1a2e);
+    border-radius: 2px 2px 1px 1px;
+    border: 1.5px solid #455a64;
+    box-shadow: 0 0 8px rgba(100,181,246,0.4), inset 0 0 10px rgba(100,181,246,0.2);
+    z-index: 2;
+}
+
+/* Monitor screen glow */
+.desk-monitor::before {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    background: linear-gradient(180deg, #1a237e 0%, #0d47a1 50%, #1565c0 100%);
+    border-radius: 1px;
+    opacity: 0.7;
+    animation: screenFlicker 4s ease-in-out infinite;
+}
+
+/* Monitor stand */
+.desk-monitor::after {
+    content: '';
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 6px;
+    background: #37474f;
+    clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%);
+}
+
+@keyframes screenFlicker {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 0.9; }
+}
+
+/* Keyboard */
+.desk-keyboard {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 8px;
+    background: linear-gradient(180deg, #cfd8dc, #b0bec5);
+    border-radius: 1px;
+    border: 0.5px solid #90a4ae;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    z-index: 2;
+}
+
+/* Keyboard keys texture */
+.desk-keyboard::before {
+    content: '';
+    position: absolute;
+    inset: 1px;
+    background: 
+        repeating-linear-gradient(90deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 2px, transparent 2px, transparent 4px),
+        repeating-linear-gradient(0deg, rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 3px);
+}
+
+/* Mouse */
+.desk-mouse {
+    position: absolute;
+    bottom: 5px;
+    right: 8px;
+    width: 6px;
+    height: 10px;
+    background: linear-gradient(180deg, #eceff1, #cfd8dc);
+    border-radius: 3px;
+    border: 0.5px solid #b0bec5;
+    z-index: 2;
+}
+
+.desk-mouse::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    height: 3px;
+    background: #90a4ae;
+    border-radius: 1px;
+}
+
+/* Coffee cup */
+.desk-coffee {
+    position: absolute;
+    bottom: 2px;
+    right: 6px;
+    font-size: 10px;
+    z-index: 2;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
+    animation: steamRise 3s ease-in-out infinite;
+}
+
+@keyframes steamRise {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+}
+
+/* ─── Whiteboard ─── */
+.css-whiteboard {
+    position: absolute;
+    width: 100px;
+    height: 60px;
+    background: linear-gradient(135deg, #fafafa, #f5f5f5);
+    border-radius: 3px;
+    border: 2px solid #90a4ae;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: #37474f;
+    z-index: 2;
+}
+
+.css-whiteboard::before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    width: 8px;
+    height: 8px;
+    background: #f44336;
+    border-radius: 50%;
+    box-shadow: 14px 0 0 #4caf50, 28px 0 0 #2196f3;
+}
+
+/* ─── Coffee Station ─── */
+.css-coffee-station {
+    position: absolute;
+    width: 50px;
+    height: 35px;
+    background: linear-gradient(135deg, #5d4037, #4e342e);
+    border-radius: 3px;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    z-index: 2;
+}
+
+.css-coffee-station::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 0;
+    right: 0;
+    height: 8px;
+    background: linear-gradient(180deg, #3e2723, #2c1d17);
+    border-radius: 0 0 3px 3px;
+}
+
+/* ─── Ceiling Lights ─── */
+.css-light {
+    position: absolute;
+    width: 40px;
+    height: 4px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.3), rgba(255,255,255,0.8), rgba(255,255,255,0.3));
     border-radius: 2px;
-    border: 1px solid #455a64;
-    box-shadow: 0 0 6px rgba(100,181,246,0.3), inset 0 0 8px rgba(100,181,246,0.15);
+    z-index: 3;
+}
+
+.css-light::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 200px;
+    background: radial-gradient(ellipse at top, rgba(255,248,220,0.08) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+/* ─── Live Status Bubble (above character head) ─── */
+.agent-status-bubble {
+    position: absolute;
+    top: -45px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(13,17,23,0.92);
+    color: #e6edf3;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 9px;
+    font-weight: 500;
+    white-space: nowrap;
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 20;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+    border: 1px solid rgba(124,92,252,0.3);
+}
+
+.agent-status-bubble.visible {
+    opacity: 1;
+}
+
+.agent-status-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 8px;
+    height: 8px;
+    background: rgba(13,17,23,0.92);
+    clip-path: polygon(50% 100%, 0 0, 100% 0);
+    border: inherit;
 }
 
 /* ─── 3D Windows with frame ─── */
