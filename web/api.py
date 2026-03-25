@@ -1633,7 +1633,7 @@ def get_followups_stats():
 
 # ─── HEALTH CHECK (tüm modülleri test eder) ──────────────────
 @app.route("/api/health/check", methods=["GET"])
-def health_check():
+def deep_health_check():
     """Tüm modüllerin import edilebilirliğini test eder."""
     results = {}
     modules = [
