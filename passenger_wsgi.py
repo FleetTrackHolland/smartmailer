@@ -17,12 +17,6 @@ try:
 except Exception:
     pass
 
-# ─── PASSENGER MODE ───────────────────────────────────────────
-# Signal to the app that we're running under Passenger WSGI.
-# This disables background threads, auto-start automation, and
-# heavy module-level initialization that would cause timeouts.
-os.environ["PASSENGER_MODE"] = "true"
-
 # Flask uygulamasini yukle — hata olursa basit hata sayfasi goster
 import time as _time
 _start = _time.time()
