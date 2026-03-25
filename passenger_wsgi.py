@@ -5,6 +5,11 @@ import traceback
 # Proje dizini
 sys.path.insert(0, os.path.dirname(__file__))
 
+# ─── PASSENGER MODE FLAG ─────────────────────────────────────────
+# Bu flag agent'ların lazy-load olmasını ve background thread'lerin
+# başlamamasını sağlar. Passenger startup timeout'unu önler.
+os.environ["PASSENGER_MODE"] = "true"
+
 # .env yukle
 try:
     from dotenv import load_dotenv
@@ -12,9 +17,23 @@ try:
 except Exception:
     pass
 
+# ─── PASSENGER MODE ───────────────────────────────────────────
+# Signal to the app that we're running under Passenger WSGI.
+# This disables background threads, auto-start automation, and
+# heavy module-level initialization that would cause timeouts.
+os.environ["PASSENGER_MODE"] = "true"
+
 # Flask uygulamasini yukle — hata olursa basit hata sayfasi goster
+import time as _time
+_start = _time.time()
 try:
     from web.api import app as application
+    _elapsed = _time.time() - _start
+    try:
+        with open(os.path.join(os.path.dirname(__file__), 'startup_timing.log'), 'w') as f:
+            f.write(f"Startup OK in {_elapsed:.2f}s\n")
+    except Exception:
+        pass
 except Exception as e:
     # Hata detaylarini logla
     error_msg = traceback.format_exc()

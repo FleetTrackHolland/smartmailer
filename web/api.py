@@ -18,19 +18,15 @@ sys.path.insert(0, PROJECT_ROOT)
 
 from config import config
 from core.logger import get_logger
-from core.database import db
-from core.ab_test_engine import ABTestEngine
-from core.followup_engine import FollowUpEngine
-from core.template_engine import TemplateEngine
-from agents.copywriter_agent import CopywriterAgent, EmailDraft
-from agents.quality_agent import QualityAgent
-from agents.compliance_agent import ComplianceAgent
-from agents.watchdog_agent import WatchdogAgent
-from agents.lead_scorer import LeadScorer
-from agents.response_tracker import ResponseTracker
-from agents.lead_finder import LeadFinder
 
 log = get_logger("web_api")
+
+# ─── PASSENGER / PRODUCTION DETECTION ─────────────────────────────
+IS_PASSENGER = (
+    os.environ.get("PASSENGER_BASE_URI")
+    or "passenger" in os.environ.get("SERVER_SOFTWARE", "").lower()
+    or os.environ.get("PASSENGER_MODE", "").lower() == "true"
+)
 
 app = Flask(__name__, static_folder="static", static_url_path="")
 
@@ -53,23 +49,84 @@ except ImportError:
     pass
 
 
-# ─── GLOBAL STATE ────────────────────────────────────────────────────
-copywriter = CopywriterAgent()
-quality = QualityAgent()
-compliance = ComplianceAgent()
-lead_scorer = LeadScorer()
-ab_test = ABTestEngine(test_size=12)
-follow_up = FollowUpEngine()
-response_tracker = ResponseTracker()
-lead_finder = LeadFinder()
-template_engine = TemplateEngine()
-watchdog = WatchdogAgent(
-    agents={"copywriter": copywriter, "quality": quality,
-            "compliance": compliance, "lead_scorer": lead_scorer,
-            "followup": follow_up, "response_tracker": response_tracker,
-            "lead_finder": lead_finder},
-    config=config,
-)
+# ─── LAZY-LOADED GLOBAL STATE ─────────────────────────────────────
+# Agents are initialized on first request, NOT at import time.
+# This prevents Passenger WSGI timeout during module loading.
+copywriter = None
+quality = None
+compliance = None
+lead_scorer = None
+ab_test = None
+follow_up = None
+response_tracker = None
+lead_finder = None
+template_engine = None
+watchdog = None
+db = None
+_agents_initialized = False
+
+
+def _init_agents():
+    """Lazy-load all agents and DB on first request."""
+    global copywriter, quality, compliance, lead_scorer, ab_test
+    global follow_up, response_tracker, lead_finder, template_engine
+    global watchdog, db, _agents_initialized
+
+    if _agents_initialized:
+        return
+
+    try:
+        from core.database import db as _db
+        db = _db
+
+        from core.ab_test_engine import ABTestEngine
+        from core.followup_engine import FollowUpEngine
+        from core.template_engine import TemplateEngine
+        from agents.copywriter_agent import CopywriterAgent
+        from agents.quality_agent import QualityAgent
+        from agents.compliance_agent import ComplianceAgent
+        from agents.watchdog_agent import WatchdogAgent
+        from agents.lead_scorer import LeadScorer
+        from agents.response_tracker import ResponseTracker
+        from agents.lead_finder import LeadFinder
+
+        copywriter = CopywriterAgent()
+        quality = QualityAgent()
+        compliance = ComplianceAgent()
+        lead_scorer = LeadScorer()
+        ab_test = ABTestEngine(test_size=12)
+        follow_up = FollowUpEngine()
+        response_tracker = ResponseTracker()
+        lead_finder = LeadFinder()
+        template_engine = TemplateEngine()
+        watchdog = WatchdogAgent(
+            agents={"copywriter": copywriter, "quality": quality,
+                    "compliance": compliance, "lead_scorer": lead_scorer,
+                    "followup": follow_up, "response_tracker": response_tracker,
+                    "lead_finder": lead_finder},
+            config=config,
+        )
+        _agents_initialized = True
+        log.info("[INIT] Tüm agent'lar başarıyla yüklendi.")
+    except Exception as e:
+        log.error(f"[INIT] Agent yükleme hatası: {e}")
+        # Set db at minimum so basic endpoints work
+        try:
+            if db is None:
+                from core.database import db as _db
+                db = _db
+        except Exception:
+            pass
+        _agents_initialized = True  # Don't retry every request
+
+
+@app.before_request
+def ensure_agents_loaded():
+    """Ensure agents are initialized before handling any API request."""
+    # Skip for health check — must respond instantly
+    if request.path == "/health":
+        return
+    _init_agents()
 
 # Kampanya durumu
 campaign_state = {
@@ -89,6 +146,18 @@ def emit_event(event_name, data):
     """Real-time event gönder (SocketIO varsa)."""
     if HAS_SOCKETIO and socketio:
         socketio.emit(event_name, data)
+
+
+# ─── HEALTH CHECK (no DB, no agents) ─────────────────────────
+@app.route("/health")
+def health_check():
+    """Lightweight health check — responds instantly, no DB or agent needed."""
+    return jsonify({
+        "status": "ok",
+        "timestamp": datetime.now().isoformat(),
+        "agents_loaded": _agents_initialized,
+        "passenger": IS_PASSENGER,
+    })
 
 
 # ─── STATIC FILES ─────────────────────────────────────────────
@@ -485,7 +554,7 @@ JSON formatında cevap ver (yalnızca JSON, başka metin olmasın):
             from core.api_guard import api_guard
 
             headers = {
-                "x-api-key": cfg.CLAUDE_API_KEY,
+                "x-api-key": cfg.ANTHROPIC_API_KEY,
                 "anthropic-version": "2023-06-01",
                 "content-type": "application/json",
             }
@@ -2063,25 +2132,28 @@ def _automation_loop():
         _automation_state["last_action"] = "Pipeline durduruldu"
 
     except Exception as e:
-        # En dıştaki koruma — thread ÖLMEZ, 60sn sonra tekrar dener
+        # En dıştaki koruma — thread güvenli şekilde durur, crash olmaz
         _auto_log(f"FATAL: {e}", "error")
         try:
             import traceback
             traceback.print_exc()
         except Exception:
             pass
-        _automation_state["last_action"] = f"FATAL: {str(e)[:200]} — 60sn sonra yeniden başlıyor..."
-        # RUNNING=FALSE YAPMIYORUZ — otomatik recovery
+        _automation_state["last_action"] = f"FATAL: {str(e)[:200]} — pipeline durdu"
+        _automation_state["running"] = False
         gc.collect()
-        time.sleep(60)
-        # Tekrar başlat (recursive olmadan, while döngüsüne geri dön)
-        if _automation_state["running"]:
-            _auto_log("🔄 FATAL recovery — pipeline yeniden başlıyor")
-            _automation_loop()  # Yeniden başlat
+        # NOT recursive — thread safely dies, can be restarted via API
 
 
 def _auto_start_automation():
-    """Server basladiginda otomasyonu otomatik baslat."""
+    """Server basladiginda otomasyonu otomatik baslat.
+    NOT: Passenger modunda devre disi — cron endpoint kullanilmali.
+    """
+    if IS_PASSENGER:
+        log.info("[AUTO] Passenger modunda — otomasyon thread'i devre disi. "
+                 "Cron endpoint /cron/run-cycle kullanin.")
+        return
+
     if not config.AUTO_START:
         log.info("[AUTO] AUTO_START devre disi — manuel baslatma gerekli")
         return
@@ -2829,8 +2901,7 @@ def _auto_sync_db():
 
 
 # Auto-sync thread — sadece doğrudan çalıştırıldığında başlat (Passenger'da değil)
-_is_passenger = os.environ.get("PASSENGER_BASE_URI") or "passenger" in os.environ.get("SERVER_SOFTWARE", "").lower()
-if not _is_passenger:
+if not IS_PASSENGER:
     try:
         _sync_thread = threading.Thread(target=_auto_sync_db, daemon=True, name="DBAutoSync")
         _sync_thread.start()

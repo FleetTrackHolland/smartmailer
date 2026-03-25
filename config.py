@@ -45,6 +45,13 @@ class Config:
     FOLLOWUP_DAY_2     = int(os.getenv("FOLLOWUP_DAY_2", "7"))
     FOLLOWUP_DAY_3     = int(os.getenv("FOLLOWUP_DAY_3", "14"))
 
+    # ─── PASSENGER / PRODUCTION DETECTION ────────────────────────
+    IS_PASSENGER = bool(
+        os.environ.get("PASSENGER_BASE_URI")
+        or "passenger" in os.environ.get("SERVER_SOFTWARE", "").lower()
+        or os.environ.get("PASSENGER_MODE", "").lower() == "true"
+    )
+
     # ─── OTOMASYON ───────────────────────────────────────────────
     SECTORS            = os.getenv("SECTORS",
         "transport,bouw,schoonmaak,logistiek,koerier,"
@@ -56,7 +63,8 @@ class Config:
         "glas,stukadoor,timmerman,metselaar"
     ).split(",")
     TARGET_LOCATION    = os.getenv("TARGET_LOCATION", "Nederland")
-    AUTO_START         = os.getenv("AUTO_START", "true").lower() == "true"
+    # Passenger'da AUTO_START devre dışı — cron ile çalıştırılır
+    AUTO_START         = (os.getenv("AUTO_START", "true").lower() == "true") and not IS_PASSENGER
     DEPLOY_SECRET      = os.getenv("DEPLOY_SECRET", "fleettrack2026")
     AUTOMATION_INTERVAL = int(os.getenv("AUTOMATION_INTERVAL", "15"))
 
