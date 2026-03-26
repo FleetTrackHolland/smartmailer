@@ -62,18 +62,18 @@
     <div class="card card-info">
         <div class="card-header">
             <h3>📧 Brevo Email Gönderim Durumu</h3>
-            <span class="info-tooltip" data-tip="Brevo Free Plan: Günlük 300 email limiti. Spam'a düşmemek için önerilen: 80-100 email/gün. IP warmup dönemi (ilk 2 hafta) günlük 20-40 ile başlayın, yavaş artırın.">ⓘ</span>
+            <span class="info-tooltip" data-tip="Brevo Standard Plan: Aylık 20.000 email hakkı, günlük hard limit yok. Spam'a düşmemek için önerilen: 550-650 email/gün. Sektör bazlı throttle ve optimal saat stratejisi aktif.">ⓘ</span>
         </div>
         <div class="info-grid">
-            <div class="info-item"><span class="info-label">Günlük Limit</span><span class="info-value" style="color:var(--amber)">300</span><small>Brevo Free Plan</small></div>
+            <div class="info-item"><span class="info-label">Aylık Limit</span><span class="info-value" style="color:var(--green)">20.000</span><small>Brevo Standard Plan</small></div>
             <div class="info-item"><span class="info-label">Bugün Gönderilen</span><span class="info-value" style="color:var(--green)" id="daily-sent">0</span></div>
-            <div class="info-item"><span class="info-label">Güvenli Limit</span><span class="info-value" style="color:var(--cyan)">80-100</span><small>Spam'a düşmemek için</small></div>
+            <div class="info-item"><span class="info-label">Güvenli Günlük</span><span class="info-value" style="color:var(--cyan)">550-650</span><small>Spam'a düşmemek için</small></div>
             <div class="info-item"><span class="info-label">Kalan</span><span class="info-value" id="daily-remaining">0</span></div>
             <div class="info-item"><span class="info-label">Duplicate Engel</span><span class="info-value" style="color:var(--green)" id="stat-dup-prevented">0</span><small>Tekrar gönderim engellendi</small></div>
         </div>
         <div class="daily-progress" style="margin-top:14px">
             <div class="progress-bar"><div class="progress-fill" id="daily-progress-fill"></div></div>
-            <div class="progress-text">Günlük kullanım: <strong id="daily-pct">0</strong>% — Güvenli limit: <strong id="daily-limit">80</strong></div>
+            <div class="progress-text">Günlük kullanım: <strong id="daily-pct">0</strong>% — Güvenli limit: <strong id="daily-limit">650</strong></div>
         </div>
     </div>
 
@@ -243,21 +243,21 @@
 
     <!-- Brevo Limit Info -->
     <div class="card card-info">
-        <div class="card-header"><h3>⚠️ Brevo Spam-Safe Gönderim Rehberi</h3></div>
+        <div class="card-header"><h3>📊 Brevo Standard — Gönderim Kapasitesi</h3></div>
         <div class="info-grid">
-            <div class="info-item"><span class="info-label">Brevo Free Limit</span><span class="info-value" style="color:var(--amber)">300/gün</span></div>
-            <div class="info-item"><span class="info-label">Önerilen Güvenli</span><span class="info-value" style="color:var(--green)">80-100/gün</span></div>
-            <div class="info-item"><span class="info-label">IP Warmup (ilk 2 hf)</span><span class="info-value" style="color:var(--cyan)">20-40/gün</span></div>
+            <div class="info-item"><span class="info-label">Aylık Limit</span><span class="info-value" style="color:var(--green)">20.000/ay</span></div>
+            <div class="info-item"><span class="info-label">Günlük Güvenli</span><span class="info-value" style="color:var(--green)">550-650/gün</span></div>
+            <div class="info-item"><span class="info-label">Sektör/Gün Maks</span><span class="info-value" style="color:var(--cyan)">60/sektör</span></div>
             <div class="info-item"><span class="info-label">Bugün Gönderilen</span><span class="info-value" id="camp-today-sent">0</span></div>
             <div class="info-item"><span class="info-label">Kalan Güvenli</span><span class="info-value" style="color:var(--green)" id="camp-remaining">0</span></div>
         </div>
-        <p class="section-desc" style="margin-top:14px">💡 <strong>Neden 80-100?</strong> Brevo Free Plan 300 günlük izin verse de, yeni IP'den 100+ email/gün göndermek spam filtrelerine yakalanma riskini artırır. İlk 2 hafta günlük 20-40, sonra 60-80, 3. haftadan sonra 80-100 ile güvenli şekilde artırın.</p>
+        <p class="section-desc" style="margin-top:14px">💡 <strong>Brevo Standard Plan:</strong> Aylık 20.000 email hakkı, günlük hard limit yok. Sistem otomatik olarak aylık bütçeyi kalan günlere dağıtır (hafta sonu %20, hafta içi yoğun). Sektör bazlı throttle ve optimal saat stratejisi (09-11, 14-16 CET) spam riskini minimize eder.</p>
     </div>
 
     <div class="card">
         <div class="card-header"><h3>Kampanya Başlat</h3></div>
         <div class="form-row">
-            <div class="form-group"><label>Günlük Limit</label><input type="number" id="campaign-limit" value="80" min="1" max="300"></div>
+            <div class="form-group"><label>Günlük Limit</label><input type="number" id="campaign-limit" value="200" min="1" max="700"></div>
             <button class="btn btn-primary" id="btn-start-campaign" onclick="startCampaign()">🚀 Başlat</button>
             <button class="btn btn-danger" id="btn-stop-campaign" onclick="stopCampaign()" style="display:none">⏹ Durdur</button>
         </div>
@@ -578,8 +578,8 @@
             <div class="card-header"><h3>⚡ Genel Ayarlar</h3></div>
             <div class="settings-form">
 
-                <div class="setting-row"><label>Günlük Limit</label><input type="number" id="set-daily-limit" min="1" max="300"></div>
-                <small>Brevo Free: max 300. Spam-safe: 80-100</small>
+                <div class="setting-row"><label>Günlük Limit</label><input type="number" id="set-daily-limit" min="1" max="700"></div>
+                <small>Brevo Standard: 20.000/ay. Güvenli günlük: 550-650</small>
                 <div class="setting-row"><label>Gecikme (Min sn)</label><input type="number" id="set-delay-min" min="5" max="120"></div>
                 <div class="setting-row"><label>Gecikme (Max sn)</label><input type="number" id="set-delay-max" min="10" max="180"></div>
                 <div class="setting-row"><label>İnsan Onayı</label><label class="toggle"><input type="checkbox" id="set-human-review"><span class="toggle-slider"></span></label></div>

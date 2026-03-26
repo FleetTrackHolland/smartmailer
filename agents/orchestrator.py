@@ -24,6 +24,8 @@ from agents.watchdog_agent import WatchdogAgent
 from agents.lead_scorer import LeadScorer
 from agents.response_tracker import ResponseTracker
 from agents.lead_finder import LeadFinder
+from agents.sending_strategist import SendingStrategist
+from agents.churn_analyst import ChurnAnalyst
 
 log = get_logger("orchestrator")
 
@@ -43,15 +45,17 @@ class Orchestrator:
 
     def __init__(self):
         self.copywriter     = CopywriterAgent()
-        self.quality        = QualityAgent()
-        self.compliance     = ComplianceAgent()
-        self.send_engine    = SendEngine()
-        self.lead_scorer    = LeadScorer()
-        self.ab_test        = ABTestEngine(test_size=12)
-        self.followup       = FollowUpEngine()
+        self.quality         = QualityAgent()
+        self.compliance      = ComplianceAgent()
+        self.send_engine     = SendEngine()
+        self.lead_scorer     = LeadScorer()
+        self.ab_test         = ABTestEngine(test_size=12)
+        self.followup        = FollowUpEngine()
         self.response_tracker = ResponseTracker()
-        self.lead_finder    = LeadFinder()
-        self.watchdog       = WatchdogAgent(
+        self.lead_finder     = LeadFinder()
+        self.strategist      = SendingStrategist()
+        self.churn_analyst   = ChurnAnalyst()
+        self.watchdog        = WatchdogAgent(
             agents={
                 "copywriter":    self.copywriter,
                 "quality":       self.quality,
@@ -60,10 +64,12 @@ class Orchestrator:
                 "followup":      self.followup,
                 "response_tracker": self.response_tracker,
                 "lead_finder":   self.lead_finder,
+                "strategist":    self.strategist,
+                "churn_analyst": self.churn_analyst,
             },
             config=config,
         )
-        log.info("Orchestrator v4 hazir (QC>=90 + Follow-Up + Response Tracking + Parallel).")
+        log.info("Orchestrator v5 hazır (Strategist + ChurnAnalyst + QC>=90 + Follow-Up).")
 
     # ─────────────────────────────────────────────────────────────
     # ANA KAMPANYA METODU
@@ -72,11 +78,27 @@ class Orchestrator:
     def run_campaign(self, leads_file: str = None, max_send: int = None):
         """
         Kampanya yürütür. Lead'ler SQLite'dan veya CSV'den yüklenir.
-        AI lead scoring ile önceliklendirilir.
+        AI lead scoring, sending strategist, ve churn analyst ile optimize edilir.
         """
-        limit = max_send or config.DAILY_SEND_LIMIT
+        # Strategist'ten günlük plan al
+        daily_plan = self.strategist.get_daily_plan()
+        strategy_limit = daily_plan["remaining_today"]
+
+        limit = min(
+            max_send or config.DAILY_SEND_LIMIT,
+            strategy_limit
+        )
+
         stats = CampaignStats()
         campaign_id = f"ft-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+
+        # Churn raporu — kampanya öncesi analiz
+        try:
+            churn_report = self.churn_analyst.generate_churn_report()
+            churn_rate = churn_report.get("opt_out_data", {}).get("churn_rate_pct", 0)
+            log.info(f"[CHURN] Pre-campaign rapor: churn rate %{churn_rate}")
+        except Exception as e:
+            log.warning(f"[CHURN] Rapor üretilemedi: {e}")
 
         # Watchdog başlat
         self.watchdog.start()
@@ -97,18 +119,20 @@ class Orchestrator:
                     reason=score_data.get("reason", ""),
                 )
 
-        # 3. Öncelikli leads al (AI skoru sırasıyla)
-        leads = db.get_unsent_leads(limit=limit * 2)
+        # 3. Lead'leri al ve strategist ile önceliklendirerek seç
+        leads_pool = db.get_unsent_leads(limit=limit * 2)
+        leads = self.strategist.prioritize_leads(leads_pool, limit)
         stats.total_leads = len(leads)
 
         # Kampanya kaydı
         db.create_campaign(campaign_id, stats.total_leads, False)
 
-        log.info(f"Kampanya başladı: {stats.total_leads} lead | "
-                 f"Limit: {limit} | CANLI GÖNDERİM | "
-                 f"ID: {campaign_id}")
-
-
+        log.info(
+            f"Kampanya başladı: {stats.total_leads} lead | "
+            f"Limit: {limit} (strateji: {strategy_limit}) | "
+            f"Aylık kalan: {daily_plan['monthly_remaining']} | "
+            f"ID: {campaign_id}"
+        )
 
         for lead in leads:
             if stats.sent >= limit:
@@ -119,8 +143,20 @@ class Orchestrator:
                 log.error("[WATCHDOG] Bounce rate kritik — kampanya durduruldu!")
                 break
 
+            # Sektör bazlı throttle kontrolü
+            sector = (lead.get("sector") or "unknown").lower()
+            can_sector, sector_reason = self.strategist.can_send_to_sector(sector)
+            if not can_sector:
+                log.info(f"[STRATEJI] Atlandı: {sector_reason}")
+                stats.skipped_compliance += 1
+                continue
+
             stats.processed += 1
             self._process_lead(lead, stats, campaign_id)
+
+            # Sektör gönderim kaydı
+            if stats.sent > 0:
+                self.strategist.record_sector_send(sector)
 
             # Kampanya stats güncelle
             db.update_campaign_stats(campaign_id,

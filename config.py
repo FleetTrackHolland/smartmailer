@@ -34,7 +34,8 @@ class Config:
     HUMAN_REVIEW       = os.getenv("HUMAN_REVIEW", "false").lower() == "true"
     DELAY_MIN          = int(os.getenv("DELAY_MIN", "15"))
     DELAY_MAX          = int(os.getenv("DELAY_MAX", "35"))
-    DAILY_SEND_LIMIT   = int(os.getenv("DAILY_SEND_LIMIT", "250"))
+    DAILY_SEND_LIMIT   = int(os.getenv("DAILY_SEND_LIMIT", "650"))
+    MONTHLY_SEND_LIMIT = int(os.getenv("MONTHLY_SEND_LIMIT", "20000"))
 
     # ─── PERFORMANCE ─────────────────────────────────────────────
     QC_MIN_SCORE       = int(os.getenv("QC_MIN_SCORE", "90"))
@@ -44,6 +45,11 @@ class Config:
     FOLLOWUP_DAY_1     = int(os.getenv("FOLLOWUP_DAY_1", "3"))
     FOLLOWUP_DAY_2     = int(os.getenv("FOLLOWUP_DAY_2", "7"))
     FOLLOWUP_DAY_3     = int(os.getenv("FOLLOWUP_DAY_3", "14"))
+
+    # ─── SMART SENDING STRATEGY ──────────────────────────────────
+    BEST_SEND_HOURS    = [(9, 11), (14, 16)]  # CET — B2B optimal saatler
+    WEEKEND_CAPACITY   = float(os.getenv("WEEKEND_CAPACITY", "0.2"))  # Haftasonu %20
+    MAX_PER_SECTOR_DAILY = int(os.getenv("MAX_PER_SECTOR_DAILY", "60"))
 
     # ─── PASSENGER / PRODUCTION DETECTION ────────────────────────
     IS_PASSENGER = bool(

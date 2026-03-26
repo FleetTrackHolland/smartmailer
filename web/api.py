@@ -1205,32 +1205,160 @@ def api_unsubscribe():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/afmelden", methods=["GET"])
 @app.route("/unsubscribe", methods=["GET"])
 def public_unsubscribe():
-    """Alıcıların email'deki link ile listeden çıkması için public sayfa."""
+    """Afmelden sayfası — anketli unsubscribe."""
     email = request.args.get("email", "").strip().lower()
-    if email:
-        try:
-            compliance.add_unsubscribe(email, "email_link")
-            with db._conn() as conn:
-                conn.execute(
-                    "INSERT OR IGNORE INTO opt_out (email, reason, ip_address) VALUES (?, ?, ?)",
-                    (email, "email_link", request.remote_addr)
-                )
-            db.cancel_pending_followups(email)
-            _notify_admin_unsubscribe(email, "email_link")
-            log.info(f"[UNSUB] {email} email link ile çıkarıldı")
-        except Exception as e:
-            log.error(f"[UNSUB] Public error: {e}")
+    if not email or "@" not in email:
+        return """<!DOCTYPE html><html><body style="font-family:Arial;text-align:center;padding:50px">
+        <h2>Ongeldige link</h2><p>Geen geldig e-mailadres gevonden.</p></body></html>""", 400
 
-    return """<!DOCTYPE html>
-    <html><head><meta charset='utf-8'><title>Afgemeld</title>
-    <style>body{font-family:Arial;display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a12;color:#e8e8f0}
-    .box{text-align:center;padding:40px;border-radius:16px;background:rgba(20,20,35,.9);border:1px solid rgba(255,255,255,.1)}
-    h2{color:#00d68f}p{color:#8888a8;margin-top:12px}</style></head>
-    <body><div class='box'><h2>✅ U bent afgemeld</h2>
-    <p>U ontvangt geen verdere e-mails van ons.</p>
-    <p style='font-size:12px;margin-top:20px'>FleetTrack Holland</p></div></body></html>"""
+    return f'''<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Afmelden — FleetTrack Holland</title>
+    <style>
+        * {{ margin: 0; padding: 0; box-sizing: border-box; }}
+        body {{
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }}
+        .card {{
+            background: #fff; border-radius: 20px; padding: 40px 48px; max-width: 520px;
+            width: 100%; box-shadow: 0 25px 80px rgba(0,0,0,0.08);
+        }}
+        .logo {{ height: 36px; margin-bottom: 20px; }}
+        h1 {{ font-size: 22px; color: #1a1a2e; margin-bottom: 6px; font-weight: 700; }}
+        .subtitle {{ color: #666; font-size: 14px; margin-bottom: 24px; line-height: 1.5; }}
+        .email-badge {{
+            background: #f0f4ff; color: #0052CC; font-weight: 600;
+            padding: 6px 14px; border-radius: 8px; font-size: 13px;
+            display: inline-block; margin-bottom: 20px;
+        }}
+        .section-title {{ font-size: 14px; font-weight: 600; color: #333; margin-bottom: 12px; }}
+        .radio-group {{ display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }}
+        .radio-item {{
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 14px; border-radius: 10px; cursor: pointer;
+            border: 1.5px solid #e8e8e8; transition: all 0.2s; font-size: 14px; color: #444;
+        }}
+        .radio-item:hover {{ border-color: #0052CC; background: #f8faff; }}
+        .radio-item input[type="radio"] {{ width: 16px; height: 16px; accent-color: #0052CC; }}
+        .radio-item.selected {{ border-color: #0052CC; background: #f0f4ff; }}
+        .freq-group {{ display: flex; gap: 8px; margin-bottom: 20px; }}
+        .freq-btn {{
+            flex: 1; padding: 10px; border-radius: 10px; cursor: pointer;
+            border: 1.5px solid #e8e8e8; text-align: center; font-size: 13px;
+            color: #555; transition: all 0.2s; background: #fff;
+        }}
+        .freq-btn:hover {{ border-color: #0052CC; }}
+        .freq-btn.selected {{ border-color: #0052CC; background: #f0f4ff; color: #0052CC; font-weight: 600; }}
+        textarea {{
+            width: 100%; border: 1.5px solid #e8e8e8; border-radius: 10px;
+            padding: 12px; font-family: inherit; font-size: 14px;
+            resize: vertical; min-height: 70px; margin-bottom: 20px;
+        }}
+        textarea:focus {{ border-color: #0052CC; outline: none; }}
+        .btn {{
+            width: 100%; padding: 14px; border: none; border-radius: 12px;
+            background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+            color: #fff; font-size: 15px; font-weight: 600; cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }}
+        .btn:hover {{ transform: translateY(-1px); box-shadow: 0 4px 16px rgba(231,76,60,0.3); }}
+        .footer {{ margin-top: 24px; text-align: center; font-size: 11px; color: #aaa; line-height: 1.5; }}
+        .footer a {{ color: #0052CC; text-decoration: none; }}
+        .success-msg {{ display: none; text-align: center; }}
+        .success-msg .check {{ font-size: 56px; margin-bottom: 12px; }}
+        .success-msg h2 {{ color: #27ae60; font-size: 20px; margin-bottom: 8px; }}
+        .success-msg p {{ color: #666; font-size: 14px; line-height: 1.5; }}
+    </style>
+</head>
+<body>
+    <div class="card">
+        <img src="https://www.fleettrackholland.nl/logo512.png" alt="FleetTrack Holland" class="logo">
+        <div id="surveyForm">
+            <h1>Uitschrijven</h1>
+            <p class="subtitle">Het spijt ons dat u weggaat. Uw feedback helpt ons verbeteren.</p>
+            <div class="email-badge">{email}</div>
+            <p class="section-title">Waarom schrijft u zich uit?</p>
+            <div class="radio-group" id="reasonGroup">
+                <label class="radio-item" onclick="selectReason(this)">
+                    <input type="radio" name="reason" value="too_many"> Ik ontvang te veel e-mails
+                </label>
+                <label class="radio-item" onclick="selectReason(this)">
+                    <input type="radio" name="reason" value="not_relevant"> De inhoud is niet relevant voor mij
+                </label>
+                <label class="radio-item" onclick="selectReason(this)">
+                    <input type="radio" name="reason" value="already_have"> Ik heb al een GPS-trackingoplossing
+                </label>
+                <label class="radio-item" onclick="selectReason(this)">
+                    <input type="radio" name="reason" value="bad_timing"> De e-mails komen op een slecht moment
+                </label>
+                <label class="radio-item" onclick="selectReason(this)">
+                    <input type="radio" name="reason" value="not_requested"> Ik heb hier niet om gevraagd
+                </label>
+                <label class="radio-item" onclick="selectReason(this)">
+                    <input type="radio" name="reason" value="other"> Anders
+                </label>
+            </div>
+            <p class="section-title">Hoe ervaart u de frequentie van onze e-mails?</p>
+            <div class="freq-group">
+                <div class="freq-btn" onclick="selectFreq(this,'te_vaak')">Te vaak</div>
+                <div class="freq-btn" onclick="selectFreq(this,'net_goed')">Was prima</div>
+                <div class="freq-btn" onclick="selectFreq(this,'onbekend')">Geen idee</div>
+            </div>
+            <textarea id="feedbackText" placeholder="Heeft u nog suggesties? (optioneel)"></textarea>
+            <button class="btn" onclick="submitSurvey()">Uitschrijven</button>
+        </div>
+        <div class="success-msg" id="successMsg">
+            <div class="check">&#10003;</div>
+            <h2>U bent afgemeld</h2>
+            <p>Het e-mailadres <strong>{email}</strong> is verwijderd uit onze mailinglijst.</p>
+            <p style="margin-top:12px">U ontvangt geen verdere e-mails meer.</p>
+            <p style="font-size:13px;color:#999;margin-top:16px">
+                Per ongeluk? <a href="mailto:sales@fleettrackholland.nl">Neem contact op</a>
+            </p>
+        </div>
+        <div class="footer">FleetTrack Holland | KVK: 88606902 |
+            <a href="https://www.fleettrackholland.nl">www.fleettrackholland.nl</a>
+        </div>
+    </div>
+    <script>
+        let selectedReason='', selectedFreq='';
+        function selectReason(el){{
+            document.querySelectorAll('.radio-item').forEach(i=>i.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedReason=el.querySelector('input').value;
+        }}
+        function selectFreq(el,val){{
+            document.querySelectorAll('.freq-btn').forEach(b=>b.classList.remove('selected'));
+            el.classList.add('selected');
+            selectedFreq=val;
+        }}
+        function submitSurvey(){{
+            fetch('/api/unsubscribe/survey',{{
+                method:'POST',
+                headers:{{'Content-Type':'application/json'}},
+                body:JSON.stringify({{
+                    email:'{email}',
+                    reason_code:selectedReason||'not_specified',
+                    reason_text:document.getElementById('feedbackText').value,
+                    frequency_feedback:selectedFreq||'onbekend'
+                }})
+            }}).finally(()=>{{
+                document.getElementById('surveyForm').style.display='none';
+                document.getElementById('successMsg').style.display='block';
+            }});
+        }}
+    </script>
+</body>
+</html>'''
 
 
 @app.route("/api/opt-out/list", methods=["GET"])
@@ -1242,6 +1370,81 @@ def get_optout_list():
             return jsonify({"opt_outs": [dict(r) for r in rows], "count": len(rows)})
     except Exception:
         return jsonify({"opt_outs": [], "count": len(compliance._unsubscribe)})
+
+# ─── UNSUBSCRIBE SURVEY API ──────────────────────────────────
+@app.route("/api/unsubscribe/survey", methods=["POST"])
+def api_unsubscribe_survey():
+    """Anketli unsubscribe — survey yanıtı + opt-out işlemi."""
+    data = request.json or {}
+    email = (data.get("email") or "").strip().lower()
+    reason_code = data.get("reason_code", "not_specified")
+    reason_text = data.get("reason_text", "")
+    frequency_feedback = data.get("frequency_feedback", "onbekend")
+
+    if not email or "@" not in email:
+        return jsonify({"error": "Geldig email gerekli"}), 400
+
+    try:
+        # 1. Survey kaydet
+        db.save_survey(
+            email=email, reason_code=reason_code,
+            reason_text=reason_text, frequency_feedback=frequency_feedback,
+            survey_data=data,
+        )
+        # 2. Unsubscribe
+        compliance.add_unsubscribe(email, f"survey_{reason_code}")
+        with db._conn() as conn:
+            conn.execute(
+                "INSERT OR IGNORE INTO opt_out (email, reason, ip_address) VALUES (?, ?, ?)",
+                (email, f"survey_{reason_code}", request.remote_addr)
+            )
+        db.cancel_pending_followups(email)
+        # 3. Admin bildirim
+        REASON_NL = {
+            "too_many": "Te veel e-mails", "not_relevant": "Niet relevant",
+            "already_have": "Heeft al GPS", "bad_timing": "Slecht moment",
+            "not_requested": "Niet aangevraagd", "other": "Anders",
+        }
+        _notify_admin_unsubscribe(email, f"{REASON_NL.get(reason_code, reason_code)} | {reason_text[:100]}")
+        emit_event("unsubscribe", {"email": email, "reason": reason_code, "frequency": frequency_feedback})
+        log.info(f"[SURVEY] {email} — reden: {reason_code}, freq: {frequency_feedback}")
+        return jsonify({"success": True, "email": email})
+    except Exception as e:
+        log.error(f"[SURVEY] Hata: {e}")
+        try:
+            compliance.add_unsubscribe(email, "survey_error")
+        except Exception:
+            pass
+        return jsonify({"success": True, "email": email})
+
+
+@app.route("/api/surveys/stats")
+def api_survey_stats():
+    """Survey istatistikleri."""
+    try:
+        return jsonify(db.get_survey_stats())
+    except Exception as e:
+        return jsonify({"total_surveys": 0, "reasons": {}, "sectors": {}})
+
+
+@app.route("/api/churn/report")
+def api_churn_report():
+    """Churn analiz raporu."""
+    try:
+        from agents.churn_analyst import ChurnAnalyst
+        return jsonify(ChurnAnalyst().generate_churn_report())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/strategy/plan")
+def api_strategy_plan():
+    """Gönderim strateji planı."""
+    try:
+        from agents.sending_strategist import SendingStrategist
+        return jsonify(SendingStrategist().get_strategy_report())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 def _notify_admin_unsubscribe(email: str, reason: str):

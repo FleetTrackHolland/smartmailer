@@ -21,10 +21,10 @@ BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 # ─── WARM-UP SCHEDULE ─────────────────────────────────────────
 # Hafta numarasına göre günlük max gönderim limiti
-# Domain doğrulanmış (SPF/DKIM/DMARC) → daha agresif başlangıç
+# Brevo Standard Plan (20K/ay) — SPF/DKIM/DMARC doğrulanmış
 WARMUP_SCHEDULE = {
-    1: 40, 2: 60, 3: 80, 4: 100,
-    5: 120, 6: 150, 7: 200, 8: 300,
+    1: 100, 2: 200, 3: 300, 4: 400,
+    5: 500, 6: 650,
 }
 
 
@@ -68,8 +68,8 @@ class SendEngine:
     def get_warmup_limit(self) -> int:
         """Mevcut haftaya göre günlük warm-up limitini hesapla."""
         days_active = (datetime.now() - self._start_date).days
-        week = min((days_active // 7) + 1, 8)
-        return WARMUP_SCHEDULE.get(week, 150)
+        week = min((days_active // 7) + 1, 6)
+        return WARMUP_SCHEDULE.get(week, 650)
 
     def _reset_daily_counter(self):
         """Gün değiştiyse daily counter sıfırla."""

@@ -156,64 +156,75 @@ Mensen voelen VERLIES 2x sterker dan winst. Frame altijd als:
 - 300+ klanten in de Benelux vertrouwen op FleetTrack
 - Offertepagina: https://www.fleettrackholland.nl/prijzen
 
-═══ HTML E-MAIL DESIGN — GOLDEN RATIO (1.618) ═══
-Ontwerp de e-mail volgens de GULDEN SNEDE voor maximale visuele impact:
+═══ HTML E-MAIL DESIGN — BODY CONTENT ONLY ═══
 
-STRUCTUUR (max-width: 620px, gecentreerd):
-1. HEADER ZONE (38.2% visueel gewicht):
-   - Achtergrond: subtiel gradient van #f7f8fa naar #ffffff
-   - 4px accent-lijn bovenaan (kleur: sectorkleur of #e8600a)
-   - Logo KLEIN: <img src="https://www.fleettrackholland.nl/logo512.png" alt="FleetTrack Holland" style="height:32px;">
-   - Korte hero-tekst in 13px grijs onder logo
+BELANGRIJK: Je schrijft ALLEEN de body-content van de e-mail.
+De template-engine voegt automatisch toe: header met logo, hero afbeelding,
+CTA-knop, statistieken-balk, en footer met afmeldlink.
 
-2. BODY ZONE (61.8% visueel gewicht):
-   - Witte achtergrond, 28px padding links/rechts
-   - OPMAAK HIËRARCHIE (cruciaal!):
-     * H2 titel: 20px, bold, kleur #1a1a2e — de kernboodschap in ÉÉN zin
-     * Subtitel: 15px, kleur #555, italic — het pijnpunt benoemen
-     * Body tekst: 14px, kleur #333, line-height 1.7
-     * Belangrijke cijfers: 24px bold in accent-kleur — springt eruit
-     * Opsommingen: 14px met custom bullet "▸" in accent-kleur
-   - GOLDEN RATIO CTA PLACEMENT: CTA-knop op exact 61.8% van de e-mail hoogte
-   - CTA-knop: accent-kleur achtergrond, wit tekst, 14px 36px padding, 6px radius, bold
-     <a href="https://www.fleettrackholland.nl/prijzen" style="display:inline-block;padding:14px 36px;background:ACCENT_COLOR;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:15px;">Bekijk tarieven →</a>
+JIJ levert ALLEEN de tekst tussen de header en de CTA-knop.
 
-3. FOOTER ZONE:
-   - Lichtgrijze achtergrond (#f8f9fa), 1px #eee bovenlijn
-   - 12px grijs: bedrijfsnaam, e-mail
-   - Afmeldlink: <a href="UNSUB_URL">Klik hier om af te melden</a>
+STRUCTUUR VAN JOUW OUTPUT (alleen body HTML):
+Gebruik INLINE CSS op elk element. Geen <html>, <head>, <body> tags nodig.
 
-4. WITRUIMTE REGELS:
-   - Tussen secties: 24px
-   - Tussen alinea's: 16px
-   - Tussen bullet points: 8px
-   - Rond CTA: 32px boven, 16px onder
+1. AANHEF:
+   <p style="margin:0 0 16px;font-size:15px;color:#333;line-height:1.7;">
+   Dag [bedrijfsnaam],</p>
+
+2. PIJNPUNT PARAGRAAF (1-2 zinnen, italic):
+   <p style="margin:0 0 16px;font-size:15px;color:#555;font-style:italic;line-height:1.7;">
+   [Herkenbaar pijnpunt benoemen]</p>
+
+3. OPLOSSING + BEWIJS (2-3 alinea's):
+   <p style="margin:0 0 16px;font-size:15px;color:#333;line-height:1.7;">
+   [Tekst met inline <strong> voor nadruk]</p>
+
+4. BELANGRIJKE CIJFERS (groot en opvallend):
+   <p style="margin:0 0 16px;font-size:15px;color:#333;line-height:1.7;">
+   Resultaat: <span style="font-size:24px;font-weight:700;color:ACCENT_COLOR;">€X.XXX</span> /maand besparing</p>
+
+5. OPSOMMINGEN (met accent-kleur bullets):
+   <p style="margin:0 0 8px;font-size:14px;color:#333;line-height:1.6;">
+   <span style="color:ACCENT_COLOR;font-weight:bold;">▸</span> Punt een</p>
+   <p style="margin:0 0 8px;font-size:14px;color:#333;line-height:1.6;">
+   <span style="color:ACCENT_COLOR;font-weight:bold;">▸</span> Punt twee</p>
+
+6. AFSLUITING + HANDTEKENING:
+   <p style="margin:24px 0 0;font-size:15px;color:#333;line-height:1.7;">
+   Met vriendelijke groet,<br>
+   <strong>FleetTrack Holland Team</strong><br>
+   <span style="font-size:13px;color:#888;">sales@fleettrackholland.nl</span></p>
 
 ═══ SCHRIJFREGELS — NIET ONDERHANDELBAAR ═══
-1. 200-350 woorden (exclusief HTML)
+1. 150-300 woorden (exclusief HTML tags)
 2. Begin met "Dag [bedrijfsnaam]," — direct en persoonlijk
 3. GEEN emojis, GEEN icoontjes — nergens
 4. GEEN "gratis", "garantie", "actie", "klik hier", "100%", "!!!"
-5. Eerste zin moet ONMIDDELLIJK relevant zijn — geen inleiding
+5. Eerste zin na aanhef moet ONMIDDELLIJK relevant zijn — geen inleiding
 6. Benoem de berekende maandprijs als voertuigaantal bekend is
-7. Gebruik normale opsommingstekens (▸) — geen fancy bullets
-8. CTA: "Bekijk tarieven →" of "Ontdek de mogelijkheden →"
+7. Gebruik "▸" als bullet — geen andere bullets
+8. GEEN CTA-knop genereren — de template doet dit automatisch
 9. Ondertekening: "Met vriendelijke groet," + "FleetTrack Holland Team" + sales@fleettrackholland.nl
 10. GEEN telefoonnummer
-11. Footer: afmeldlink (AVG verplicht)
+11. GEEN footer of afmeldlink — de template doet dit
 12. Alles in het Nederlands
-13. Gebruik INLINE CSS — geen externe stylesheets
-14. Begin HTML direct met <!DOCTYPE html>
+13. Gebruik INLINE CSS op elk HTML element
+14. GEEN <html>, <head>, <body>, <!DOCTYPE> tags — alleen body-inhoud
+
+ACCENT_COLOR PER SECTOR:
+- transport/logistiek/koerier: #1a5fa0
+- bouw: #e8a31a
+- schoonmaak/thuiszorg/catering: #22a85a
+- default: #e8600a
 
 ANTWOORD FORMAT — EXACT DIT:
 SUBJECT_A: [zakelijk, kort, max 55 tekens, curiosity gap]
 SUBJECT_B: [pijnpunt-gebaseerd, loss aversion frame, max 55 tekens]
 SUBJECT_C: [social proof of resultaat, max 55 tekens]
 ---HTML---
-<!DOCTYPE html>
-[premium HTML e-mail met golden ratio layout — inline CSS]
+[ALLEEN body-content HTML met inline CSS — GEEN volledige pagina]
 ---TEXT---
-[platte tekst versie — ZONDER emojis]""".replace("UNSUB_URL", config.UNSUBSCRIBE_URL)
+[platte tekst versie — ZONDER emojis]"""
 
 
 class CopywriterAgent:
@@ -312,6 +323,15 @@ lengte en onderwerpstijl. Pas je aan op basis van wat WERKT.
         # Self-learning data
         winning_style = self._get_winning_style()
 
+        # Churn analyst insights — unsubscribe paternlerinden öğrenilenler
+        churn_context = ""
+        try:
+            from agents.churn_analyst import ChurnAnalyst
+            churn = ChurnAnalyst()
+            churn_context = churn.get_copywriter_context(sector=sector)
+        except Exception as e:
+            log.debug(f"[Copywriter] Churn context alınamadı: {e}")
+
         # Intel context
         intel_section = ""
         if intel_context:
@@ -342,6 +362,7 @@ Aanbevolen psychologie: {ctx.get('psychological_angle', 'social_proof + authorit
 Prijs: {price_hint}
 {intel_section}
 {winning_style}
+{churn_context}
 
 ═══ TECHNISCHE EISEN ═══
 - Accent kleur in CTA-knop en highlights: {accent_color}
@@ -480,37 +501,27 @@ SUBJECT_C: [onderwerp — social proof]
         )
 
     def _to_html(self, text: str) -> str:
-        """Fallback: plain text → premium styled HTML met golden ratio."""
+        """Fallback: plain text → styled body-only HTML (template wraps it)."""
         paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
-        html_p = "".join(
-            f"<p style=\"margin:0 0 16px;font-size:14px;color:#333;line-height:1.7;\">{p.replace(chr(10), '<br>')}</p>"
-            for p in paragraphs
-        )
-        return f"""<!DOCTYPE html>
-<html lang="nl"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-</head><body style="margin:0;padding:0;background:#f7f8fa;font-family:Arial,Helvetica,sans-serif;">
-<div style="max-width:620px;margin:0 auto;background:#ffffff;">
-  <!-- 4px accent lijn -->
-  <div style="height:4px;background:linear-gradient(90deg,#e8600a,#ff8c42);"></div>
-  <!-- Header (38.2%) -->
-  <div style="padding:24px 28px 16px;background:linear-gradient(180deg,#f7f8fa,#ffffff);">
-    <img src="https://www.fleettrackholland.nl/logo512.png" alt="FleetTrack Holland" style="height:32px;width:auto;">
-    <p style="margin:8px 0 0;font-size:13px;color:#888;">GPS Tracking & Vlootbeheer</p>
-  </div>
-  <!-- Body (61.8%) -->
-  <div style="padding:8px 28px 32px;">
-    {html_p}
-    <div style="text-align:center;padding:32px 0 16px;">
-      <a href="https://www.fleettrackholland.nl/prijzen" style="display:inline-block;padding:14px 36px;background:#e8600a;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:15px;">Bekijk tarieven →</a>
-    </div>
-  </div>
-  <!-- Footer -->
-  <div style="padding:20px 28px;background:#f8f9fa;border-top:1px solid #eee;">
-    <p style="margin:0;font-size:12px;color:#999;">FleetTrack Holland | sales@fleettrackholland.nl</p>
-    <p style="margin:8px 0 0;font-size:11px;color:#bbb;"><a href="{config.UNSUBSCRIBE_URL}" style="color:#999;">Afmelden</a></p>
-  </div>
-</div>
-</body></html>"""
+        html_parts = []
+        for p in paragraphs:
+            lines = p.split("\n")
+            for line in lines:
+                line = line.strip()
+                if not line:
+                    continue
+                if line.startswith(("▸", "-", "•")):
+                    clean = line.lstrip("▸-• ").strip()
+                    html_parts.append(
+                        f'<p style="margin:0 0 8px;font-size:14px;color:#333;line-height:1.6;">'
+                        f'<span style="color:#e8600a;font-weight:bold;">▸</span> {clean}</p>'
+                    )
+                else:
+                    html_parts.append(
+                        f'<p style="margin:0 0 16px;font-size:15px;color:#333;line-height:1.7;">{line}</p>'
+                    )
+        return "\n".join(html_parts)
 
     def ping(self) -> bool:
         return True
+

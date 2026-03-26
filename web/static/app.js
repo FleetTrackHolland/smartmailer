@@ -114,7 +114,7 @@ async function refreshAll() {
     }
     if (daily) {
         setText('daily-sent', daily.today_sent || 0);
-        setText('daily-limit', daily.daily_limit || 80);
+        setText('daily-limit', daily.daily_limit || 650);
         setText('daily-pct', daily.percentage || 0);
         setText('daily-remaining', daily.remaining || 0);
         const fill = document.getElementById('daily-progress-fill');
@@ -431,7 +431,7 @@ async function processFollowups() {
 // CAMPAIGN
 // ═══════════════════════════════════════════════════════════
 async function startCampaign() {
-    const limit = parseInt(document.getElementById('campaign-limit').value) || 80;
+    const limit = parseInt(document.getElementById('campaign-limit').value) || 200;
     showToast(`Kampanya başlatılıyor, limit: ${limit}`, 'info');
     const data = await api('/api/campaign/start', 'POST', { limit });
     if (data?.success) {

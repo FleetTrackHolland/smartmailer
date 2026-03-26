@@ -245,6 +245,33 @@ class Database:
 
                 CREATE INDEX IF NOT EXISTS idx_agent_learning_name ON agent_learning(agent_name);
                 CREATE INDEX IF NOT EXISTS idx_agent_learning_type ON agent_learning(learning_type);
+
+                -- v6: Unsubscribe Survey tablosu
+                CREATE TABLE IF NOT EXISTS unsubscribe_surveys (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    email TEXT NOT NULL,
+                    reason_code TEXT DEFAULT '',
+                    reason_text TEXT DEFAULT '',
+                    frequency_feedback TEXT DEFAULT '',
+                    sector TEXT DEFAULT '',
+                    emails_received INTEGER DEFAULT 0,
+                    days_since_first_email INTEGER DEFAULT 0,
+                    survey_data TEXT DEFAULT '{}',
+                    created_at TEXT DEFAULT (datetime('now'))
+                );
+
+                CREATE INDEX IF NOT EXISTS idx_unsub_survey_email ON unsubscribe_surveys(email);
+                CREATE INDEX IF NOT EXISTS idx_unsub_survey_reason ON unsubscribe_surveys(reason_code);
+
+                -- v6: Churn analysis raporları
+                CREATE TABLE IF NOT EXISTS churn_reports (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    report_type TEXT DEFAULT 'full',
+                    report_data TEXT DEFAULT '{}',
+                    insights TEXT DEFAULT '[]',
+                    recommendations TEXT DEFAULT '[]',
+                    created_at TEXT DEFAULT (datetime('now'))
+                );
             """)
 
     # ─── LEADS CRUD ───────────────────────────────────────────────
@@ -1205,6 +1232,142 @@ class Database:
             """, (source, limit)).fetchall()
             return [dict(r) for r in rows]
 
+    # ─── UNSUBSCRIBE SURVEYS (v6) ─────────────────────────────────
 
+    def save_survey(self, email: str, reason_code: str = "",
+                    reason_text: str = "", frequency_feedback: str = "",
+                    survey_data: dict = None) -> int:
+        """Unsubscribe anket yanıtını kaydet — lead bilgileriyle zenginleştir."""
+        email = email.strip().lower()
+        # Lead bilgilerini al
+        lead = self.get_lead_by_email(email)
+        sector = (lead or {}).get("sector", "")
+        emails_received = 0
+        days_since_first = 0
+
+        if lead:
+            # Kaç email aldı?
+            with self._conn() as conn:
+                row = conn.execute(
+                    "SELECT COUNT(*) FROM sent_log WHERE email = ?", (email,)
+                ).fetchone()
+                emails_received = row[0] if row else 0
+
+                # İlk emailden bu yana kaç gün?
+                row = conn.execute(
+                    "SELECT MIN(sent_at) FROM sent_log WHERE email = ?", (email,)
+                ).fetchone()
+                if row and row[0]:
+                    try:
+                        first_sent = datetime.fromisoformat(row[0].replace("Z", ""))
+                        days_since_first = (datetime.now() - first_sent).days
+                    except Exception:
+                        days_since_first = 0
+
+        with self._conn() as conn:
+            conn.execute("""
+                INSERT INTO unsubscribe_surveys
+                    (email, reason_code, reason_text, frequency_feedback,
+                     sector, emails_received, days_since_first_email, survey_data)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            """, (
+                email, reason_code, reason_text, frequency_feedback,
+                sector, emails_received, days_since_first,
+                json.dumps(survey_data or {}),
+            ))
+            return conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+    def get_survey_stats(self) -> dict:
+        """Anket istatistikleri — churn analyst için."""
+        with self._conn() as conn:
+            total = conn.execute(
+                "SELECT COUNT(*) FROM unsubscribe_surveys"
+            ).fetchone()[0]
+
+            # Sebep dağılımı
+            reason_rows = conn.execute("""
+                SELECT reason_code, COUNT(*) as cnt
+                FROM unsubscribe_surveys
+                WHERE reason_code != ''
+                GROUP BY reason_code
+                ORDER BY cnt DESC
+            """).fetchall()
+            reasons = {r["reason_code"]: r["cnt"] for r in reason_rows}
+
+            # Sektör dağılımı
+            sector_rows = conn.execute("""
+                SELECT sector, COUNT(*) as cnt
+                FROM unsubscribe_surveys
+                WHERE sector != ''
+                GROUP BY sector
+                ORDER BY cnt DESC
+            """).fetchall()
+            sectors = {r["sector"]: r["cnt"] for r in sector_rows}
+
+            # Frekans geri bildirim
+            freq_rows = conn.execute("""
+                SELECT frequency_feedback, COUNT(*) as cnt
+                FROM unsubscribe_surveys
+                WHERE frequency_feedback != ''
+                GROUP BY frequency_feedback
+            """).fetchall()
+            frequency = {r["frequency_feedback"]: r["cnt"] for r in freq_rows}
+
+            # Ortalama email sayısı ve gün
+            avg_row = conn.execute("""
+                SELECT AVG(emails_received) as avg_emails,
+                       AVG(days_since_first_email) as avg_days
+                FROM unsubscribe_surveys
+            """).fetchone()
+
+            return {
+                "total_surveys": total,
+                "reasons": reasons,
+                "sectors": sectors,
+                "frequency_feedback": frequency,
+                "avg_emails_before_unsub": round(avg_row["avg_emails"] or 0, 1),
+                "avg_days_before_unsub": round(avg_row["avg_days"] or 0, 1),
+            }
+
+    def get_all_surveys(self, limit: int = 100) -> list[dict]:
+        """Tüm anket yanıtlarını döndür."""
+        with self._conn() as conn:
+            rows = conn.execute("""
+                SELECT * FROM unsubscribe_surveys
+                ORDER BY created_at DESC LIMIT ?
+            """, (limit,)).fetchall()
+            return [dict(r) for r in rows]
+
+    # ─── CHURN REPORTS (v6) ───────────────────────────────────────
+
+    def save_churn_report(self, report_data: dict, insights: list,
+                          recommendations: list, report_type: str = "full") -> int:
+        """Churn analiz raporunu kaydet."""
+        with self._conn() as conn:
+            conn.execute("""
+                INSERT INTO churn_reports (report_type, report_data, insights, recommendations)
+                VALUES (?, ?, ?, ?)
+            """, (
+                report_type,
+                json.dumps(report_data),
+                json.dumps(insights),
+                json.dumps(recommendations),
+            ))
+            return conn.execute("SELECT last_insert_rowid()").fetchone()[0]
+
+    def get_latest_churn_report(self) -> dict | None:
+        """En son churn raporunu getir."""
+        with self._conn() as conn:
+            row = conn.execute("""
+                SELECT * FROM churn_reports
+                ORDER BY created_at DESC LIMIT 1
+            """).fetchone()
+            if row:
+                d = dict(row)
+                d["report_data"] = json.loads(d.get("report_data") or "{}")
+                d["insights"] = json.loads(d.get("insights") or "[]")
+                d["recommendations"] = json.loads(d.get("recommendations") or "[]")
+                return d
+            return None
 # Singleton instance
 db = Database()
