@@ -65,10 +65,11 @@
             <span class="info-tooltip" data-tip="Brevo Standard Plan: Aylık 20.000 email hakkı, günlük hard limit yok. Spam'a düşmemek için önerilen: 550-650 email/gün. Sektör bazlı throttle ve optimal saat stratejisi aktif.">ⓘ</span>
         </div>
         <div class="info-grid">
-            <div class="info-item"><span class="info-label">Aylık Limit</span><span class="info-value" style="color:var(--green)">20.000</span><small>Brevo Standard Plan</small></div>
+            <div class="info-item"><span class="info-label">Aylık Limit</span><span class="info-value" style="color:var(--green)" id="brevo-monthly-limit">20.000</span><small>Brevo Standard Plan</small></div>
             <div class="info-item"><span class="info-label">Bugün Gönderilen</span><span class="info-value" style="color:var(--green)" id="daily-sent">0</span></div>
             <div class="info-item"><span class="info-label">Güvenli Günlük</span><span class="info-value" style="color:var(--cyan)">550-650</span><small>Spam'a düşmemek için</small></div>
             <div class="info-item"><span class="info-label">Kalan</span><span class="info-value" id="daily-remaining">0</span></div>
+            <div class="info-item"><span class="info-label">Brevo Kalan</span><span class="info-value" style="color:var(--green)" id="brevo-monthly-remaining">—</span><small>Gerçek Brevo kredisi</small></div>
             <div class="info-item"><span class="info-label">Duplicate Engel</span><span class="info-value" style="color:var(--green)" id="stat-dup-prevented">0</span><small>Tekrar gönderim engellendi</small></div>
         </div>
         <div class="daily-progress" style="margin-top:14px">
@@ -640,6 +641,6 @@
 <div class="toast-container" id="toast-container"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
-<script src="/app.js?v=14"></script>
+<script src="/app.js?v=15"></script>
 </body>
 </html>

@@ -119,6 +119,14 @@ async function refreshAll() {
         setText('daily-remaining', daily.remaining || 0);
         const fill = document.getElementById('daily-progress-fill');
         if (fill) fill.style.width = `${Math.min(daily.percentage || 0, 100)}%`;
+        // Brevo gerçek kalan kredi
+        if (daily.brevo_remaining !== null && daily.brevo_remaining !== undefined) {
+            const monthlyEl = document.getElementById('brevo-monthly-remaining');
+            if (monthlyEl) monthlyEl.textContent = daily.brevo_remaining.toLocaleString('tr-TR');
+            // Aylık limit kartını güncelle
+            const limitEl = document.getElementById('brevo-monthly-limit');
+            if (limitEl) limitEl.textContent = (daily.monthly_limit || 20000).toLocaleString('tr-TR');
+        }
     }
     if (dupStats) { setText('stat-dup-prevented', dupStats.duplicates_prevented || 0); }
     // Badge güncelleme burada YAPILMAZ — sadece loadAutomationStatus/refreshAutomation yapar

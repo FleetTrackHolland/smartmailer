@@ -208,12 +208,61 @@ def get_leads():
 def get_daily_stats():
     """Günlük gönderim istatistikleri — limit göstergesi için."""
     today_sent = db.get_today_sent_count()
+
+    # Brevo API'den gerçek kalan krediyi al
+    brevo_remaining = None
+    brevo_plan = None
+    try:
+        import requests as req
+        headers = {"api-key": config.BREVO_API_KEY, "accept": "application/json"}
+        resp = req.get("https://api.brevo.com/v3/account", headers=headers, timeout=5)
+        if resp.status_code == 200:
+            acct = resp.json()
+            # Plan bilgisi
+            for p in acct.get("plan", []):
+                if p.get("type") == "payAsYouGo" or "email" in p.get("type", "").lower():
+                    brevo_remaining = p.get("credits", None)
+                    brevo_plan = p.get("type", "")
+            # credits alanı doğrudan da olabilir
+            if brevo_remaining is None:
+                for p in acct.get("plan", []):
+                    if p.get("credits") is not None:
+                        brevo_remaining = p.get("credits")
+                        brevo_plan = p.get("type", "standard")
+                        break
+    except Exception as e:
+        log.warning(f"Brevo account API hatası: {e}")
+
     return jsonify({
         "today_sent": today_sent,
         "daily_limit": config.DAILY_SEND_LIMIT,
         "remaining": max(0, config.DAILY_SEND_LIMIT - today_sent),
         "percentage": round((today_sent / config.DAILY_SEND_LIMIT) * 100) if config.DAILY_SEND_LIMIT > 0 else 0,
+        "brevo_remaining": brevo_remaining,
+        "brevo_plan": brevo_plan,
+        "monthly_limit": config.MONTHLY_SEND_LIMIT,
     })
+
+
+@app.route("/api/brevo/account", methods=["GET"])
+def get_brevo_account():
+    """Brevo hesap bilgisi — gerçek kalan kredi ve plan detayları."""
+    try:
+        import requests as req
+        headers = {"api-key": config.BREVO_API_KEY, "accept": "application/json"}
+        resp = req.get("https://api.brevo.com/v3/account", headers=headers, timeout=10)
+        resp.raise_for_status()
+        acct = resp.json()
+        return jsonify({
+            "success": True,
+            "email": acct.get("email"),
+            "plan": acct.get("plan", []),
+            "credits": acct.get("credits"),
+            "relay": acct.get("relay", {}),
+            "marketing_automation": acct.get("marketingAutomation", {}),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
 
 
 @app.route("/api/leads/upload", methods=["POST"])
