@@ -19,13 +19,10 @@ log = get_logger("send_engine")
 
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
-# ─── WARM-UP SCHEDULE ─────────────────────────────────────────
-# Hafta numarasına göre günlük max gönderim limiti
-# Brevo Standard Plan (20K/ay) — SPF/DKIM/DMARC doğrulanmış
-WARMUP_SCHEDULE = {
-    1: 100, 2: 200, 3: 300, 4: 400,
-    5: 500, 6: 650,
-}
+# ─── BREVO STANDARD PLAN ──────────────────────────────────────
+# Brevo Standard Plan (20K/ay) — günlük hard limit YOK
+# SPF/DKIM/DMARC doğrulanmış, warm-up tamamlandı
+# Günlük limit artık sending_strategist tarafından dinamik hesaplanır
 
 
 @dataclass
@@ -53,7 +50,7 @@ class SendEngine:
     def __init__(self):
         # Per-domain throttle: domain → [timestamp, timestamp, ...]
         self._domain_sends: dict[str, list[float]] = defaultdict(list)
-        self._max_per_domain_per_hour = 3
+        self._max_per_domain_per_hour = 10  # Standard plan: daha yüksek domain limiti
         # Bounce tracking
         self._bounce_count = 0
         self._total_sent = 0
@@ -66,10 +63,8 @@ class SendEngine:
     # ─── WARM-UP LİMİT KONTROLÜ ──────────────────────────────────
 
     def get_warmup_limit(self) -> int:
-        """Mevcut haftaya göre günlük warm-up limitini hesapla."""
-        days_active = (datetime.now() - self._start_date).days
-        week = min((days_active // 7) + 1, 6)
-        return WARMUP_SCHEDULE.get(week, 650)
+        """Brevo Standard Plan: warmup tamamlandı, config limitini döndür."""
+        return config.DAILY_SEND_LIMIT
 
     def _reset_daily_counter(self):
         """Gün değiştiyse daily counter sıfırla."""
@@ -81,10 +76,9 @@ class SendEngine:
     def can_send_today(self) -> tuple[bool, str]:
         """Bugün hâlâ gönderim yapılabilir mi?"""
         self._reset_daily_counter()
-        warmup_limit = self.get_warmup_limit()
-        effective_limit = min(warmup_limit, config.DAILY_SEND_LIMIT)
-        if self._daily_sent >= effective_limit:
-            return False, f"Günlük limit doldu ({self._daily_sent}/{effective_limit})"
+        # Standard plan: sadece config limiti (sending_strategist dinamik ayarlar)
+        if self._daily_sent >= config.DAILY_SEND_LIMIT:
+            return False, f"Günlük limit doldu ({self._daily_sent}/{config.DAILY_SEND_LIMIT})"
         return True, ""
 
     # ─── PER-DOMAIN THROTTLE ──────────────────────────────────────
@@ -273,8 +267,8 @@ class SendEngine:
         """Deliverability istatistikleri."""
         return {
             "daily_sent": self._daily_sent,
-            "warmup_limit": self.get_warmup_limit(),
-            "effective_limit": min(self.get_warmup_limit(), config.DAILY_SEND_LIMIT),
+            "daily_limit": config.DAILY_SEND_LIMIT,
+            "effective_limit": config.DAILY_SEND_LIMIT,
             "total_sent": self._total_sent,
             "bounce_count": self._bounce_count,
             "bounce_rate": round(self.bounce_rate * 100, 2),
