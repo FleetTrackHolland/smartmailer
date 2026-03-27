@@ -299,17 +299,36 @@ def brevo_webhook():
 
             db.record_event(email, event_type, message_id, metadata)
 
-            # Bounce → lead'i invalid işaretle
-            if event_type in ("hard_bounce", "hardbounce", "blocked", "invalid"):
+            # Click → hot lead
+            if event_type in ("click", "clicked"):
                 try:
-                    db.mark_lead_invalid(email)
+                    db.flag_lead_hot(email)
                 except Exception:
                     pass
 
-            # Spam → opt-out listesine ekle
-            if event_type in ("spam", "complaint", "spamreport"):
+            # 2+ opens → hot lead
+            if event_type in ("opened", "open", "unique_opened", "uniqueopened"):
                 try:
-                    db.add_unsubscribe(email, reason="spam_complaint")
+                    opens = db.get_events_by_type("opened", 500) + db.get_events_by_type("open", 500)
+                    open_count = sum(1 for e in opens if e.get("email") == email)
+                    if open_count >= 2:
+                        db.flag_lead_hot(email)
+                except Exception:
+                    pass
+
+            # Bounce → lead'i invalid işaretle + followup iptal
+            if event_type in ("hard_bounce", "hardbounce", "blocked", "invalid"):
+                try:
+                    db.mark_lead_invalid(email)
+                    db.cancel_pending_followups(email)
+                except Exception:
+                    pass
+
+            # Spam/Unsub → opt-out + followup iptal
+            if event_type in ("spam", "complaint", "spamreport", "unsubscribed", "unsubscribe"):
+                try:
+                    db.add_opt_out(email, reason=f"brevo_{event_type}")
+                    db.cancel_pending_followups(email)
                 except Exception:
                     pass
 
@@ -1140,66 +1159,7 @@ def get_all_followups():
     stats = db.get_followup_stats()
     return jsonify({"followups": followups, "stats": stats})
 
-
-
-# ─── BREVO WEBHOOK — OPEN / CLICK / BOUNCE / UNSUB ──────────
-@app.route("/webhook/brevo", methods=["POST"])
-def brevo_webhook():
-    """Brevo email event webhook — açılma, tıklama, bounce, unsub."""
-    try:
-        data = request.get_json(silent=True) or {}
-        event = data.get("event", "").lower()
-        email = (data.get("email") or "").strip().lower()
-        message_id = data.get("message-id") or data.get("msg-id") or ""
-
-        if not email or not event:
-            return jsonify({"ok": False, "error": "missing data"}), 400
-
-        # Event'i kaydet
-        db.record_event(
-            email=email,
-            event_type=event,
-            message_id=str(message_id),
-            metadata={
-                "ts": data.get("ts"),
-                "tag": data.get("tag"),
-                "ip": data.get("ip"),
-                "link": data.get("link"),
-                "reason": data.get("reason"),
-            }
-        )
-
-        # Event türüne göre aksiyon
-        if event in ("opened", "open", "unique_opened"):
-            # Kaç kez açıldı?
-            open_count = len(db.get_events_by_email_and_type(email, "opened")) + \
-                         len(db.get_events_by_email_and_type(email, "open")) + \
-                         len(db.get_events_by_email_and_type(email, "unique_opened"))
-            if open_count >= 2:
-                db.flag_lead_hot(email)
-                log.info(f"[WEBHOOK] 🔥 Hot lead (2+ opens): {email}")
-
-        elif event in ("click",):
-            # Link tıklayan → hot lead
-            db.flag_lead_hot(email)
-            log.info(f"[WEBHOOK] 🔥 Hot lead (click): {email}")
-
-        elif event in ("hard_bounce", "soft_bounce", "blocked"):
-            db.mark_lead_invalid(email)
-            db.cancel_pending_followups(email)
-            log.info(f"[WEBHOOK] ❌ Bounce: {email} ({event})")
-
-        elif event in ("unsubscribe", "complaint", "spam"):
-            db.add_opt_out(email, reason=f"brevo_{event}")
-            db.cancel_pending_followups(email)
-            log.info(f"[WEBHOOK] 🚫 Opt-out: {email} ({event})")
-
-        log.info(f"[WEBHOOK] {event}: {email}")
-        return jsonify({"ok": True, "event": event})
-
-    except Exception as e:
-        log.error(f"[WEBHOOK] Hata: {e}")
-        return jsonify({"ok": False, "error": str(e)}), 500
+# (Eski brevo_webhook handler kaldırıldı — yeni handler line 269'da)
 
 
 # ─── TRACKING STATS ──────────────────────────────────────────
