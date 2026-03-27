@@ -265,6 +265,121 @@ def get_brevo_account():
         return jsonify({"success": False, "error": str(e)})
 
 
+# ─── BREVO WEBHOOK EVENT TRACKING ─────────────────────────────────
+@app.route("/webhook/brevo", methods=["POST"])
+def brevo_webhook():
+    """Brevo webhook — email event'lerini yakala (open, click, bounce, spam)."""
+    try:
+        data = request.get_json(force=True)
+        if not data:
+            return jsonify({"status": "no_data"}), 400
+
+        # Brevo tek event veya liste gönderebilir
+        events_list = data if isinstance(data, list) else [data]
+
+        for evt in events_list:
+            email = evt.get("email", "").lower().strip()
+            event_type = evt.get("event", "").lower()
+            message_id = evt.get("message-id", "") or evt.get("messageId", "")
+
+            if not email or not event_type:
+                continue
+
+            # Metadata topla
+            metadata = {
+                "ts": evt.get("ts_event") or evt.get("date"),
+                "subject": evt.get("subject", ""),
+                "tag": evt.get("tag", ""),
+                "ip": evt.get("ip", ""),
+                "link": evt.get("link", ""),  # click event'inde tıklanan link
+                "reason": evt.get("reason", ""),  # bounce reason
+            }
+            # Temiz data — boş olanları çıkar
+            metadata = {k: v for k, v in metadata.items() if v}
+
+            db.record_event(email, event_type, message_id, metadata)
+
+            # Bounce → lead'i invalid işaretle
+            if event_type in ("hard_bounce", "hardbounce", "blocked", "invalid"):
+                try:
+                    db.mark_lead_invalid(email)
+                except Exception:
+                    pass
+
+            # Spam → opt-out listesine ekle
+            if event_type in ("spam", "complaint", "spamreport"):
+                try:
+                    db.add_unsubscribe(email, reason="spam_complaint")
+                except Exception:
+                    pass
+
+            log.info(f"[WEBHOOK] {event_type} ← {email}")
+
+        return jsonify({"status": "ok", "processed": len(events_list)})
+    except Exception as e:
+        log.error(f"[WEBHOOK] Hata: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+
+
+@app.route("/api/stats/events", methods=["GET"])
+def get_event_stats():
+    """Email event istatistikleri — open rate, click rate, bounce rate."""
+    stats = db.get_event_stats()
+    return jsonify(stats)
+
+
+@app.route("/api/stats/events/recent", methods=["GET"])
+def get_recent_events():
+    """Son email event'leri feed."""
+    limit = request.args.get("limit", 50, type=int)
+    events = db.get_recent_events(limit)
+    return jsonify({"events": events, "count": len(events)})
+
+
+@app.route("/api/brevo/setup-webhooks", methods=["POST"])
+def setup_brevo_webhooks():
+    """Brevo'da webhook'ları otomatik oluştur."""
+    try:
+        import requests as req
+        headers = {"api-key": config.BREVO_API_KEY, "content-type": "application/json", "accept": "application/json"}
+
+        webhook_url = "https://app.fleettrackholland.nl/webhook/brevo"
+        events_to_track = [
+            "delivered", "hardBounce", "softBounce", "blocked",
+            "spam", "opened", "click", "unsubscribed", "invalid", "deferred"
+        ]
+
+        # Mevcut webhook'ları kontrol et
+        existing = req.get("https://api.brevo.com/v3/webhooks", headers=headers, timeout=10)
+        existing_urls = []
+        if existing.status_code == 200:
+            for wh in existing.json().get("webhooks", []):
+                existing_urls.append(wh.get("url", ""))
+
+        results = []
+        if webhook_url in existing_urls:
+            results.append({"status": "already_exists", "url": webhook_url})
+        else:
+            # Transactional webhook
+            payload = {
+                "url": webhook_url,
+                "description": "SmartMailer Event Tracker",
+                "events": events_to_track,
+                "type": "transactional",
+            }
+            resp = req.post("https://api.brevo.com/v3/webhooks", json=payload, headers=headers, timeout=10)
+            results.append({"type": "transactional", "status": resp.status_code, "body": resp.json() if resp.status_code < 300 else resp.text[:200]})
+
+            # Marketing webhook
+            payload["type"] = "marketing"
+            resp2 = req.post("https://api.brevo.com/v3/webhooks", json=payload, headers=headers, timeout=10)
+            results.append({"type": "marketing", "status": resp2.status_code, "body": resp2.json() if resp2.status_code < 300 else resp2.text[:200]})
+
+        return jsonify({"success": True, "results": results})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)})
+
+
 @app.route("/api/leads/upload", methods=["POST"])
 def upload_leads():
     """CSV yükle → SQLite'a import et."""

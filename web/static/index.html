@@ -78,6 +78,22 @@
         </div>
     </div>
 
+    <!-- Brevo Standard: Advanced Analytics -->
+    <div class="card card-info" style="margin-top:16px">
+        <div class="card-header">
+            <h3>📊 Brevo Standard Analytics</h3>
+            <button class="btn btn-sm btn-primary" onclick="setupWebhooks()" id="btn-setup-webhooks" title="Brevo webhook'larını otomatik kur">⚡ Webhook Kur</button>
+        </div>
+        <div class="info-grid">
+            <div class="info-item"><span class="info-label">Açılma Oranı</span><span class="info-value" style="color:var(--green)" id="evt-open-rate">—</span><small id="evt-opened-count">0 açıldı</small></div>
+            <div class="info-item"><span class="info-label">Tıklama Oranı</span><span class="info-value" style="color:var(--cyan)" id="evt-click-rate">—</span><small id="evt-clicked-count">0 tıklandı</small></div>
+            <div class="info-item"><span class="info-label">Bounce Oranı</span><span class="info-value" style="color:var(--red)" id="evt-bounce-rate">—</span><small id="evt-bounced-count">0 bounce</small></div>
+            <div class="info-item"><span class="info-label">Spam Oranı</span><span class="info-value" style="color:var(--red)" id="evt-spam-rate">—</span><small id="evt-spam-count">0 spam</small></div>
+            <div class="info-item"><span class="info-label">Delivered</span><span class="info-value" style="color:var(--green)" id="evt-delivered">—</span></div>
+            <div class="info-item"><span class="info-label">AI Send-Time</span><span class="info-value" style="color:var(--purple)">✅ Aktif</span><small>Brevo AI optimize</small></div>
+        </div>
+    </div>
+
     <div class="dashboard-grid">
         <div class="card">
             <div class="card-header"><h3>📊 Kaynak Dağılımı</h3><span class="info-tooltip" data-tip="Leadlerin hangi kaynaktan keşfedildiğinin dağılımı. DeTelefoongids, Opendi, Telefoonboek, OpenStreetMap, Bing, DuckDuckGo, website crawl gibi 10+ kaynaktan toplanır.">ⓘ</span></div>
@@ -641,6 +657,6 @@
 <div class="toast-container" id="toast-container"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script>
-<script src="/app.js?v=15"></script>
+<script src="/app.js?v=16"></script>
 </body>
 </html>

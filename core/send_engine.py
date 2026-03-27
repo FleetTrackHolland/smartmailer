@@ -191,7 +191,10 @@ class SendEngine:
                 "List-Unsubscribe": f"<{unsub_url}>",
                 "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
             },
-            "tags": [msg.campaign_id] if msg.campaign_id else [],
+            "tags": [msg.campaign_id] if msg.campaign_id else ["smartmailer"],
+            # Brevo Standard: AI Send-Time Optimization
+            # Brevo en iyi açılma zamanını otomatik hesaplar
+            "sendAtBestTime": True,
         }
         # BCC — gönderilen her mailin kopyasını sales@ adresine gönder
         bcc_email = getattr(config, 'BCC_EMAIL', 'sales@fleettrackholland.nl')

@@ -131,6 +131,50 @@ async function refreshAll() {
     if (dupStats) { setText('stat-dup-prevented', dupStats.duplicates_prevented || 0); }
     // Badge güncelleme burada YAPILMAZ — sadece loadAutomationStatus/refreshAutomation yapar
     setText('last-update', `Son: ${new Date().toLocaleTimeString('tr-TR')}`);
+    // Brevo Standard: Event stats yükle
+    loadEventStats();
+}
+
+// ─── BREVO STANDARD ANALYTICS ──────────────────────────────────────
+async function loadEventStats() {
+    try {
+        const resp = await fetch('/api/stats/events');
+        if (!resp.ok) return;
+        const s = await resp.json();
+        setText('evt-open-rate', s.open_rate ? s.open_rate + '%' : '—');
+        setText('evt-click-rate', s.click_rate ? s.click_rate + '%' : '—');
+        setText('evt-bounce-rate', s.bounce_rate ? s.bounce_rate + '%' : '—');
+        setText('evt-spam-rate', s.spam_rate ? s.spam_rate + '%' : '—');
+        setText('evt-delivered', s.delivered || 0);
+        // Sub-counts
+        const oc = document.getElementById('evt-opened-count');
+        if (oc) oc.textContent = `${s.opened || 0} açıldı`;
+        const cc = document.getElementById('evt-clicked-count');
+        if (cc) cc.textContent = `${s.clicked || 0} tıklandı`;
+        const bc = document.getElementById('evt-bounced-count');
+        if (bc) bc.textContent = `${s.bounced || 0} bounce`;
+        const sc = document.getElementById('evt-spam-count');
+        if (sc) sc.textContent = `${s.spam || 0} spam`;
+    } catch (e) { console.warn('Event stats yüklenemedi:', e); }
+}
+
+async function setupWebhooks() {
+    const btn = document.getElementById('btn-setup-webhooks');
+    if (btn) { btn.disabled = true; btn.textContent = '⏳ Kuruluyor...'; }
+    try {
+        const resp = await fetch('/api/brevo/setup-webhooks', { method: 'POST' });
+        const data = await resp.json();
+        if (data.success) {
+            showToast('✅ Brevo webhook\'ları kuruldu! Artık açılma/tıklama/bounce takip ediliyor.', 'success');
+            if (btn) btn.textContent = '✅ Kuruldu';
+        } else {
+            showToast('❌ Webhook kurulumu başarısız: ' + (data.error || ''), 'error');
+            if (btn) { btn.disabled = false; btn.textContent = '⚡ Webhook Kur'; }
+        }
+    } catch (e) {
+        showToast('❌ Webhook kurulumu hatası', 'error');
+        if (btn) { btn.disabled = false; btn.textContent = '⚡ Webhook Kur'; }
+    }
 }
 
 function renderSourceStats(dist) {

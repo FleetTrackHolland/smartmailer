@@ -777,6 +777,67 @@ class Database:
                     }
             return variants
 
+    def get_event_stats(self) -> dict:
+        """Tüm email event istatistikleri — dashboard ana metrikleri."""
+        with self._conn() as conn:
+            total_sent = conn.execute("SELECT COUNT(DISTINCT email) FROM sent_log").fetchone()[0]
+            if total_sent == 0:
+                return {
+                    "total_sent": 0, "delivered": 0, "opened": 0, "clicked": 0,
+                    "bounced": 0, "spam": 0, "unsubscribed": 0,
+                    "open_rate": 0, "click_rate": 0, "bounce_rate": 0, "spam_rate": 0,
+                }
+
+            def count_unique(event_types):
+                placeholders = ",".join("?" * len(event_types))
+                r = conn.execute(f"""
+                    SELECT COUNT(DISTINCT email) FROM events
+                    WHERE event_type IN ({placeholders})
+                """, event_types).fetchone()
+                return r[0] if r else 0
+
+            delivered = count_unique(["delivered", "delivery"])
+            opened = count_unique(["opened", "open", "unique_opened", "uniqueOpened"])
+            clicked = count_unique(["clicked", "click", "unique_click", "uniqueClick"])
+            bounced = count_unique(["hard_bounce", "hardBounce", "soft_bounce", "softBounce", "bounce"])
+            spam = count_unique(["spam", "complaint", "spamreport"])
+            unsubscribed = count_unique(["unsubscribed", "unsubscribe"])
+
+            return {
+                "total_sent": total_sent,
+                "delivered": delivered,
+                "opened": opened,
+                "clicked": clicked,
+                "bounced": bounced,
+                "spam": spam,
+                "unsubscribed": unsubscribed,
+                "open_rate": round(opened / total_sent * 100, 1) if total_sent > 0 else 0,
+                "click_rate": round(clicked / total_sent * 100, 1) if total_sent > 0 else 0,
+                "bounce_rate": round(bounced / total_sent * 100, 1) if total_sent > 0 else 0,
+                "spam_rate": round(spam / total_sent * 100, 1) if total_sent > 0 else 0,
+            }
+
+    def get_recent_events(self, limit: int = 50) -> list[dict]:
+        """Son email event'leri — dashboard event feed."""
+        with self._conn() as conn:
+            rows = conn.execute("""
+                SELECT e.email, e.event_type, e.message_id, e.received_at,
+                       s.company, s.subject
+                FROM events e
+                LEFT JOIN sent_log s ON e.email = s.email
+                ORDER BY e.received_at DESC LIMIT ?
+            """, (limit,)).fetchall()
+            return [dict(r) for r in rows]
+
+    def get_email_event_history(self, email: str) -> list[dict]:
+        """Tek bir email'in tüm event geçmişi."""
+        with self._conn() as conn:
+            rows = conn.execute("""
+                SELECT * FROM events WHERE email = ?
+                ORDER BY received_at ASC
+            """, (email.strip().lower(),)).fetchall()
+            return [dict(r) for r in rows]
+
     # ─── FOLLOW-UP (v4) ──────────────────────────────────────────
 
     def schedule_followup(self, email: str, step: int, scheduled_at: str,
