@@ -30,28 +30,43 @@ class SendingStrategist:
     # ─── AYLIK BÜTÇE TAKİBİ ──────────────────────────────────────
 
     def get_monthly_budget(self) -> dict:
-        """Bu ayki gönderim bütçesi durumu."""
+        """Bu billing cycle gönderim bütçesi durumu.
+        Brevo Standard: billing cycle her ayın 25'inde yenilenir."""
         now = datetime.now()
-        month_start = now.replace(day=1).strftime("%Y-%m-%d")
-        month_end = now.replace(
-            day=calendar.monthrange(now.year, now.month)[1]
-        ).strftime("%Y-%m-%d")
+        billing_day = 25  # Brevo billing reset day
 
-        # Bu ay gönderilen toplam
+        # Billing cycle: 25. gün - sonraki ayın 25. günü
+        if now.day >= billing_day:
+            cycle_start = now.replace(day=billing_day)
+            # Sonraki ayın 25'i
+            if now.month == 12:
+                cycle_end = now.replace(year=now.year + 1, month=1, day=billing_day)
+            else:
+                cycle_end = now.replace(month=now.month + 1, day=billing_day)
+        else:
+            # Önceki ayın 25'i
+            if now.month == 1:
+                cycle_start = now.replace(year=now.year - 1, month=12, day=billing_day)
+            else:
+                cycle_start = now.replace(month=now.month - 1, day=billing_day)
+            cycle_end = now.replace(day=billing_day)
+
+        cycle_start_str = cycle_start.strftime("%Y-%m-%d")
+        cycle_end_str = cycle_end.strftime("%Y-%m-%d")
+
+        # Bu cycle'da gönderilen toplam
         try:
             with db._conn() as conn:
                 row = conn.execute(
-                    "SELECT COUNT(*) FROM sent_log WHERE date(sent_at) >= ? AND date(sent_at) <= ?",
-                    (month_start, month_end)
+                    "SELECT COUNT(*) FROM sent_log WHERE date(sent_at) >= ? AND date(sent_at) < ?",
+                    (cycle_start_str, cycle_end_str)
                 ).fetchone()
                 monthly_sent = row[0] if row else 0
         except Exception:
             monthly_sent = 0
 
         remaining = max(0, config.MONTHLY_SEND_LIMIT - monthly_sent)
-        days_left = max(1, (now.replace(
-            day=calendar.monthrange(now.year, now.month)[1]
-        ) - now).days + 1)
+        days_left = max(1, (cycle_end - now).days)
 
         return {
             "monthly_limit": config.MONTHLY_SEND_LIMIT,
@@ -59,7 +74,7 @@ class SendingStrategist:
             "remaining": remaining,
             "days_left": days_left,
             "usage_pct": round((monthly_sent / config.MONTHLY_SEND_LIMIT) * 100, 1),
-            "month": now.strftime("%Y-%m"),
+            "month": f"{cycle_start.strftime('%d/%m')} - {cycle_end.strftime('%d/%m')}",
         }
 
     # ─── GÜNLÜK PLAN HESAPLA ─────────────────────────────────────
