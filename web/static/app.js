@@ -1233,11 +1233,13 @@ async function startAgentMeeting() {
                 seat.classList.add('walking');
             }, i * 350);
 
-            // 2) Masaya otur — walking dur, depth güncelle
+            // 2) Masaya otur — walking dur, oturma bounce efekti, depth güncelle
             setTimeout(() => {
                 seat.classList.remove('walking', 'facing-left', 'facing-right');
-                seat.classList.add('at-table');
+                seat.classList.add('at-table', 'sitting-down');
                 applyDepthScaling(seat);
+                // Oturma bounce'ı bitince kaldır
+                setTimeout(() => seat.classList.remove('sitting-down'), 700);
             }, i * 350 + 2000);
         });
 

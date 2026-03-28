@@ -1343,6 +1343,114 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     border: 1px solid rgba(0,0,0,0.1);
 }
 
+/* ─── Projector Screen ─── */
+.css-projector-screen {
+    position: absolute;
+    width: 160px;
+    height: 100px;
+    background: linear-gradient(180deg, #eceff1, #fafafa, #e8eaf6);
+    border: 3px solid #90a4ae;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2), inset 0 0 20px rgba(0,0,0,0.03);
+}
+.css-projector-screen::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 24px;
+    height: 8px;
+    background: #78909c;
+    border-radius: 2px;
+}
+.projector-content {
+    font-size: 12px;
+    font-weight: 700;
+    color: #37474f;
+    text-align: center;
+    animation: projectorFlicker 5s ease-in-out infinite;
+}
+@keyframes projectorFlicker {
+    0%, 100% { opacity: 0.9; }
+    50% { opacity: 1; }
+    95% { opacity: 0.85; }
+}
+
+/* ─── Printer ─── */
+.css-printer {
+    position: absolute;
+    width: 36px;
+    height: 28px;
+    background: linear-gradient(180deg, #eceff1, #cfd8dc);
+    border: 1px solid rgba(0,0,0,0.12);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    z-index: 2;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+/* ─── Coat Rack ─── */
+.css-coatrack {
+    position: absolute;
+    font-size: 28px;
+    z-index: 2;
+    filter: drop-shadow(0 3px 5px rgba(0,0,0,0.2));
+}
+
+/* ─── TV Screen ─── */
+.css-tv-screen {
+    position: absolute;
+    width: 80px;
+    height: 50px;
+    background: linear-gradient(180deg, #0d1117, #161b22);
+    border: 3px solid #30363d;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    box-shadow: 0 0 15px rgba(124,92,252,0.1), 0 4px 8px rgba(0,0,0,0.3);
+}
+.tv-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+.tv-label {
+    font-size: 7px;
+    font-weight: 800;
+    color: #ef4444;
+    letter-spacing: 1px;
+    animation: tvBlink 2s ease-in-out infinite;
+}
+.tv-metric {
+    font-size: 11px;
+    color: #4ade80;
+    font-weight: 700;
+}
+@keyframes tvBlink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* ─── Large Potted Tree ─── */
+.css-plant-large {
+    position: absolute;
+    font-size: 36px;
+    z-index: 2;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.25));
+    animation: plantSway 7s ease-in-out infinite;
+}
+
 /* ─── Live Status Bubble (above character head) ─── */
 .agent-status-bubble {
     position: absolute;
@@ -1527,36 +1635,95 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) rotateX(25deg);
-    width: 320px;
-    height: 180px;
+    width: 380px;
+    height: 220px;
     z-index: 1;
-    transition: all 1s var(--ease);
-    opacity: 0.3;
+    transition: all 1.2s var(--ease);
+    opacity: 0.25;
 }
 
 .meeting-table.active {
     opacity: 1;
-    transform: translate(-50%, -50%) rotateX(15deg) scale(1.05);
+    transform: translate(-50%, -50%) rotateX(12deg) scale(1.08);
 }
 
 .table-surface {
     width: 100%;
     height: 100%;
-    background: linear-gradient(135deg, #1a1a3e, #24244a);
+    background: linear-gradient(135deg, #1a1a3e 0%, #2a2352 30%, #1e1e44 60%, #24244a 100%);
     border-radius: 50%;
-    border: 2px solid rgba(124,92,252,0.25);
-    box-shadow: 0 0 40px rgba(124,92,252,0.1), inset 0 0 30px rgba(0,0,0,0.3),
-                0 20px 60px rgba(0,0,0,0.4);
+    border: 3px solid rgba(124,92,252,0.3);
+    box-shadow: 
+        0 0 50px rgba(124,92,252,0.12),
+        inset 0 0 40px rgba(0,0,0,0.4),
+        inset 0 -8px 20px rgba(124,92,252,0.08),
+        0 25px 60px rgba(0,0,0,0.5),
+        0 6px 0 #141430;
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Table wood grain texture */
+.table-surface::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: repeating-linear-gradient(
+        120deg,
+        rgba(255,255,255,0.01) 0px,
+        transparent 2px,
+        transparent 8px
+    );
+    pointer-events: none;
+}
+
+/* Table edge highlight */
+.table-surface::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 10%;
+    width: 80%;
+    height: 30%;
+    background: radial-gradient(ellipse, rgba(124,92,252,0.08) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+/* Table legs (visible on hover/active) */
+.meeting-table.active::before {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 15%;
+    width: 70%;
+    height: 14px;
+    background: linear-gradient(180deg, #141430 0%, #0a0a1f 100%);
+    border-radius: 0 0 50% 50%;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.4);
 }
 
 .table-logo {
-    font-size: 13px;
+    font-size: 14px;
     font-weight: 800;
-    color: rgba(124,92,252,0.35);
-    letter-spacing: 1px;
+    color: rgba(124,92,252,0.4);
+    letter-spacing: 1.5px;
+    text-shadow: 0 0 20px rgba(124,92,252,0.15);
+    z-index: 1;
+    animation: tableLogoGlow 4s ease-in-out infinite;
+}
+
+.meeting-table.active .table-logo {
+    color: rgba(124,92,252,0.6);
+}
+
+@keyframes tableLogoGlow {
+    0%, 100% { text-shadow: 0 0 15px rgba(124,92,252,0.1); }
+    50% { text-shadow: 0 0 30px rgba(124,92,252,0.25); }
 }
 
 /* ─── Agent Koltukları — 3D Karakter Sistemi ─── */
@@ -1742,6 +1909,129 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 
 /* Toplantıda laptop kaldır */
 .meeting-seat.at-table::after { display: none; }
+
+/* ═══ AT-TABLE SITTING POSE — masada oturma pozu ═══ */
+/* Bacaklar 90° bükülü, kollar masada, hafif sallanma */
+.meeting-seat.at-table .chibi-leg-l {
+    transform: translate(-4px, 50px) rotate(75deg) !important;
+    animation: none !important;
+}
+.meeting-seat.at-table .chibi-leg-r {
+    transform: translate(4px, 50px) rotate(-75deg) !important;
+    animation: none !important;
+}
+/* Kollar masada — hafif hareket */
+.meeting-seat.at-table .chibi-arm-l {
+    animation: meetingArmL 3s ease-in-out infinite !important;
+}
+.meeting-seat.at-table .chibi-arm-r {
+    animation: meetingArmR 3s ease-in-out infinite 0.5s !important;
+}
+/* Baş — konuşmayı izliyormuş gibi hafif dönme */
+.meeting-seat.at-table .chibi-head {
+    animation: meetingHeadLook 6s ease-in-out infinite;
+}
+/* Vücut hafif öne eğik (masaya doğru) */
+.meeting-seat.at-table .chibi-body {
+    transform: translate(0, -2px);
+}
+/* Nefes alma — hafif yukarı aşağı */
+.meeting-seat.at-table .chibi-svg {
+    animation: meetingSitBreathe 4s ease-in-out infinite !important;
+}
+
+@keyframes meetingArmL {
+    0%, 100% { transform: translate(0, 36px) rotate(-12deg); }
+    30% { transform: translate(0, 38px) rotate(-8deg); }
+    70% { transform: translate(0, 36px) rotate(-15deg); }
+}
+@keyframes meetingArmR {
+    0%, 100% { transform: translate(0, 36px) rotate(12deg); }
+    30% { transform: translate(0, 38px) rotate(8deg); }
+    70% { transform: translate(0, 36px) rotate(15deg); }
+}
+@keyframes meetingHeadLook {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    20% { transform: translateY(0) rotate(-3deg); }
+    40% { transform: translateY(1px) rotate(2deg); }
+    60% { transform: translateY(0) rotate(-1deg); }
+    80% { transform: translateY(1px) rotate(1.5deg); }
+}
+@keyframes meetingSitBreathe {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-1.5px); }
+}
+
+/* ═══ MEETING CHAIRS — masanın etrafında sandalyeler ═══ */
+.meeting-seat.at-table::before {
+    content: '';
+    position: absolute;
+    bottom: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 42px;
+    height: 22px;
+    background: linear-gradient(180deg, #37474f, #263238);
+    border-radius: 6px 6px 3px 3px;
+    z-index: -1;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.3);
+}
+
+/* Sandalye arkalığı */
+.meeting-seat.at-table .agent-seat-name::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 12px;
+    background: linear-gradient(180deg, #455a64, #37474f);
+    border-radius: 5px 5px 2px 2px;
+    z-index: -2;
+    box-shadow: 0 -1px 4px rgba(0,0,0,0.15);
+}
+
+/* ═══ SPEAKING AT TABLE — konuşanın vurgusu güçlü ═══ */
+.meeting-seat.at-table.speaking .agent-avatar {
+    filter: drop-shadow(0 0 18px rgba(0,214,143,0.7)) drop-shadow(0 4px 8px rgba(0,0,0,0.3)) !important;
+}
+.meeting-seat.at-table.speaking .chibi-arm-l {
+    animation: speakGestureL 0.6s ease-in-out infinite !important;
+}
+.meeting-seat.at-table.speaking .chibi-arm-r {
+    animation: speakGestureR 0.6s ease-in-out infinite 0.15s !important;
+}
+.meeting-seat.at-table.speaking .chibi-head {
+    animation: speakHeadNod 0.8s ease-in-out infinite !important;
+}
+
+@keyframes speakGestureL {
+    0%, 100% { transform: translate(0, 36px) rotate(-20deg); }
+    50% { transform: translate(-2px, 34px) rotate(-30deg); }
+}
+@keyframes speakGestureR {
+    0%, 100% { transform: translate(0, 36px) rotate(20deg); }
+    50% { transform: translate(2px, 34px) rotate(30deg); }
+}
+@keyframes speakHeadNod {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    30% { transform: translateY(-2px) rotate(-2deg); }
+    60% { transform: translateY(1px) rotate(1deg); }
+}
+
+/* ═══ SIT-DOWN TRANSITION — masaya oturma animasyonu ═══ */
+.meeting-seat.sitting-down .agent-avatar {
+    animation: sitDownBounce 0.6s ease-out forwards !important;
+}
+
+@keyframes sitDownBounce {
+    0% { transform: translateY(-15px) scale(1); }
+    40% { transform: translateY(3px) scale(0.97, 1.03); }
+    60% { transform: translateY(-4px) scale(1.01, 0.99); }
+    80% { transform: translateY(1px) scale(0.99, 1.01); }
+    100% { transform: translateY(0) scale(1); }
+}
 
 /* ═══ DEPTH SCALING — uzaktakiler küçük, yakındakiler büyük ═══ */
 .meeting-seat.depth-far   { transform: scale(0.7);  z-index: 3; }
