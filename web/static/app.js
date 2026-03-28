@@ -1,4 +1,4 @@
-/**
+﻿/**
  * SmartMailer Ultimate — Professional Dashboard Application v2
  * New: Sent Mail Viewer, Follow-Up Engine tab, Agent Self-Improvement,
  * Duplicate Prevention, Brevo spam info, Sector Tags
@@ -1362,295 +1362,176 @@ function displayMeetingMessages(messages) {
     });
 }
 
-// ═══ PREMIUM 3D CHIBI CHARACTER GENERATOR ═══
-// Matches polished 3D-rendered chibi style with voluminous hair, soft shadows
+// ═══ FUTURISTIC AI ROBOT CHARACTER GENERATOR ═══
+// Tesla Optimus / NVIDIA humanoid robot style — each agent has unique color
 function generateMarioCharacter(agentName) {
-    const chars = {
+    const bots = {
         Orchestrator: {
-            shirt: '#283593', shirtLight: '#3949ab', logo: '#ffd700',
-            pants: '#1a237e', shoes: '#4e342e', shoesLight: '#6d4c41',
-            skin: '#fddcb5', skinMid: '#f5c5a3', skinDark: '#e8ae8c',
-            hairBase: '#2c3e50', hairMid: '#34495e', hairLight: '#4a6074',
-            eyeColor: '#1a237e', blush: '#f4a7a0',
-            hairStyle: 'slick', accessory: 'crown',
+            primary: '#7c5cfc', primaryLight: '#a78bfa', accent: '#ffd700',
+            metalBase: '#2a2a4a', metalLight: '#3d3d6b', metalDark: '#1a1a35',
+            eyeGlow: '#ffd700', coreGlow: '#ffd700', antennaType: 'crown',
+            label: 'ORCH'
         },
         Copywriter: {
-            shirt: '#9c27b0', shirtLight: '#ce93d8', logo: '#f48fb1',
-            pants: '#4a148c', shoes: '#3e2723', shoesLight: '#5d4037',
-            skin: '#fde2c8', skinMid: '#f8d0ae', skinDark: '#ebb894',
-            hairBase: '#6a1b9a', hairMid: '#8e24aa', hairLight: '#ab47bc',
-            eyeColor: '#6a1b9a', blush: '#f48fb1',
-            hairStyle: 'wavy', accessory: 'beret',
+            primary: '#e040fb', primaryLight: '#ea80fc', accent: '#f48fb1',
+            metalBase: '#2e1f3d', metalLight: '#4a2d5e', metalDark: '#1a1229',
+            eyeGlow: '#e040fb', coreGlow: '#f48fb1', antennaType: 'pen',
+            label: 'COPY'
         },
         QualityControl: {
-            shirt: '#eceff1', shirtLight: '#fafafa', logo: '#78909c',
-            pants: '#37474f', shoes: '#212121', shoesLight: '#424242',
-            skin: '#fddcb5', skinMid: '#f5c5a3', skinDark: '#e8ae8c',
-            hairBase: '#4e342e', hairMid: '#6d4c41', hairLight: '#8d6e63',
-            eyeColor: '#37474f', blush: '#ffccbc',
-            hairStyle: 'short', accessory: 'glasses',
+            primary: '#00e5ff', primaryLight: '#6effff', accent: '#b2ebf2',
+            metalBase: '#1a2f3d', metalLight: '#2a4a5e', metalDark: '#0d1f2a',
+            eyeGlow: '#00e5ff', coreGlow: '#00bcd4', antennaType: 'scanner',
+            label: 'QC'
         },
         Scorer: {
-            shirt: '#1976d2', shirtLight: '#64b5f6', logo: '#bbdefb',
-            pants: '#0d47a1', shoes: '#3e2723', shoesLight: '#5d4037',
-            skin: '#fde2c8', skinMid: '#f8d0ae', skinDark: '#ebb894',
-            hairBase: '#e65100', hairMid: '#ff9800', hairLight: '#ffb74d',
-            eyeColor: '#0d47a1', blush: '#ffab91',
-            hairStyle: 'spiky', accessory: 'cap',
+            primary: '#448aff', primaryLight: '#82b1ff', accent: '#bbdefb',
+            metalBase: '#1a2744', metalLight: '#2a3d6b', metalDark: '#0d1a30',
+            eyeGlow: '#448aff', coreGlow: '#2979ff', antennaType: 'radar',
+            label: 'SCORE'
         },
         Recon: {
-            shirt: '#37474f', shirtLight: '#607d8b', logo: '#90a4ae',
-            pants: '#263238', shoes: '#1a1a1a', shoesLight: '#333333',
-            skin: '#d7a87e', skinMid: '#c49066', skinDark: '#b07a52',
-            hairBase: '#1a1a1a', hairMid: '#333333', hairLight: '#4a4a4a',
-            eyeColor: '#263238', blush: '#dba08f',
-            hairStyle: 'slick', accessory: 'fedora',
+            primary: '#78909c', primaryLight: '#a7c0cd', accent: '#00e676',
+            metalBase: '#263238', metalLight: '#37474f', metalDark: '#1a2328',
+            eyeGlow: '#00e676', coreGlow: '#00c853', antennaType: 'stealth',
+            label: 'RECON'
         },
         Finder: {
-            shirt: '#388e3c', shirtLight: '#66bb6a', logo: '#a5d6a7',
-            pants: '#1b5e20', shoes: '#4e342e', shoesLight: '#6d4c41',
-            skin: '#fddcb5', skinMid: '#f5c5a3', skinDark: '#e8ae8c',
-            hairBase: '#b71c1c', hairMid: '#e53935', hairLight: '#ef5350',
-            eyeColor: '#1b5e20', blush: '#ffab91',
-            hairStyle: 'spiky', accessory: 'cap',
+            primary: '#00e676', primaryLight: '#69f0ae', accent: '#a5d6a7',
+            metalBase: '#1a3325', metalLight: '#2a4d3a', metalDark: '#0d2118',
+            eyeGlow: '#00e676', coreGlow: '#76ff03', antennaType: 'radar',
+            label: 'FIND'
         },
         FollowUp: {
-            shirt: '#00897b', shirtLight: '#4db6ac', logo: '#80cbc4',
-            pants: '#004d40', shoes: '#3e2723', shoesLight: '#5d4037',
-            skin: '#d7a87e', skinMid: '#c49066', skinDark: '#b07a52',
-            hairBase: '#3e2723', hairMid: '#5d4037', hairLight: '#795548',
-            eyeColor: '#00695c', blush: '#dba08f',
-            hairStyle: 'wavy', accessory: 'beanie',
+            primary: '#26c6da', primaryLight: '#80deea', accent: '#80cbc4',
+            metalBase: '#1a3333', metalLight: '#2a4d4d', metalDark: '#0d2121',
+            eyeGlow: '#26c6da', coreGlow: '#00bfa5', antennaType: 'signal',
+            label: 'F-UP'
         },
         Tracker: {
-            shirt: '#3949ab', shirtLight: '#7986cb', logo: '#9fa8da',
-            pants: '#1a237e', shoes: '#3e2723', shoesLight: '#5d4037',
-            skin: '#fde2c8', skinMid: '#f8d0ae', skinDark: '#ebb894',
-            hairBase: '#1a237e', hairMid: '#283593', hairLight: '#3949ab',
-            eyeColor: '#283593', blush: '#ffccbc',
-            hairStyle: 'short', accessory: 'headphones',
+            primary: '#536dfe', primaryLight: '#8c9eff', accent: '#9fa8da',
+            metalBase: '#1a1f44', metalLight: '#2a3066', metalDark: '#0d1230',
+            eyeGlow: '#536dfe', coreGlow: '#304ffe', antennaType: 'dish',
+            label: 'TRACK'
         },
         Watchdog: {
-            shirt: '#c62828', shirtLight: '#ef5350', logo: '#ffcdd2',
-            pants: '#8e0000', shoes: '#212121', shoesLight: '#424242',
-            skin: '#fddcb5', skinMid: '#f5c5a3', skinDark: '#e8ae8c',
-            hairBase: '#3e2723', hairMid: '#5d4037', hairLight: '#795548',
-            eyeColor: '#b71c1c', blush: '#ffab91',
-            hairStyle: 'spiky', accessory: 'none',
+            primary: '#ff5252', primaryLight: '#ff8a80', accent: '#ffcdd2',
+            metalBase: '#3d1a1a', metalLight: '#5e2a2a', metalDark: '#290d0d',
+            eyeGlow: '#ff5252', coreGlow: '#d50000', antennaType: 'alert',
+            label: 'GUARD'
         },
         Compliance: {
-            shirt: '#5d4037', shirtLight: '#8d6e63', logo: '#a1887f',
-            pants: '#3e2723', shoes: '#212121', shoesLight: '#424242',
-            skin: '#d7a87e', skinMid: '#c49066', skinDark: '#b07a52',
-            hairBase: '#1a1a2e', hairMid: '#2c2c42', hairLight: '#3e3e56',
-            eyeColor: '#3e2723', blush: '#dba08f',
-            hairStyle: 'slick', accessory: 'tie',
+            primary: '#ff9100', primaryLight: '#ffab40', accent: '#ffe0b2',
+            metalBase: '#33261a', metalLight: '#4d3a2a', metalDark: '#211a0d',
+            eyeGlow: '#ff9100', coreGlow: '#ff6d00', antennaType: 'scale',
+            label: 'COMP'
         },
         ABTest: {
-            shirt: '#ef6c00', shirtLight: '#ff9800', logo: '#ffe0b2',
-            pants: '#bf360c', shoes: '#3e2723', shoesLight: '#5d4037',
-            skin: '#fde2c8', skinMid: '#f8d0ae', skinDark: '#ebb894',
-            hairBase: '#212121', hairMid: '#424242', hairLight: '#616161',
-            eyeColor: '#e65100', blush: '#ffccbc',
-            hairStyle: 'short', accessory: 'cap',
+            primary: '#ffea00', primaryLight: '#ffff56', accent: '#fff9c4',
+            metalBase: '#33331a', metalLight: '#4d4d2a', metalDark: '#21210d',
+            eyeGlow: '#ffea00', coreGlow: '#ffd600', antennaType: 'split',
+            label: 'A/B'
         },
     };
 
-    const c = chars[agentName] || chars.Orchestrator;
+    const b = bots[agentName] || bots.Orchestrator;
     const id = agentName.replace(/[^a-zA-Z]/g, '');
 
-    // Voluminous hair paths based on style
-    let hairSvg = '';
-    if (c.hairStyle === 'spiky') {
-        hairSvg = `
-            <path d="M8 18 Q8 -2 30 -6 Q52 -2 52 18 Q48 10 42 8 Q36 4 30 2 Q24 4 18 8 Q12 10 8 18Z" fill="${c.hairBase}"/>
-            <path d="M12 16 Q14 2 30 -2 Q46 2 48 16 Q44 8 30 5 Q16 8 12 16Z" fill="${c.hairMid}"/>
-            <path d="M18 12 Q22 0 30 -1 Q38 0 42 12 Q38 6 30 4 Q22 6 18 12Z" fill="${c.hairLight}" opacity="0.7"/>
-            <ellipse cx="22" cy="-1" rx="4" ry="6" fill="${c.hairBase}" transform="rotate(-15 22 -1)"/>
-            <ellipse cx="38" cy="-1" rx="4" ry="6" fill="${c.hairBase}" transform="rotate(15 38 -1)"/>
-            <ellipse cx="30" cy="-4" rx="5" ry="7" fill="${c.hairMid}" transform="rotate(0 30 -4)"/>`;
-    } else if (c.hairStyle === 'wavy') {
-        hairSvg = `
-            <path d="M6 20 Q4 4 18 -2 Q26 -6 30 -4 Q34 -6 42 -2 Q56 4 54 20 Q50 12 42 6 Q34 2 30 0 Q26 2 18 6 Q10 12 6 20Z" fill="${c.hairBase}"/>
-            <path d="M10 18 Q10 4 22 0 Q30 -3 38 0 Q50 4 50 18 Q46 10 38 5 Q30 1 22 5 Q14 10 10 18Z" fill="${c.hairMid}"/>
-            <path d="M16 14 Q20 2 30 0 Q40 2 44 14 Q40 8 30 4 Q20 8 16 14Z" fill="${c.hairLight}" opacity="0.6"/>
-            <ellipse cx="14" cy="8" rx="6" ry="8" fill="${c.hairBase}" transform="rotate(-20 14 8)"/>
-            <ellipse cx="46" cy="8" rx="6" ry="8" fill="${c.hairBase}" transform="rotate(20 46 8)"/>`;
-    } else if (c.hairStyle === 'short') {
-        hairSvg = `
-            <path d="M10 18 Q10 2 30 -2 Q50 2 50 18 Q46 10 30 6 Q14 10 10 18Z" fill="${c.hairBase}"/>
-            <path d="M14 16 Q16 4 30 0 Q44 4 46 16 Q42 8 30 4 Q18 8 14 16Z" fill="${c.hairMid}"/>
-            <path d="M20 12 Q24 2 30 1 Q36 2 40 12 Q36 6 30 4 Q24 6 20 12Z" fill="${c.hairLight}" opacity="0.5"/>`;
-    } else { // slick
-        hairSvg = `
-            <path d="M8 20 Q6 0 30 -4 Q54 0 52 20 Q48 8 30 4 Q12 8 8 20Z" fill="${c.hairBase}"/>
-            <path d="M12 18 Q12 2 30 -1 Q48 2 48 18 Q44 8 30 3 Q16 8 12 18Z" fill="${c.hairMid}"/>
-            <path d="M18 14 Q22 2 30 0 Q38 2 42 14 Q38 6 30 3 Q22 6 18 14Z" fill="${c.hairLight}" opacity="0.5"/>`;
+    let antennaSvg = '';
+    if (b.antennaType === 'crown') {
+        antennaSvg = '<polygon points="22,0 25,-8 28,-3 30,-10 32,-3 35,-8 38,0" fill="'+b.accent+'" opacity="0.9"/><circle cx="30" cy="-10" r="2" fill="'+b.accent+'"><animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/></circle>';
+    } else if (b.antennaType === 'pen') {
+        antennaSvg = '<rect x="28" y="-12" width="4" height="14" rx="2" fill="'+b.metalLight+'"/><circle cx="30" cy="-13" r="2.5" fill="'+b.primaryLight+'"><animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/></circle>';
+    } else if (b.antennaType === 'scanner') {
+        antennaSvg = '<rect x="26" y="-8" width="8" height="10" rx="2" fill="'+b.metalLight+'"/><rect x="27" y="-7" width="6" height="3" rx="1" fill="'+b.eyeGlow+'" opacity="0.6"><animate attributeName="opacity" values="0.3;0.9;0.3" dur="1.8s" repeatCount="indefinite"/></rect>';
+    } else if (b.antennaType === 'radar') {
+        antennaSvg = '<line x1="30" y1="2" x2="30" y2="-10" stroke="'+b.metalLight+'" stroke-width="2"/><circle cx="30" cy="-10" r="3" fill="none" stroke="'+b.primaryLight+'" stroke-width="1.5"><animate attributeName="r" values="2;4;2" dur="2s" repeatCount="indefinite"/></circle><circle cx="30" cy="-10" r="1.5" fill="'+b.primaryLight+'"/>';
+    } else if (b.antennaType === 'stealth') {
+        antennaSvg = '<rect x="24" y="-4" width="12" height="5" rx="2.5" fill="'+b.metalDark+'" stroke="'+b.accent+'" stroke-width="0.5"/><rect x="26" y="-3" width="3" height="3" rx="1" fill="'+b.accent+'" opacity="0.5"><animate attributeName="opacity" values="0.2;0.7;0.2" dur="3s" repeatCount="indefinite"/></rect>';
+    } else if (b.antennaType === 'signal') {
+        antennaSvg = '<line x1="30" y1="2" x2="30" y2="-8" stroke="'+b.metalLight+'" stroke-width="1.5"/><path d="M24,-6 Q30,-14 36,-6" stroke="'+b.primaryLight+'" stroke-width="1" fill="none" opacity="0.5"><animate attributeName="opacity" values="0.2;0.8;0.2" dur="1.5s" repeatCount="indefinite"/></path>';
+    } else if (b.antennaType === 'dish') {
+        antennaSvg = '<line x1="30" y1="2" x2="30" y2="-6" stroke="'+b.metalLight+'" stroke-width="2"/><ellipse cx="30" cy="-8" rx="6" ry="3" fill="'+b.metalLight+'" stroke="'+b.primaryLight+'" stroke-width="0.8"/><circle cx="30" cy="-8" r="1.5" fill="'+b.primaryLight+'"><animate attributeName="opacity" values="1;0.2;1" dur="2.5s" repeatCount="indefinite"/></circle>';
+    } else if (b.antennaType === 'alert') {
+        antennaSvg = '<rect x="27" y="-8" width="6" height="10" rx="3" fill="'+b.primary+'"/><circle cx="30" cy="-9" r="3" fill="'+b.eyeGlow+'"><animate attributeName="opacity" values="1;0.1;1" dur="0.8s" repeatCount="indefinite"/></circle>';
+    } else if (b.antennaType === 'scale') {
+        antennaSvg = '<line x1="30" y1="2" x2="30" y2="-6" stroke="'+b.metalLight+'" stroke-width="2"/><line x1="22" y1="-6" x2="38" y2="-6" stroke="'+b.metalLight+'" stroke-width="1.5"/><circle cx="22" cy="-6" r="2" fill="'+b.primaryLight+'"/><circle cx="38" cy="-6" r="2" fill="'+b.primaryLight+'"/>';
+    } else {
+        antennaSvg = '<rect x="22" y="-6" width="7" height="8" rx="2" fill="'+b.primary+'" opacity="0.8"/><rect x="31" y="-6" width="7" height="8" rx="2" fill="'+b.primaryLight+'" opacity="0.8"/><line x1="30" y1="-4" x2="30" y2="1" stroke="'+b.accent+'" stroke-width="0.8"/>';
     }
 
-    // Accessories
-    let accessorySvg = '';
-    if (c.accessory === 'glasses') {
-        accessorySvg = `
-            <rect x="15" y="18" width="12" height="9" rx="4" fill="none" stroke="#546e7a" stroke-width="2"/>
-            <rect x="33" y="18" width="12" height="9" rx="4" fill="none" stroke="#546e7a" stroke-width="2"/>
-            <line x1="27" y1="22" x2="33" y2="22" stroke="#546e7a" stroke-width="1.5"/>
-            <line x1="15" y1="22" x2="10" y2="20" stroke="#546e7a" stroke-width="1.2"/>
-            <line x1="45" y1="22" x2="50" y2="20" stroke="#546e7a" stroke-width="1.2"/>`;
-    } else if (c.accessory === 'headphones') {
-        accessorySvg = `
-            <path d="M10 16 Q10 2 30 2 Q50 2 50 16" fill="none" stroke="#424242" stroke-width="3" stroke-linecap="round"/>
-            <rect x="6" y="14" width="7" height="10" rx="3" fill="#616161"/>
-            <rect x="47" y="14" width="7" height="10" rx="3" fill="#616161"/>
-            <rect x="7" y="15" width="5" height="8" rx="2" fill="#424242"/>
-            <rect x="48" y="15" width="5" height="8" rx="2" fill="#424242"/>`;
-    } else if (c.accessory === 'crown') {
-        accessorySvg = `
-            <polygon points="16,12 20,0 24,8 30,-4 36,8 40,0 44,12" fill="#ffd700" stroke="#daa520" stroke-width="0.8"/>
-            <rect x="16" y="10" width="28" height="5" rx="1" fill="#ffd700"/>
-            <circle cx="24" cy="12" r="2" fill="#e53935"/><circle cx="30" cy="12" r="2" fill="#1e88e5"/><circle cx="36" cy="12" r="2" fill="#43a047"/>`;
-    } else if (c.accessory === 'cap') {
-        accessorySvg = `
-            <ellipse cx="30" cy="8" rx="22" ry="10" fill="${c.hairBase}"/>
-            <rect x="8" y="6" width="44" height="8" rx="4" fill="${c.hairBase}"/>
-            <rect x="4" y="13" width="24" height="5" rx="2.5" fill="${c.hairMid}"/>
-            <ellipse cx="30" cy="8" rx="6" ry="5" fill="${c.hairLight}" opacity="0.4"/>`;
-    } else if (c.accessory === 'fedora') {
-        accessorySvg = `
-            <ellipse cx="30" cy="12" rx="26" ry="6" fill="${c.hairBase}"/>
-            <ellipse cx="30" cy="6" rx="18" ry="10" fill="${c.hairBase}"/>
-            <rect x="18" y="8" width="24" height="4" rx="2" fill="${c.hairMid}"/>
-            <ellipse cx="30" cy="4" rx="12" ry="6" fill="${c.hairLight}" opacity="0.3"/>`;
-    } else if (c.accessory === 'beanie') {
-        accessorySvg = `
-            <ellipse cx="30" cy="10" rx="20" ry="14" fill="${c.hairBase}"/>
-            <rect x="10" y="12" width="40" height="5" rx="2.5" fill="${c.hairMid}"/>
-            <circle cx="30" cy="-2" r="4" fill="${c.hairLight}"/>
-            <path d="M12 14 Q20 8 30 6 Q40 8 48 14" fill="${c.hairLight}" opacity="0.3"/>`;
-    } else if (c.accessory === 'beret') {
-        accessorySvg = `
-            <ellipse cx="24" cy="8" rx="20" ry="10" fill="${c.hairBase}"/>
-            <circle cx="18" cy="2" r="3" fill="${c.hairMid}"/>
-            <ellipse cx="24" cy="6" rx="14" ry="7" fill="${c.hairLight}" opacity="0.3"/>`;
-    } else if (c.accessory === 'tie') {
-        // Tie rendered on body
-    }
-
-    let bodySvg = '';
-    if (c.accessory === 'tie') {
-        bodySvg = `<polygon points="29,40 31,40 33,52 30,56 27,52" fill="#c62828"/>`;
-    }
-
-    return `<svg class="chibi-svg" viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-            <linearGradient id="sk-${id}" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="${c.skin}"/><stop offset="50%" stop-color="${c.skinMid}"/><stop offset="100%" stop-color="${c.skinDark}"/>
-            </linearGradient>
-            <linearGradient id="sh-${id}" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stop-color="${c.shirtLight}"/><stop offset="100%" stop-color="${c.shirt}"/>
-            </linearGradient>
-            <radialGradient id="bl-${id}" cx="50%" cy="50%" r="50%">
-                <stop offset="0%" stop-color="${c.blush}" stop-opacity="0.55"/><stop offset="100%" stop-color="${c.blush}" stop-opacity="0"/>
-            </radialGradient>
-            <filter id="sd-${id}" x="-20%" y="-20%" width="140%" height="140%">
-                <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
-                <feOffset dx="0" dy="2" result="offset"/>
-                <feFlood flood-color="rgba(0,0,0,0.18)" result="color"/>
-                <feComposite in="color" in2="offset" operator="in" result="shadow"/>
-                <feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-        </defs>
-
-        <!-- Ground shadow -->
-        <ellipse cx="30" cy="97" rx="22" ry="4" fill="rgba(0,0,0,0.15)"/>
-
-        <!-- LEGS + SHOES -->
-        <g class="chibi-leg chibi-leg-l">
-            <rect x="18" y="0" width="10" height="18" rx="4" fill="${c.pants}"/>
-            <ellipse cx="22" cy="18" rx="8" ry="5" fill="${c.shoes}"/>
-            <ellipse cx="20" cy="17" rx="5" ry="3" fill="${c.shoesLight}" opacity="0.5"/>
-        </g>
-        <g class="chibi-leg chibi-leg-r">
-            <rect x="32" y="0" width="10" height="18" rx="4" fill="${c.pants}"/>
-            <ellipse cx="38" cy="18" rx="8" ry="5" fill="${c.shoes}"/>
-            <ellipse cx="40" cy="17" rx="5" ry="3" fill="${c.shoesLight}" opacity="0.5"/>
-        </g>
-
-        <!-- BODY -->
-        <g class="chibi-body" filter="url(#sd-${id})">
-            <rect x="12" y="38" width="36" height="28" rx="10" fill="url(#sh-${id})"/>
-            <!-- Shirt highlight -->
-            <rect x="14" y="40" width="32" height="12" rx="8" fill="${c.shirtLight}" opacity="0.3"/>
-            <!-- Logo circle on shirt -->
-            <circle cx="30" cy="52" r="6" fill="${c.logo}" opacity="0.7"/>
-            <circle cx="30" cy="52" r="3.5" fill="${c.shirt}" opacity="0.6"/>
-            ${bodySvg}
-        </g>
-
-        <!-- ARMS with round hands -->
-        <g class="chibi-arm chibi-arm-l">
-            <rect x="4" y="2" width="10" height="24" rx="5" fill="url(#sh-${id})"/>
-            <circle cx="9" cy="26" r="6" fill="${c.skin}"/>
-            <circle cx="9" cy="25" r="4" fill="${c.skinMid}" opacity="0.4"/>
-        </g>
-        <g class="chibi-arm chibi-arm-r">
-            <rect x="46" y="2" width="10" height="24" rx="5" fill="url(#sh-${id})"/>
-            <circle cx="51" cy="26" r="6" fill="${c.skin}"/>
-            <circle cx="51" cy="25" r="4" fill="${c.skinMid}" opacity="0.4"/>
-        </g>
-
-        <!-- HEAD -->
-        <g class="chibi-head" filter="url(#sd-${id})">
-            <!-- Face -->
-            <circle cx="30" cy="22" r="22" fill="url(#sk-${id})"/>
-            <!-- Face highlight (3D effect) -->
-            <ellipse cx="26" cy="16" rx="12" ry="10" fill="${c.skin}" opacity="0.4"/>
-
-            <!-- Ears -->
-            <circle cx="8" cy="22" r="5" fill="url(#sk-${id})"/>
-            <circle cx="8" cy="22" r="3" fill="${c.skinDark}" opacity="0.25"/>
-            <circle cx="52" cy="22" r="5" fill="url(#sk-${id})"/>
-            <circle cx="52" cy="22" r="3" fill="${c.skinDark}" opacity="0.25"/>
-
-            <!-- Eyebrows -->
-            <path d="M17 16 Q21 13 25 15" stroke="${c.hairBase}" stroke-width="2" fill="none" stroke-linecap="round"/>
-            <path d="M35 15 Q39 13 43 16" stroke="${c.hairBase}" stroke-width="2" fill="none" stroke-linecap="round"/>
-
-            <!-- Eyes (large, expressive) -->
-            <ellipse cx="22" cy="22" rx="6" ry="6.5" fill="#fff"/>
-            <ellipse cx="22" cy="22" rx="5" ry="5.5" fill="#fff" stroke="#ccc" stroke-width="0.3"/>
-            <circle cx="23" cy="22" r="3.5" fill="${c.eyeColor}"/>
-            <circle cx="23" cy="22" r="2" fill="#1a1a2e"/>
-            <circle cx="24.5" cy="20.5" r="1.5" fill="#fff" opacity="0.95"/>
-            <circle cx="21.5" cy="23.5" r="0.8" fill="#fff" opacity="0.6"/>
-
-            <ellipse cx="38" cy="22" rx="6" ry="6.5" fill="#fff"/>
-            <ellipse cx="38" cy="22" rx="5" ry="5.5" fill="#fff" stroke="#ccc" stroke-width="0.3"/>
-            <circle cx="37" cy="22" r="3.5" fill="${c.eyeColor}"/>
-            <circle cx="37" cy="22" r="2" fill="#1a1a2e"/>
-            <circle cx="38.5" cy="20.5" r="1.5" fill="#fff" opacity="0.95"/>
-            <circle cx="35.5" cy="23.5" r="0.8" fill="#fff" opacity="0.6"/>
-
-            <!-- Nose -->
-            <ellipse cx="30" cy="28" rx="3.5" ry="2.8" fill="${c.skinDark}" opacity="0.7"/>
-            <ellipse cx="29" cy="27" rx="2" ry="1.5" fill="${c.skin}" opacity="0.6"/>
-
-            <!-- Mouth (wide smile) -->
-            <path d="M24 32 Q27 36 30 36 Q33 36 36 32" stroke="#a0522d" stroke-width="1.8" fill="none" stroke-linecap="round"/>
-            <path d="M26 33 Q30 35.5 34 33" fill="#c0392b" opacity="0.3"/>
-
-            <!-- Cheek blush -->
-            <ellipse cx="13" cy="28" rx="5" ry="3.5" fill="url(#bl-${id})"/>
-            <ellipse cx="47" cy="28" rx="5" ry="3.5" fill="url(#bl-${id})"/>
-
-            <!-- Hair (voluminous, layered) -->
-            ${hairSvg}
-
-            <!-- Accessory (on top of hair) -->
-            ${accessorySvg}
-        </g>
-    </svg>`;
+    return '<svg class="chibi-svg" viewBox="0 0 60 100" xmlns="http://www.w3.org/2000/svg">'
+        + '<defs>'
+        + '<linearGradient id="mb-'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+b.metalLight+'"/><stop offset="100%" stop-color="'+b.metalDark+'"/></linearGradient>'
+        + '<filter id="glow-'+id+'" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2" result="blur"/><feFlood flood-color="'+b.eyeGlow+'" flood-opacity="0.4" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
+        + '<filter id="sd-'+id+'" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/><feOffset dx="0" dy="2" result="offset"/><feFlood flood-color="rgba(0,0,0,0.25)" result="color"/><feComposite in="color" in2="offset" operator="in" result="shadow"/><feMerge><feMergeNode in="shadow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>'
+        + '</defs>'
+        // Ground shadow + glow
+        + '<ellipse cx="30" cy="97" rx="20" ry="4" fill="rgba(0,0,0,0.2)"/>'
+        + '<ellipse cx="30" cy="97" rx="14" ry="3" fill="'+b.primary+'" opacity="0.08"/>'
+        // LEGS
+        + '<g class="chibi-leg chibi-leg-l">'
+        + '<rect x="19" y="0" width="8" height="12" rx="3" fill="url(#mb-'+id+')"/>'
+        + '<circle cx="23" cy="12" r="4" fill="'+b.metalBase+'" stroke="'+b.primary+'" stroke-width="0.8"/>'
+        + '<rect x="19" y="14" width="8" height="10" rx="2" fill="'+b.metalDark+'"/>'
+        + '<path d="M16,24 L28,24 L30,28 L14,28 Z" fill="'+b.metalBase+'" stroke="'+b.primary+'" stroke-width="0.5"/>'
+        + '<rect x="16" y="26" width="14" height="2" rx="1" fill="'+b.primary+'" opacity="0.3"/></g>'
+        + '<g class="chibi-leg chibi-leg-r">'
+        + '<rect x="33" y="0" width="8" height="12" rx="3" fill="url(#mb-'+id+')"/>'
+        + '<circle cx="37" cy="12" r="4" fill="'+b.metalBase+'" stroke="'+b.primary+'" stroke-width="0.8"/>'
+        + '<rect x="33" y="14" width="8" height="10" rx="2" fill="'+b.metalDark+'"/>'
+        + '<path d="M30,24 L44,24 L46,28 L28,28 Z" fill="'+b.metalBase+'" stroke="'+b.primary+'" stroke-width="0.5"/>'
+        + '<rect x="30" y="26" width="14" height="2" rx="1" fill="'+b.primary+'" opacity="0.3"/></g>'
+        // BODY
+        + '<g class="chibi-body" filter="url(#sd-'+id+')">'
+        + '<rect x="12" y="36" width="36" height="30" rx="8" fill="url(#mb-'+id+')" stroke="'+b.primary+'" stroke-width="0.5"/>'
+        + '<rect x="18" y="40" width="24" height="16" rx="5" fill="'+b.metalDark+'" stroke="'+b.primary+'" stroke-width="0.8"/>'
+        + '<circle cx="30" cy="48" r="6" fill="'+b.metalDark+'" stroke="'+b.coreGlow+'" stroke-width="1.5"/>'
+        + '<circle cx="30" cy="48" r="4" fill="'+b.coreGlow+'" opacity="0.3"><animate attributeName="opacity" values="0.2;0.5;0.2" dur="3s" repeatCount="indefinite"/></circle>'
+        + '<circle cx="30" cy="48" r="2" fill="'+b.coreGlow+'" opacity="0.7"><animate attributeName="opacity" values="0.5;1;0.5" dur="2s" repeatCount="indefinite"/></circle>'
+        + '<rect x="8" y="37" width="12" height="6" rx="3" fill="'+b.metalBase+'" stroke="'+b.primary+'" stroke-width="0.5"/>'
+        + '<rect x="40" y="37" width="12" height="6" rx="3" fill="'+b.metalBase+'" stroke="'+b.primary+'" stroke-width="0.5"/>'
+        + '<line x1="16" y1="58" x2="44" y2="58" stroke="'+b.primary+'" stroke-width="0.5" opacity="0.4"/>'
+        + '<line x1="14" y1="62" x2="46" y2="62" stroke="'+b.primary+'" stroke-width="0.5" opacity="0.3"/>'
+        + '<text x="30" y="55" text-anchor="middle" font-size="5" font-weight="800" fill="'+b.primary+'" opacity="0.6" font-family="monospace">'+b.label+'</text></g>'
+        // ARMS
+        + '<g class="chibi-arm chibi-arm-l">'
+        + '<rect x="4" y="2" width="9" height="16" rx="4" fill="url(#mb-'+id+')" stroke="'+b.primary+'" stroke-width="0.5"/>'
+        + '<circle cx="8" cy="18" r="3.5" fill="'+b.metalBase+'" stroke="'+b.primary+'" stroke-width="0.8"/>'
+        + '<rect x="4" y="20" width="9" height="10" rx="3" fill="'+b.metalDark+'"/>'
+        + '<rect x="3" y="30" width="4" height="5" rx="2" fill="'+b.metalLight+'"/>'
+        + '<rect x="7" y="30" width="4" height="6" rx="2" fill="'+b.metalLight+'"/>'
+        + '<circle cx="8" cy="30" r="3" fill="'+b.metalBase+'" stroke="'+b.primary+'" stroke-width="0.5"/></g>'
+        + '<g class="chibi-arm chibi-arm-r">'
+        + '<rect x="47" y="2" width="9" height="16" rx="4" fill="url(#mb-'+id+')" stroke="'+b.primary+'" stroke-width="0.5"/>'
+        + '<circle cx="52" cy="18" r="3.5" fill="'+b.metalBase+'" stroke="'+b.primary+'" stroke-width="0.8"/>'
+        + '<rect x="47" y="20" width="9" height="10" rx="3" fill="'+b.metalDark+'"/>'
+        + '<rect x="49" y="30" width="4" height="5" rx="2" fill="'+b.metalLight+'"/>'
+        + '<rect x="53" y="30" width="4" height="6" rx="2" fill="'+b.metalLight+'"/>'
+        + '<circle cx="52" cy="30" r="3" fill="'+b.metalBase+'" stroke="'+b.primary+'" stroke-width="0.5"/></g>'
+        // HEAD
+        + '<g class="chibi-head" filter="url(#sd-'+id+')">'
+        + '<rect x="10" y="2" width="40" height="36" rx="14" fill="url(#mb-'+id+')" stroke="'+b.primary+'" stroke-width="0.8"/>'
+        + '<rect x="14" y="4" width="32" height="8" rx="8" fill="'+b.metalLight+'" opacity="0.3"/>'
+        + '<rect x="14" y="14" width="32" height="18" rx="8" fill="'+b.metalDark+'" stroke="'+b.primary+'" stroke-width="0.5"/>'
+        + '<rect x="16" y="18" width="28" height="8" rx="4" fill="'+b.metalDark+'" stroke="'+b.eyeGlow+'" stroke-width="1"/>'
+        + '<rect x="18" y="20" width="10" height="4" rx="2" fill="'+b.eyeGlow+'" filter="url(#glow-'+id+')"><animate attributeName="opacity" values="0.8;1;0.8" dur="3s" repeatCount="indefinite"/></rect>'
+        + '<rect x="32" y="20" width="10" height="4" rx="2" fill="'+b.eyeGlow+'" filter="url(#glow-'+id+')"><animate attributeName="opacity" values="0.8;1;0.8" dur="3s" repeatCount="indefinite"/></rect>'
+        + '<rect x="20" y="21" width="3" height="2" rx="1" fill="#fff" opacity="0.5"/>'
+        + '<rect x="34" y="21" width="3" height="2" rx="1" fill="#fff" opacity="0.5"/>'
+        + '<rect x="22" y="28" width="16" height="4" rx="2" fill="'+b.metalDark+'" stroke="'+b.primary+'" stroke-width="0.4"/>'
+        + '<line x1="25" y1="28" x2="25" y2="32" stroke="'+b.primary+'" stroke-width="0.4" opacity="0.5"/>'
+        + '<line x1="28" y1="28" x2="28" y2="32" stroke="'+b.primary+'" stroke-width="0.4" opacity="0.5"/>'
+        + '<line x1="31" y1="28" x2="31" y2="32" stroke="'+b.primary+'" stroke-width="0.4" opacity="0.5"/>'
+        + '<line x1="34" y1="28" x2="34" y2="32" stroke="'+b.primary+'" stroke-width="0.4" opacity="0.5"/>'
+        + '<rect x="7" y="16" width="5" height="12" rx="2.5" fill="'+b.metalBase+'" stroke="'+b.primary+'" stroke-width="0.5"/>'
+        + '<rect x="8" y="19" width="3" height="3" rx="1" fill="'+b.primaryLight+'" opacity="0.4"><animate attributeName="opacity" values="0.2;0.6;0.2" dur="4s" repeatCount="indefinite"/></rect>'
+        + '<rect x="48" y="16" width="5" height="12" rx="2.5" fill="'+b.metalBase+'" stroke="'+b.primary+'" stroke-width="0.5"/>'
+        + '<rect x="49" y="19" width="3" height="3" rx="1" fill="'+b.primaryLight+'" opacity="0.4"><animate attributeName="opacity" values="0.2;0.6;0.2" dur="4s" repeatCount="indefinite"/></rect>'
+        + antennaSvg
+        + '</g></svg>';
 }
+
 
 // ═══ OFFICE INIT — Agent'ları ofiste masalarına yerleştir ═══
 function initOfficeAgents() {
