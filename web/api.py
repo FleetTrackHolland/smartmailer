@@ -108,6 +108,10 @@ def _init_agents():
         )
         _agents_initialized = True
         log.info("[INIT] Tüm agent'lar başarıyla yüklendi.")
+
+        # ★ AUTO WEBHOOK SETUP — Her başlangıçta Brevo webhook'ları otomatik kur
+        _auto_setup_webhooks()
+
     except Exception as e:
         log.error(f"[INIT] Agent yükleme hatası: {e}")
         # Set db at minimum so basic endpoints work
@@ -118,6 +122,54 @@ def _init_agents():
         except Exception:
             pass
         _agents_initialized = True  # Don't retry every request
+
+
+def _auto_setup_webhooks():
+    """Brevo webhook'larını otomatik olarak kur — her app başlangıcında çağrılır.
+    Manuel kurulum gerekmez."""
+    try:
+        import requests as req
+        brevo_key = config.BREVO_API_KEY
+        if not brevo_key:
+            log.warning("[WEBHOOK-AUTO] BREVO_API_KEY yok — webhook kurulumu atlanıyor.")
+            return
+
+        headers = {"api-key": brevo_key, "content-type": "application/json", "accept": "application/json"}
+        webhook_url = "https://app.fleettrackholland.nl/webhook/brevo"
+        events_to_track = [
+            "delivered", "hardBounce", "softBounce", "blocked",
+            "spam", "opened", "click", "unsubscribed", "invalid", "deferred"
+        ]
+
+        # Mevcut webhook'ları kontrol et
+        existing = req.get("https://api.brevo.com/v3/webhooks", headers=headers, timeout=10)
+        existing_urls = []
+        if existing.status_code == 200:
+            for wh in existing.json().get("webhooks", []):
+                existing_urls.append(wh.get("url", ""))
+
+        if webhook_url in existing_urls:
+            log.info("[WEBHOOK-AUTO] ✅ Webhook zaten aktif — atlanıyor.")
+            return
+
+        # Transactional webhook
+        payload = {
+            "url": webhook_url,
+            "description": "SmartMailer Event Tracker (Auto)",
+            "events": events_to_track,
+            "type": "transactional",
+        }
+        resp = req.post("https://api.brevo.com/v3/webhooks", json=payload, headers=headers, timeout=10)
+        log.info(f"[WEBHOOK-AUTO] Transactional: HTTP {resp.status_code}")
+
+        # Marketing webhook
+        payload["type"] = "marketing"
+        resp2 = req.post("https://api.brevo.com/v3/webhooks", json=payload, headers=headers, timeout=10)
+        log.info(f"[WEBHOOK-AUTO] Marketing: HTTP {resp2.status_code}")
+
+        log.info("[WEBHOOK-AUTO] ✅ Brevo webhook'ları otomatik kuruldu!")
+    except Exception as e:
+        log.warning(f"[WEBHOOK-AUTO] ⚠️ Webhook otomatik kurulum hatası (devam): {e}")
 
 
 @app.before_request
@@ -2231,6 +2283,20 @@ def _automation_loop():
                     batch_size = min(10, remaining)
                     _auto_log(f"📊 Bugün gönderilen: {today_sent}/{config.DAILY_SEND_LIMIT}, kalan kota: {remaining}")
 
+                    # ★ SAAT KONTROLÜ — Hollanda saati ile gönderim penceresi
+                    # Pazartesi-Cuma: 08:00-19:00, Cumartesi: 08:00-19:00, Pazar: 12:00-19:00
+                    _now = datetime.now()
+                    _hour = _now.hour
+                    _wday = _now.weekday()  # 0=Mon, 6=Sun
+                    if _wday == 6:  # Pazar
+                        _s_start, _s_end = 12, 19
+                    else:  # Mon-Sat
+                        _s_start, _s_end = 8, 19
+                    _day_names = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz']
+                    if _hour < _s_start or _hour >= _s_end:
+                        _auto_log(f"⏰ Gönderim saati dışı ({_day_names[_wday]} saat {_hour}:00) — Phase 3 atlanıyor. İzin: {_s_start}:00-{_s_end}:00")
+                        batch_size = 0  # Gönderim yapılmasın
+
                     if batch_size > 0:
                         unsent = db.get_unsent_leads(limit=batch_size)
                         if unsent:
@@ -2316,15 +2382,27 @@ def _automation_loop():
                                     except Exception as draft_err:
                                         _auto_log(f"⚠️ Draft kayıt hatası: {draft_err}")
 
-                                    # 4. Gönder
+                                    # 4. Gönder — template ile sar
                                     if send_engine:
                                         try:
                                             from core.send_engine import EmailMessage
+                                            # ★ Template engine ile body_html'i sar
+                                            try:
+                                                from core.template_engine import TemplateEngine
+                                                _te = TemplateEngine()
+                                                wrapped_html = _te.render(
+                                                    body_html=body_html,
+                                                    company_name=company,
+                                                    sector=sector,
+                                                )
+                                            except Exception:
+                                                wrapped_html = body_html  # fallback
+
                                             msg = EmailMessage(
                                                 to_email=email_addr,
                                                 to_name=company,
                                                 subject=subject,
-                                                html_body=body_html,
+                                                html_body=wrapped_html,
                                                 text_body=body_text,
                                                 lead_id=email_addr,
                                             )
@@ -2881,11 +2959,19 @@ def cron_run_cycle():
         batch_size = min(10, remaining)
         _auto_log(f"📊 Bugün gönderilen: {today_sent}/{config.DAILY_SEND_LIMIT}, kalan: {remaining}")
 
-        # ★ SAAT KONTROLÜ — gece gönderimi engelle (08:00-18:00 CET)
+        # ★ SAAT KONTROLÜ — Hollanda saati ile gönderim penceresi
+        # Pazartesi-Cuma: 08:00-19:00, Cumartesi: 08:00-19:00, Pazar: 12:00-19:00
         current_hour = datetime.now().hour
-        if current_hour < 8 or current_hour >= 18:
-            _auto_log(f"⏰ Gece saati (saat {current_hour}:00) — Phase 3 atlanıyor. İzin: 08:00-18:00")
-            results["phase_3_send"] = {"sent": 0, "skipped": "night_hours", "hour": current_hour}
+        current_weekday = datetime.now().weekday()  # 0=Mon, 6=Sun
+        if current_weekday == 6:  # Pazar
+            send_start, send_end = 12, 19
+        else:  # Mon-Sat
+            send_start, send_end = 8, 19
+        outside_hours = current_hour < send_start or current_hour >= send_end
+        day_names = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz']
+        if outside_hours:
+            _auto_log(f"⏰ Gönderim saati dışı ({day_names[current_weekday]} saat {current_hour}:00) — Phase 3 atlanıyor. İzin: {send_start}:00-{send_end}:00")
+            results["phase_3_send"] = {"sent": 0, "skipped": "outside_hours", "hour": current_hour, "day": day_names[current_weekday]}
         elif batch_size > 0:
             unsent = db.get_unsent_leads(limit=batch_size)
             if unsent:

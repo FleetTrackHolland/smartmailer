@@ -172,7 +172,12 @@ class SendingStrategist:
     # ─── GÖNDERİM ÖNERİSİ ────────────────────────────────────────
 
     def should_send_now(self) -> tuple[bool, str]:
-        """Şu anda gönderim yapılması uygun mu?"""
+        """Şu anda gönderim yapılması uygun mu?
+        Hollanda saatine göre gönderim penceresi:
+        - Pazartesi-Cuma: 08:00-19:00
+        - Cumartesi: 08:00-19:00
+        - Pazar: 12:00-19:00
+        """
         plan = self.get_daily_plan()
 
         # Aylık limit kontrolü
@@ -183,12 +188,21 @@ class SendingStrategist:
         if plan["remaining_today"] <= 0:
             return False, f"Günlük limit doldu ({plan['daily_limit']}/gün)"
 
-        # Optimal saat kontrolü — gece gönderimini kesinlikle engelle
+        # ★ SAAT KONTROLÜ — Hollanda saati ile gönderim penceresi
         current_hour = plan["current_hour"]
-        if current_hour < 8 or current_hour >= 18:
+        now = datetime.now()
+        current_weekday = now.weekday()  # 0=Mon, 6=Sun
+        day_names = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz']
+
+        if current_weekday == 6:  # Pazar
+            send_start, send_end = 12, 19
+        else:  # Pazartesi-Cumartesi
+            send_start, send_end = 8, 19
+
+        if current_hour < send_start or current_hour >= send_end:
             return False, (
-                f"Gece gönderimi engellendi (saat {current_hour}:00). "
-                f"İzin verilen saatler: 08:00-18:00 CET."
+                f"Gönderim saati dışı ({day_names[current_weekday]} saat {current_hour}:00). "
+                f"İzin: {send_start}:00-{send_end}:00."
             )
 
         # Optimal saat kontrolü — uyarı (gönderim devam eder)

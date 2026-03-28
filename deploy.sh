@@ -6,8 +6,11 @@
 # --- Git deploy (her 5 dakikada) ---
 # */5 * * * * /home/fleettrackholland/domains/app.fleettrackholland.nl/public_html/deploy.sh deploy >> /home/fleettrackholland/domains/app.fleettrackholland.nl/public_html/data/cron.log 2>&1
 #
-# --- Pipeline çalıştır (her 10 dakikada) ---
-# */10 * * * * /home/fleettrackholland/domains/app.fleettrackholland.nl/public_html/deploy.sh pipeline >> /home/fleettrackholland/domains/app.fleettrackholland.nl/public_html/data/cron.log 2>&1
+# --- Pipeline çalıştır (her 10 dakikada, sadece izin verilen saatlerde) ---
+# Pazartesi-Cumartesi 08:00-18:59:
+# */10 8-18 * * 1-6 /home/fleettrackholland/domains/app.fleettrackholland.nl/public_html/deploy.sh pipeline >> /home/fleettrackholland/domains/app.fleettrackholland.nl/public_html/data/cron.log 2>&1
+# Pazar 12:00-18:59:
+# */10 12-18 * * 0 /home/fleettrackholland/domains/app.fleettrackholland.nl/public_html/deploy.sh pipeline >> /home/fleettrackholland/domains/app.fleettrackholland.nl/public_html/data/cron.log 2>&1
 
 APP_DIR="/home/fleettrackholland/domains/app.fleettrackholland.nl/public_html"
 LOG_FILE="$APP_DIR/data/cron.log"
@@ -39,6 +42,25 @@ do_deploy() {
 
 # ─── PIPELINE: Curl ile otomasyon cycle çalıştır ──────────────
 do_pipeline() {
+    # ★ SAAT KONTROLÜ — Hollanda saati ile gönderim penceresi
+    # Pazartesi-Cumartesi: 08:00-19:00, Pazar: 12:00-19:00
+    HOUR=$(date +%H)
+    DOW=$(date +%u)  # 1=Mon, 7=Sun
+
+    if [ "$DOW" = "7" ]; then
+        # Pazar: 12:00-19:00
+        if [ "$HOUR" -lt 12 ] || [ "$HOUR" -ge 19 ]; then
+            echo "[$(date)] [PIPELINE] ⏰ Pazar gönderim saati dışı (saat $HOUR). İzin: 12:00-19:00 — atlanıyor."
+            return 0
+        fi
+    else
+        # Pazartesi-Cumartesi: 08:00-19:00
+        if [ "$HOUR" -lt 8 ] || [ "$HOUR" -ge 19 ]; then
+            echo "[$(date)] [PIPELINE] ⏰ Gönderim saati dışı (saat $HOUR). İzin: 08:00-19:00 — atlanıyor."
+            return 0
+        fi
+    fi
+
     echo "[$(date)] [PIPELINE] Starting cron cycle..."
     
     # Timeout 600s (10 dakika) — pipeline uzun sürebilir
