@@ -1,7 +1,7 @@
-/* ═══════════════════════════════════════════════════════════
-   SmartMailer Ultimate — Professional Dark Dashboard CSS v2
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   SmartMailer Ultimate â€” Professional Dark Dashboard CSS v2
    21st Century Design Language
-   ═══════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 :root {
     --bg-0: #060610;
@@ -42,6 +42,14 @@
     --shadow: 0 4px 24px rgba(0,0,0,0.4);
     --shadow-lg: 0 12px 48px rgba(0,0,0,0.6);
     --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    /* Tech Lab Theme */
+    --tech-bg: #0a0a1a;
+    --tech-panel: #111125;
+    --tech-accent: #00f3ff;
+    --tech-purple: #7000ff;
+    --tech-floor: #16162a;
+    --tech-grid: rgba(0, 243, 255, 0.08);
+    --tech-glow: rgba(0, 243, 255, 0.2);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -56,21 +64,21 @@ body {
     -moz-osx-font-smoothing: grayscale;
 }
 
-/* ─── SCROLLBAR ─── */
+/* â”€â”€â”€ SCROLLBAR â”€â”€â”€ */
 ::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--text-3); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-2); }
 
-/* ─── TEXT HELPERS ─── */
+/* â”€â”€â”€ TEXT HELPERS â”€â”€â”€ */
 .text-muted { color: var(--text-3); font-size: 13px; }
 .text-success { color: var(--green); }
 .text-danger { color: var(--red); }
 .text-accent { color: var(--purple); }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    SIDEBAR
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .sidebar {
     width: 250px;
     min-width: 250px;
@@ -214,9 +222,9 @@ body {
     50% { opacity: 0.4; transform: scale(0.85); }
 }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MAIN CONTENT
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .main-content {
     flex: 1;
     margin-left: 250px;
@@ -238,7 +246,7 @@ body {
 .header-actions { display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
 .last-update { font-size: 11px; color: var(--text-3); }
 
-/* ─── TAB SYSTEM ─── */
+/* â”€â”€â”€ TAB SYSTEM â”€â”€â”€ */
 .tab-content { display: none; animation: fadeSlide 0.35s var(--ease); }
 .tab-content.active { display: block; }
 
@@ -247,9 +255,9 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    CARDS
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .card {
     background: var(--bg-card);
     border: 1px solid var(--border);
@@ -280,9 +288,9 @@ body {
 
 .section-desc { font-size: 12px; color: var(--text-2); margin: -8px 0 16px; line-height: 1.5; }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    STAT CARDS
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .stats-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -330,12 +338,12 @@ body {
 .stat-label { font-size: 11px; opacity: 0.85; margin-top: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px; }
 .stat-arrow { margin-left: auto; font-size: 16px; opacity: 0.5; z-index: 1; }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    DASHBOARD GRID
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
 
-/* ─── PROGRESS BAR ─── */
+/* â”€â”€â”€ PROGRESS BAR â”€â”€â”€ */
 .daily-progress { margin-top: 8px; }
 .progress-bar { height: 10px; background: rgba(255,255,255,0.06); border-radius: 5px; overflow: hidden; margin-bottom: 10px; }
 .progress-fill { height: 100%; background: var(--gradient-2); border-radius: 5px; transition: width 1s var(--ease); width: 0%; position: relative; }
@@ -343,9 +351,9 @@ body {
 @keyframes shimmer { 0%{opacity:0} 50%{opacity:1} 100%{opacity:0} }
 .progress-text { font-size: 13px; color: var(--text-2); font-weight: 500; }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    BUTTONS
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .btn {
     padding: 10px 20px;
     border-radius: var(--radius-xs);
@@ -371,9 +379,9 @@ body {
 .btn-sm { padding: 6px 12px; font-size: 11px; border-radius: var(--radius-xs); }
 .btn:disabled { opacity: 0.35; cursor: not-allowed; transform: none !important; }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    TABLES
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .table-container { overflow-x: auto; }
 .table-actions-inline { display: flex; gap: 10px; align-items: center; }
 
@@ -406,9 +414,9 @@ tbody tr.selected { background: rgba(124, 92, 252, 0.08); }
 
 .empty-state { text-align: center; color: var(--text-3); padding: 40px 20px !important; font-style: italic; }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    FORMS & INPUTS
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .form-row { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-group label { font-size: 11px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; }
@@ -427,7 +435,7 @@ input[type="text"], input[type="number"], select, textarea {
 
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px var(--purple-glow); }
 
-/* ─── CHECKBOX ─── */
+/* â”€â”€â”€ CHECKBOX â”€â”€â”€ */
 input[type="checkbox"] {
     appearance: none;
     -webkit-appearance: none;
@@ -442,9 +450,9 @@ input[type="checkbox"] {
     min-width: 16px;
 }
 input[type="checkbox"]:checked { background: var(--purple); border-color: var(--purple); }
-input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top: -1px; left: 3px; color: white; font-size: 11px; font-weight: 700; }
+input[type="checkbox"]:checked::after { content: 'âœ“'; position: absolute; top: -1px; left: 3px; color: white; font-size: 11px; font-weight: 700; }
 
-/* ─── TOGGLE ─── */
+/* â”€â”€â”€ TOGGLE â”€â”€â”€ */
 .toggle { display: flex; align-items: center; cursor: pointer; width: fit-content; }
 .toggle input { display: none; }
 .toggle-slider {
@@ -468,9 +476,9 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .toggle input:checked + .toggle-slider::before { left: 23px; }
 .toggle-hint { font-size: 11px; color: var(--text-3); margin-top: 2px; }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    TOOLTIP
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .info-tooltip {
     display: inline-flex;
     align-items: center;
@@ -514,9 +522,9 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 
 .info-tooltip:hover::after { opacity: 1; visibility: visible; transform: translateY(0); }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    AGENTS GRID
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .agents-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -558,9 +566,9 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .agent-status.warning { background: var(--amber-glow); color: var(--amber); }
 .agent-status.critical { background: var(--red-glow); color: var(--red); }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    PIPELINE VISUALIZATION
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .pipeline-steps {
     display: flex;
     align-items: center;
@@ -591,7 +599,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .pipe-detail { display: block; font-size: 10px; color: var(--text-3); margin-top: 3px; }
 .pipeline-arrow { color: var(--text-3); font-size: 16px; flex-shrink: 0; }
 
-/* ─── Automation Panel ─── */
+/* â”€â”€â”€ Automation Panel â”€â”€â”€ */
 .auto-status { display: flex; align-items: center; gap: 18px; }
 .auto-indicator { width: 14px; height: 14px; border-radius: 50%; background: var(--text-3); flex-shrink: 0; }
 .auto-indicator.running { background: var(--green); animation: pulse 1.5s infinite; box-shadow: 0 0 14px rgba(0,214,143,0.4); }
@@ -600,7 +608,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .cycle-badge { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; background: var(--purple-glow); color: var(--purple); }
 .auto-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 16px; }
 
-/* ─── LOG CONTAINER ─── */
+/* â”€â”€â”€ LOG CONTAINER â”€â”€â”€ */
 .log-container {
     max-height: 450px;
     overflow-y: auto;
@@ -616,9 +624,9 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     word-break: break-all;
 }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    DISCOVER / SOURCE
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .discover-status { margin-top: 16px; padding: 14px 16px; border-radius: var(--radius-sm); display: none; font-size: 13px; }
 .discover-status.active { display: block; background: var(--purple-glow); border: 1px solid rgba(124,92,252,0.15); }
 .discover-status.success { display: block; background: var(--green-glow); border: 1px solid rgba(0,214,143,0.15); color: var(--green); }
@@ -637,9 +645,9 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .source-stat .value { font-size: 22px; font-weight: 800; color: var(--purple); }
 .source-stat .label { font-size: 10px; color: var(--text-3); margin-top: 4px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.3px; }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    DRAFTS
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .drafts-container { margin-top: 16px; }
 
 .draft-card {
@@ -670,9 +678,9 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .draft-subject { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
 .draft-preview { font-size: 12px; color: var(--text-2); line-height: 1.6; }
 
-/* ════════════════════════════════════════════════════════════
-   CAMPAIGN — INFO GRID
-   ════════════════════════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+   CAMPAIGN â€” INFO GRID
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .info-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -696,9 +704,9 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .campaign-stat-item .label { font-size: 10px; color: var(--text-3); margin-top: 4px; text-transform: uppercase; font-weight: 600; }
 .campaign-badge { padding: 4px 12px; border-radius: 20px; font-size: 10px; font-weight: 700; background: var(--green-glow); color: var(--green); animation: pulse 2s infinite; }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    SETTINGS
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .settings-sections {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
@@ -743,25 +751,25 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .status-badge.ok { background: var(--green-glow); color: var(--green); }
 .status-badge.error { background: var(--red-glow); color: var(--red); }
 
-/* ─── Sector Tags ─── */
+/* â”€â”€â”€ Sector Tags â”€â”€â”€ */
 .sector-tags-container { display: flex; flex-wrap: wrap; gap: 6px; }
 .sector-tag { padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; background: var(--purple-glow); color: var(--purple); border: 1px solid rgba(124,92,252,0.15); }
 
-/* ─── Followup Stats ─── */
+/* â”€â”€â”€ Followup Stats â”€â”€â”€ */
 .followup-stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; }
 .followup-stat { text-align: center; padding: 14px 10px; background: rgba(255,255,255,0.02); border-radius: var(--radius-sm); border: 1px solid var(--border); }
 .followup-stat .value { font-size: 20px; font-weight: 800; color: var(--cyan); }
 .followup-stat .label { font-size: 9px; color: var(--text-3); margin-top: 4px; text-transform: uppercase; font-weight: 700; letter-spacing: 0.3px; }
 
-/* ─── Watchdog ─── */
+/* â”€â”€â”€ Watchdog â”€â”€â”€ */
 .watchdog-report { display: flex; flex-direction: column; gap: 6px; }
 .watchdog-item { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: rgba(255,255,255,0.02); border-radius: var(--radius-sm); border-left: 3px solid var(--green); }
 .watchdog-item.warning { border-left-color: var(--amber); }
 .watchdog-item.critical { border-left-color: var(--red); }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MODAL
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .modal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
@@ -815,9 +823,9 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .modal-body .detail-section h4 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
 .modal-body .email-content { background: #0a0a16; padding: 16px; border-radius: var(--radius-sm); font-size: 13px; line-height: 1.6; color: var(--text-1); white-space: pre-wrap; border: 1px solid var(--border); max-height: 400px; overflow-y: auto; }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    TOASTS
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
 
 .toast {
@@ -841,13 +849,13 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 
 @keyframes toastIn { from { transform: translateX(120px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
-/* ─── LOADING ─── */
+/* â”€â”€â”€ LOADING â”€â”€â”€ */
 .loading { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,0.15); border-top-color: var(--purple); border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    RESPONSIVE
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 @media (max-width: 900px) {
     .sidebar { width: 60px; min-width: 60px; }
     .sidebar-brand h1, .brand-sub, .nav-text, .mode-toggle-hint, .mode-detail { display: none; }
@@ -859,9 +867,9 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     .pipeline-arrow { display: none; }
 }
 
-/* ════════════════════════════════════════════════════════════
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    MEETING ROOM
-   ════════════════════════════════════════════════════════════ */
+   â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 .meeting-room-card { overflow: hidden; }
 
 .meeting-status-badge {
@@ -880,7 +888,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     animation: pulse 2s infinite;
 }
 
-/* ─── Ofis Alanı — 3D Isometric ─── */
+/* â”€â”€â”€ Ofis AlanÄ± â€” 3D Isometric â”€â”€â”€ */
 .meeting-office {
     position: relative;
     width: 100%;
@@ -890,58 +898,51 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     overflow: hidden;
     margin-bottom: 16px;
     perspective: 1200px;
-    /* Warm office ambient */
-    background: linear-gradient(180deg, 
-        #e8dcc8 0%, 
-        #e5ddd0 15%,
-        #ddd5c8 40%, 
-        #d4cec4 70%, 
-        #c8c2b8 100%);
+    /* High-tech AI Lab Ambient (Tesla/NVIDIA Style) */
+    background: radial-gradient(circle at 50% 10%, #1a1a3a 0%, #0d0d1f 40%, #050510 100%);
 }
 
-/* ─── 3D Wooden Floor ─── */
+/* â”€â”€â”€ High-Tech Lab Floor â€” Metallic Grid â”€â”€â”€ */
 .office-floor {
     position: absolute;
     inset: 0;
     z-index: 0;
     background:
-        /* Wood grain horizontal planks */
+        /* Tech grid lines */
         repeating-linear-gradient(90deg, 
-            rgba(160,120,80,0.15) 0px, 
-            rgba(180,140,100,0.08) 3px, 
-            rgba(160,120,80,0.12) 6px, 
-            transparent 6px, 
-            transparent 50px),
-        /* Plank borders */
-        repeating-linear-gradient(0deg, 
-            rgba(120,90,60,0.1) 0px, 
-            rgba(120,90,60,0.1) 1px, 
+            var(--tech-grid) 0px, 
+            var(--tech-grid) 1px, 
             transparent 1px, 
-            transparent 36px),
-        /* Base warm wood */
-        linear-gradient(180deg, #d4c4a8 0%, #c8b898 60%, #bfb08a 100%);
-    /* Deeper isometric tilt */
-    transform: perspective(800px) rotateX(12deg);
+            transparent 40px),
+        repeating-linear-gradient(0deg, 
+            var(--tech-grid) 0px, 
+            var(--tech-grid) 1px, 
+            transparent 1px, 
+            transparent 40px),
+        /* Composite futuristic tiles */
+        linear-gradient(135deg, #16162a 0%, #0f0f1d 50%, #090915 100%);
+    /* Perspective tilt */
+    transform: perspective(800px) rotateX(15deg);
     transform-origin: center 85%;
 }
 
-/* Warm light from windows — brighter */
+/* Cold neon light glow from top */
 .office-floor::before {
     content: '';
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    height: 180px;
+    height: 250px;
     background: linear-gradient(180deg, 
-        rgba(255,248,220,0.4) 0%, 
-        rgba(255,240,200,0.15) 50%,
+        rgba(0,243,255,0.15) 0%, 
+        rgba(112,0,255,0.05) 50%,
         transparent 100%);
     pointer-events: none;
-    animation: ambientPulse 6s ease-in-out infinite;
+    animation: neonPulse 4s ease-in-out infinite;
 }
 
-/* Varnish sheen on floor */
+/* Digital sheen on metallic surface */
 .office-floor::after {
     content: '';
     position: absolute;
@@ -951,529 +952,155 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     height: 100%;
     background: linear-gradient(135deg, 
         transparent 0%, 
-        rgba(255,255,255,0.04) 30%, 
-        rgba(255,255,255,0.08) 50%, 
-        rgba(255,255,255,0.04) 70%, 
+        rgba(0,243,255,0.02) 20%, 
+        rgba(0,243,255,0.05) 50%, 
+        rgba(0,243,255,0.02) 80%, 
         transparent 100%);
     pointer-events: none;
 }
 
-@keyframes ambientPulse {
-    0%, 100% { opacity: 0.8; }
-    50% { opacity: 1; }
+@keyframes neonPulse {
+    0%, 100% { opacity: 0.6; filter: hue-rotate(0deg); }
+    50% { opacity: 0.9; filter: hue-rotate(10deg); }
 }
 
-/* ─── 3D Isometric Desks (enhanced) ─── */
-.office-furniture { 
-    position: absolute; 
-    inset: 0; 
-    z-index: 1; 
-    pointer-events: none; 
+@keyframes holographic {
+    0%, 100% { opacity: 0.8; transform: skewX(0deg); }
+    50% { opacity: 1; transform: skewX(0.5deg); }
+    52% { opacity: 0.7; transform: skewX(-1deg); }
 }
 
+/* â”€â”€â”€ Futuristic Consoles (Updated Desks) â”€â”€â”€ */
 .css-desk {
     position: absolute;
-    width: 120px;
-    height: 44px;
+    width: 124px;
+    height: 48px;
     transform-style: preserve-3d;
-    transform: perspective(500px) rotateX(22deg);
+    transform: perspective(500px) rotateX(25deg);
 }
 
-/* Desk top surface — deeper wood */
+/* Desk top â€” Carbon fiber / Dark glass */
 .css-desk::before {
     content: '';
     position: absolute;
     inset: 0;
-    background: linear-gradient(135deg, #9c7c5c 0%, #8d6e4e 30%, #7d5f40 70%, #6d5038 100%);
-    border-radius: 3px;
+    background: linear-gradient(135deg, #252535 0%, #151525 60%, #0a0a15 100%);
+    border-radius: 4px;
     box-shadow: 
-        0 -2px 0 rgba(255,255,255,0.18),
-        0 4px 12px rgba(0,0,0,0.35),
-        inset 0 1px 3px rgba(255,255,255,0.25);
-    border: 1px solid rgba(0,0,0,0.18);
+        0 -1px 0 rgba(0, 243, 255, 0.4),
+        0 8px 16px rgba(0,0,0,0.6),
+        inset 0 0 10px rgba(0, 243, 255, 0.1);
+    border: 1px solid rgba(0, 243, 255, 0.2);
 }
 
-/* Desk front face (3D depth — thicker) */
+/* Data edge highlight */
 .css-desk::after {
     content: '';
     position: absolute;
-    bottom: -16px;
-    left: 3px;
-    right: 3px;
-    height: 16px;
-    background: linear-gradient(180deg, #5d4037 0%, #4a322a 50%, #3e2723 100%);
-    border-radius: 0 0 3px 3px;
-    box-shadow: 0 3px 6px rgba(0,0,0,0.25);
+    bottom: -6px;
+    left: 2px;
+    right: 2px;
+    height: 4px;
+    background: var(--tech-accent);
+    opacity: 0.4;
+    filter: blur(2px);
+    box-shadow: 0 0 8px var(--tech-accent);
 }
 
-/* ─── Monitor (bigger, brighter) ─── */
+/* Monitors â€” Holographic projection */
 .desk-monitor {
     position: absolute;
-    top: -34px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 42px;
-    height: 30px;
-    background: linear-gradient(145deg, #1e272e, #0d1117);
-    border-radius: 3px 3px 1px 1px;
-    border: 2px solid #37474f;
-    box-shadow: 0 0 12px rgba(100,181,246,0.5), inset 0 0 14px rgba(100,181,246,0.25);
-    z-index: 2;
+    top: -30px;
+    left: 25px;
+    width: 70px;
+    height: 40px;
+    background: linear-gradient(180deg, rgba(0, 243, 255, 0.15) 0%, rgba(0, 243, 255, 0.05) 100%);
+    border: 1px solid rgba(0, 243, 255, 0.4);
+    border-radius: 3px;
+    backdrop-filter: blur(2px);
+    animation: holographic 6s infinite;
 }
-
-/* Monitor screen glow */
-.desk-monitor::before {
-    content: '';
-    position: absolute;
-    inset: 2px;
-    background: linear-gradient(180deg, #1a237e 0%, #0d47a1 50%, #1565c0 100%);
-    border-radius: 1px;
-    opacity: 0.7;
-    animation: screenFlicker 4s ease-in-out infinite;
-}
-
-/* Monitor stand */
 .desk-monitor::after {
-    content: '';
+    content: 'â—ˆ';
     position: absolute;
-    bottom: -6px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 8px;
-    height: 6px;
-    background: #37474f;
-    clip-path: polygon(20% 0, 80% 0, 100% 100%, 0 100%);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 10px; color: var(--tech-accent);
+    opacity: 0.6;
 }
 
-@keyframes screenFlicker {
-    0%, 100% { opacity: 0.7; }
-    50% { opacity: 0.9; }
-}
-
-/* Keyboard */
-.desk-keyboard {
-    position: absolute;
-    bottom: 4px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 28px;
-    height: 8px;
-    background: linear-gradient(180deg, #cfd8dc, #b0bec5);
-    border-radius: 1px;
-    border: 0.5px solid #90a4ae;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
-    z-index: 2;
-}
-
-/* Keyboard keys texture */
-.desk-keyboard::before {
-    content: '';
-    position: absolute;
-    inset: 1px;
-    background: 
-        repeating-linear-gradient(90deg, rgba(0,0,0,0.1) 0px, rgba(0,0,0,0.1) 2px, transparent 2px, transparent 4px),
-        repeating-linear-gradient(0deg, rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 1px, transparent 1px, transparent 3px);
-}
-
-/* Mouse */
-.desk-mouse {
-    position: absolute;
-    bottom: 5px;
-    right: 8px;
-    width: 6px;
-    height: 10px;
-    background: linear-gradient(180deg, #eceff1, #cfd8dc);
-    border-radius: 3px;
-    border: 0.5px solid #b0bec5;
-    z-index: 2;
-}
-
-.desk-mouse::before {
-    content: '';
-    position: absolute;
-    top: 2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 2px;
-    height: 3px;
-    background: #90a4ae;
-    border-radius: 1px;
-}
-
-/* Coffee cup */
-.desk-coffee {
-    position: absolute;
-    bottom: 2px;
-    right: 6px;
-    font-size: 10px;
-    z-index: 2;
-    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
-    animation: steamRise 3s ease-in-out infinite;
-}
-
-@keyframes steamRise {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-2px); }
-}
-
-/* ─── Whiteboard ─── */
-.css-whiteboard {
-    position: absolute;
-    width: 100px;
-    height: 60px;
-    background: linear-gradient(135deg, #fafafa, #f5f5f5);
-    border-radius: 3px;
-    border: 2px solid #90a4ae;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    color: #37474f;
-    z-index: 2;
-}
-
-.css-whiteboard::before {
-    content: '';
-    position: absolute;
-    top: 5px;
-    left: 5px;
-    width: 8px;
-    height: 8px;
-    background: #f44336;
-    border-radius: 50%;
-    box-shadow: 14px 0 0 #4caf50, 28px 0 0 #2196f3;
-}
-
-/* ─── Coffee Station ─── */
-.css-coffee-station {
-    position: absolute;
-    width: 50px;
-    height: 35px;
-    background: linear-gradient(135deg, #5d4037, #4e342e);
-    border-radius: 3px;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.25);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-    z-index: 2;
-}
-
-.css-coffee-station::after {
-    content: '';
-    position: absolute;
-    bottom: -8px;
-    left: 0;
-    right: 0;
-    height: 8px;
-    background: linear-gradient(180deg, #3e2723, #2c1d17);
-    border-radius: 0 0 3px 3px;
-}
-
-/* ─── Ceiling Lights ─── */
-.css-light {
-    position: absolute;
-    width: 50px;
-    height: 5px;
-    background: linear-gradient(90deg, rgba(255,255,255,0.2), rgba(255,255,255,0.9), rgba(255,255,255,0.2));
-    border-radius: 3px;
-    z-index: 3;
-    box-shadow: 0 0 6px rgba(255,248,220,0.3);
-}
-
-.css-light::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 140px;
-    height: 220px;
-    background: radial-gradient(ellipse at top, rgba(255,248,220,0.1) 0%, transparent 70%);
-    pointer-events: none;
-}
-
-/* ─── Office Back Wall ─── */
-.office-wall {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 70px;
-    background: linear-gradient(180deg, #c8bca8 0%, #d4c8b4 60%, #bfb5a2 100%);
-    border-bottom: 3px solid #a09080;
-    z-index: 0;
-}
-/* Baseboard trim */
-.office-wall::after {
-    content: '';
-    position: absolute;
-    bottom: -3px;
-    left: 0;
-    right: 0;
-    height: 6px;
-    background: linear-gradient(180deg, #8d7e6e, #7a6d5e);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
-}
-
-/* ─── Office Chair ─── */
+/* Mechanical chairs */
 .desk-chair {
     position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 32px;
-    height: 30px;
-    z-index: 3;
-}
-/* Chair seat */
-.desk-chair::before {
-    content: '';
-    position: absolute;
-    top: 12px;
-    left: 2px;
-    width: 28px;
-    height: 10px;
-    background: linear-gradient(180deg, #37474f, #263238);
-    border-radius: 4px 4px 2px 2px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-/* Chair back */
-.desk-chair::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 6px;
-    width: 20px;
-    height: 14px;
-    background: linear-gradient(180deg, #455a64, #37474f);
-    border-radius: 4px 4px 1px 1px;
-    box-shadow: 0 -1px 3px rgba(0,0,0,0.15);
+    width: 38px;
+    height: 38px;
+    left: 41px;
+    background: linear-gradient(135deg, #333344 0%, #111122 100%);
+    border-radius: 5px;
+    transform: perspective(400px) rotateX(-15deg);
+    border: 1px solid rgba(255,255,255,0.05);
 }
 
-/* ─── Central Carpet/Rug ─── */
-.css-carpet {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 40%;
-    height: 35%;
-    background: linear-gradient(135deg, 
-        rgba(124,92,252,0.04) 0%, 
-        rgba(124,92,252,0.08) 50%, 
-        rgba(124,92,252,0.04) 100%);
-    border: 2px solid rgba(124,92,252,0.1);
-    border-radius: 8px;
-    z-index: 0;
+/* Bio-Tech Foliage (Replacing plants) */
+.css-plant, .css-plant-large {
+    font-size: 24px;
+    filter: drop-shadow(0 0 8px var(--tech-accent)) brightness(1.5) grayscale(0.2);
+    animation: bioPulse 3s infinite alternate;
 }
-.css-carpet::before {
-    content: '';
-    position: absolute;
-    inset: 4px;
-    border: 1px solid rgba(124,92,252,0.06);
-    border-radius: 6px;
+@keyframes bioPulse { from { filter: hue-rotate(0deg) brightness(1.5); } to { filter: hue-rotate(180deg) brightness(2); } }
+
+/* Holographic Displays (Replacing Whiteboard/Projector) */
+.css-whiteboard, .css-projector-screen {
+    background: rgba(0, 243, 255, 0.05) !important;
+    border: 1px solid rgba(0, 243, 255, 0.3) !important;
+    backdrop-filter: blur(4px);
+    box-shadow: 0 0 30px rgba(0, 243, 255, 0.15);
+    animation: holographic 8s infinite;
+}
+.css-whiteboard span, .projector-content {
+    color: var(--tech-accent) !important;
+    text-shadow: 0 0 8px var(--tech-accent);
+    font-family: 'Cascadia Code', monospace;
+    text-transform: uppercase;
 }
 
-/* ─── Wall Art Frames ─── */
-.wall-frame {
+/* Data Nodes (Replacing server racks/bookshelves) */
+.css-bookshelf, .css-filing, .css-printer {
+    background: #111122 !important;
+    border: 1px solid rgba(112,0,255,0.3) !important;
+    color: var(--tech-purple) !important;
+    text-shadow: 0 0 10px var(--tech-purple);
+    font-size: 28px !important;
+}
+.css-bookshelf::after, .css-filing::after {
+    content: '...';
     position: absolute;
-    width: 40px;
-    height: 35px;
-    background: linear-gradient(145deg, #f5f0e8, #e8e0d4);
-    border: 2px solid #c0a882;
-    border-radius: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    z-index: 2;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15), inset 0 0 4px rgba(0,0,0,0.05);
+    bottom: 2px;
+    left: 50%; transform: translateX(-50%);
+    font-size: 8px; color: #00ff00;
+    animation: blink 0.5s infinite alternate;
 }
 
-/* ─── Wall Clock ─── */
-.wall-clock {
-    position: absolute;
-    width: 28px;
-    height: 28px;
-    background: radial-gradient(circle, #fafafa, #eceff1);
-    border: 2px solid #90a4ae;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    z-index: 2;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+/* Neon Lights */
+.css-light {
+    width: 150px !important;
+    height: 4px !important;
+    border-radius: 10px !important;
+    background: #fff !important;
+    box-shadow: 0 0 20px #00f3ff, 0 0 40px #00f3ff !important;
+    opacity: 0.8;
 }
-
-/* ─── Bookshelf ─── */
-.css-bookshelf {
-    position: absolute;
-    width: 50px;
-    height: 45px;
-    background: linear-gradient(180deg, #6d4c41, #5d4037);
-    border-radius: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    z-index: 2;
-    box-shadow: 0 3px 8px rgba(0,0,0,0.2);
-    border: 1px solid rgba(0,0,0,0.1);
-}
-
-/* ─── Water Cooler ─── */
-.css-watercooler {
-    position: absolute;
-    width: 24px;
-    height: 36px;
-    background: linear-gradient(180deg, #e3f2fd, #bbdefb, #90caf9);
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    z-index: 2;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    border: 1px solid rgba(0,0,0,0.08);
-}
-
-/* ─── Filing Cabinet ─── */
-.css-filing {
-    position: absolute;
-    width: 30px;
-    height: 40px;
-    background: linear-gradient(180deg, #78909c, #607d8b);
-    border-radius: 2px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    z-index: 2;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-    border: 1px solid rgba(0,0,0,0.1);
-}
-
-/* ─── Projector Screen ─── */
-.css-projector-screen {
-    position: absolute;
-    width: 160px;
-    height: 100px;
-    background: linear-gradient(180deg, #eceff1, #fafafa, #e8eaf6);
-    border: 3px solid #90a4ae;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.2), inset 0 0 20px rgba(0,0,0,0.03);
-}
-.css-projector-screen::before {
-    content: '';
-    position: absolute;
-    top: -10px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 24px;
-    height: 8px;
-    background: #78909c;
-    border-radius: 2px;
-}
-.projector-content {
-    font-size: 12px;
-    font-weight: 700;
-    color: #37474f;
-    text-align: center;
-    animation: projectorFlicker 5s ease-in-out infinite;
-}
-@keyframes projectorFlicker {
-    0%, 100% { opacity: 0.9; }
-    50% { opacity: 1; }
-    95% { opacity: 0.85; }
-}
-
-/* ─── Printer ─── */
-.css-printer {
-    position: absolute;
-    width: 36px;
-    height: 28px;
-    background: linear-gradient(180deg, #eceff1, #cfd8dc);
-    border: 1px solid rgba(0,0,0,0.12);
-    border-radius: 3px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    z-index: 2;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-}
-
-/* ─── Coat Rack ─── */
-.css-coatrack {
-    position: absolute;
-    font-size: 28px;
-    z-index: 2;
-    filter: drop-shadow(0 3px 5px rgba(0,0,0,0.2));
-}
-
-/* ─── TV Screen ─── */
-.css-tv-screen {
-    position: absolute;
-    width: 80px;
-    height: 50px;
-    background: linear-gradient(180deg, #0d1117, #161b22);
-    border: 3px solid #30363d;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2;
-    box-shadow: 0 0 15px rgba(124,92,252,0.1), 0 4px 8px rgba(0,0,0,0.3);
-}
-.tv-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-}
-.tv-label {
-    font-size: 7px;
-    font-weight: 800;
-    color: #ef4444;
-    letter-spacing: 1px;
-    animation: tvBlink 2s ease-in-out infinite;
-}
-.tv-metric {
-    font-size: 11px;
-    color: #4ade80;
-    font-weight: 700;
-}
-@keyframes tvBlink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-}
-
-/* ─── Large Potted Tree ─── */
-.css-plant-large {
-    position: absolute;
-    font-size: 36px;
-    z-index: 2;
-    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.25));
-    animation: plantSway 7s ease-in-out infinite;
-}
-
 /* ─── Live Status Bubble (above character head) ─── */
 .agent-status-bubble {
     position: absolute;
     top: -55px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(13,17,23,0.94);
+    background: rgba(10, 10, 26, 0.95);
     backdrop-filter: blur(8px);
-    color: #e6edf3;
-    padding: 6px 12px;
-    border-radius: 10px;
+    color: var(--tech-accent);
+    padding: 8px 14px;
+    border-radius: 8px;
     font-size: 11px;
     font-weight: 600;
     white-space: normal;
@@ -1485,8 +1112,9 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     pointer-events: none;
     opacity: 0;
     transition: opacity 0.5s ease;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 0 0 1px rgba(124,92,252,0.2);
-    border: 1px solid rgba(124,92,252,0.35);
+    box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+    border: 1px solid rgba(0, 243, 255, 0.3);
+    font-family: 'Cascadia Code', monospace;
 }
 
 .agent-status-bubble.visible {
@@ -1501,12 +1129,13 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     transform: translateX(-50%);
     width: 8px;
     height: 8px;
-    background: rgba(13,17,23,0.92);
+    background: #0a0a1a;
     clip-path: polygon(50% 100%, 0 0, 100% 0);
-    border: inherit;
+    border-bottom: 1px solid rgba(0, 243, 255, 0.3);
+    border-right: 1px solid rgba(0, 243, 255, 0.3);
 }
 
-/* ─── 3D Windows with frame ─── */
+/* ─── Tech Viewports (Replacing windows) ─── */
 .css-window {
     position: absolute;
     top: 0;
@@ -1552,7 +1181,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     pointer-events: none;
 }
 
-/* ─── 3D Plants with pots ─── */
+/* â”€â”€â”€ 3D Plants with pots â”€â”€â”€ */
 .css-plant {
     position: absolute;
     font-size: 28px;
@@ -1630,7 +1259,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     z-index: 1;
 }
 
-/* ─── 3D Perspective Container ─── */
+/* â”€â”€â”€ 3D Perspective Container â”€â”€â”€ */
 .meeting-office {
     perspective: 1200px;
 }
@@ -1641,7 +1270,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     height: 100%;
 }
 
-/* ─── Toplantı Masası ─── */
+/* â”€â”€â”€ ToplantÄ± MasasÄ± â”€â”€â”€ */
 .meeting-table {
     position: absolute;
     top: 50%;
@@ -1738,7 +1367,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     50% { text-shadow: 0 0 30px rgba(124,92,252,0.25); }
 }
 
-/* ─── Agent Koltukları — 3D Karakter Sistemi ─── */
+/* â”€â”€â”€ Agent KoltuklarÄ± â€” 3D Karakter Sistemi â”€â”€â”€ */
 .meeting-seat {
     position: absolute;
     display: flex;
@@ -1756,14 +1385,14 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .meeting-seat:hover { z-index: 20; }
 .meeting-seat:hover .agent-avatar { transform: scale(1.15) translateY(-5px); }
 
-/* ═══ 3D CHARACTER BASE — perspective standing ═══ */
+/* â•â•â• 3D CHARACTER BASE â€” perspective standing â•â•â• */
 .meeting-seat .agent-avatar {
     transform-style: preserve-3d;
     transform: perspective(400px) rotateX(5deg) rotateY(0deg);
     transition: transform 0.4s var(--ease);
 }
 
-/* Direction awareness — character faces movement direction */
+/* Direction awareness â€” character faces movement direction */
 .meeting-seat.facing-left .agent-avatar {
     transform: perspective(400px) rotateX(5deg) rotateY(15deg) scaleX(-1);
 }
@@ -1771,7 +1400,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     transform: perspective(400px) rotateX(5deg) rotateY(-15deg);
 }
 
-/* ═══ IDLE — masada çalışırken (öne eğik, yazıyor) ═══ */
+/* â•â•â• IDLE â€” masada Ã§alÄ±ÅŸÄ±rken (Ã¶ne eÄŸik, yazÄ±yor) â•â•â• */
 .meeting-seat.idle .agent-avatar {
     animation: idleWork 3s ease-in-out infinite;
     transform-origin: bottom center;
@@ -1789,7 +1418,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     }
 }
 
-/* ═══ WALKING — 3D adım atma animasyonu ═══ */
+/* â•â•â• WALKING â€” 3D adÄ±m atma animasyonu â•â•â• */
 .meeting-seat.walking .agent-avatar {
     animation: walk3D 0.5s ease-in-out infinite !important;
     transform-origin: bottom center;
@@ -1848,7 +1477,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     }
 }
 
-/* ═══ SPEAKING — konuşma efekti (yeşil halka + titreme) ═══ */
+/* â•â•â• SPEAKING â€” konuÅŸma efekti (yeÅŸil halka + titreme) â•â•â• */
 .meeting-seat.speaking .agent-avatar {
     animation: speakAnim 0.8s ease-in-out infinite !important;
     filter: drop-shadow(0 0 12px rgba(0,214,143,0.5)) drop-shadow(0 4px 8px rgba(0,0,0,0.3));
@@ -1869,7 +1498,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     }
 }
 
-/* ═══ GROUND SHADOW — 3D gölge (her durum için) ═══ */
+/* â•â•â• GROUND SHADOW â€” 3D gÃ¶lge (her durum iÃ§in) â•â•â• */
 .meeting-seat::before {
     content: '';
     position: absolute;
@@ -1904,9 +1533,9 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     50% { transform: translateX(-50%) rotateX(60deg) scaleX(1.1); }
 }
 
-/* ═══ DESK INDICATOR — laptop emoji at desk ═══ */
+/* â•â•â• DESK INDICATOR â€” laptop emoji at desk â•â•â• */
 .meeting-seat.idle::after {
-    content: '💻';
+    content: 'ðŸ’»';
     position: absolute;
     bottom: -22px;
     font-size: 16px;
@@ -1919,11 +1548,11 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     50% { transform: translateY(-2px); opacity: 0.9; }
 }
 
-/* Toplantıda laptop kaldır */
+/* ToplantÄ±da laptop kaldÄ±r */
 .meeting-seat.at-table::after { display: none; }
 
-/* ═══ AT-TABLE SITTING POSE — masada oturma pozu ═══ */
-/* Bacaklar 90° bükülü, kollar masada, hafif sallanma */
+/* â•â•â• AT-TABLE SITTING POSE â€” masada oturma pozu â•â•â• */
+/* Bacaklar 90Â° bÃ¼kÃ¼lÃ¼, kollar masada, hafif sallanma */
 .meeting-seat.at-table .chibi-leg-l {
     transform: translate(-4px, 50px) rotate(75deg) !important;
     animation: none !important;
@@ -1932,22 +1561,22 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     transform: translate(4px, 50px) rotate(-75deg) !important;
     animation: none !important;
 }
-/* Kollar masada — hafif hareket */
+/* Kollar masada â€” hafif hareket */
 .meeting-seat.at-table .chibi-arm-l {
     animation: meetingArmL 3s ease-in-out infinite !important;
 }
 .meeting-seat.at-table .chibi-arm-r {
     animation: meetingArmR 3s ease-in-out infinite 0.5s !important;
 }
-/* Baş — konuşmayı izliyormuş gibi hafif dönme */
+/* BaÅŸ â€” konuÅŸmayÄ± izliyormuÅŸ gibi hafif dÃ¶nme */
 .meeting-seat.at-table .chibi-head {
     animation: meetingHeadLook 6s ease-in-out infinite;
 }
-/* Vücut hafif öne eğik (masaya doğru) */
+/* VÃ¼cut hafif Ã¶ne eÄŸik (masaya doÄŸru) */
 .meeting-seat.at-table .chibi-body {
     transform: translate(0, -2px);
 }
-/* Nefes alma — hafif yukarı aşağı */
+/* Nefes alma â€” hafif yukarÄ± aÅŸaÄŸÄ± */
 .meeting-seat.at-table .chibi-svg {
     animation: meetingSitBreathe 4s ease-in-out infinite !important;
 }
@@ -1974,7 +1603,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     50% { transform: translateY(-1.5px); }
 }
 
-/* ═══ MEETING CHAIRS — masanın etrafında sandalyeler ═══ */
+/* â•â•â• MEETING CHAIRS â€” masanÄ±n etrafÄ±nda sandalyeler â•â•â• */
 .meeting-seat.at-table::before {
     content: '';
     position: absolute;
@@ -1989,7 +1618,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     box-shadow: 0 3px 8px rgba(0,0,0,0.3);
 }
 
-/* Sandalye arkalığı */
+/* Sandalye arkalÄ±ÄŸÄ± */
 .meeting-seat.at-table .agent-seat-name::before {
     content: '';
     position: absolute;
@@ -2004,7 +1633,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     box-shadow: 0 -1px 4px rgba(0,0,0,0.15);
 }
 
-/* ═══ SPEAKING AT TABLE — konuşanın vurgusu güçlü ═══ */
+/* â•â•â• SPEAKING AT TABLE â€” konuÅŸanÄ±n vurgusu gÃ¼Ã§lÃ¼ â•â•â• */
 .meeting-seat.at-table.speaking .agent-avatar {
     filter: drop-shadow(0 0 18px rgba(0,214,143,0.7)) drop-shadow(0 4px 8px rgba(0,0,0,0.3)) !important;
 }
@@ -2032,7 +1661,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     60% { transform: translateY(1px) rotate(1deg); }
 }
 
-/* ═══ SIT-DOWN TRANSITION — masaya oturma animasyonu ═══ */
+/* â•â•â• SIT-DOWN TRANSITION â€” masaya oturma animasyonu â•â•â• */
 .meeting-seat.sitting-down .agent-avatar {
     animation: sitDownBounce 0.6s ease-out forwards !important;
 }
@@ -2045,14 +1674,14 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     100% { transform: translateY(0) scale(1); }
 }
 
-/* ═══ DEPTH SCALING — uzaktakiler küçük, yakındakiler büyük ═══ */
+/* â•â•â• DEPTH SCALING â€” uzaktakiler kÃ¼Ã§Ã¼k, yakÄ±ndakiler bÃ¼yÃ¼k â•â•â• */
 .meeting-seat.depth-far   { transform: scale(0.7);  z-index: 3; }
 .meeting-seat.depth-mid   { transform: scale(0.9);  z-index: 5; }
 .meeting-seat.depth-near  { transform: scale(1.1);  z-index: 7; }
 .meeting-seat.depth-front { transform: scale(1.2);  z-index: 9; }
-/* ═══════════════════════════════════════════ */
-/* ═══ SVG CHIBI CHARACTER SYSTEM ═══════════ */
-/* ═══════════════════════════════════════════ */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* â•â•â• SVG CHIBI CHARACTER SYSTEM â•â•â•â•â•â•â•â•â•â•â• */
+/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
 
 .agent-avatar {
     width: 80px;
@@ -2075,7 +1704,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     filter: drop-shadow(0 0 14px rgba(255,215,0,0.6)) drop-shadow(0 6px 10px rgba(0,0,0,0.35));
 }
 
-/* ─── SVG Base — 3D Perspective ─── */
+/* â”€â”€â”€ SVG Base â€” 3D Perspective â”€â”€â”€ */
 .chibi-svg {
     width: 100%;
     height: 100%;
@@ -2100,21 +1729,21 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     filter: blur(3px);
 }
 
-/* ─── Leg positioning (below body) ─── */
+/* â”€â”€â”€ Leg positioning (below body) â”€â”€â”€ */
 .chibi-leg {
     transform-origin: center top;
 }
 .chibi-leg-l { transform: translate(0, 55px); }
 .chibi-leg-r { transform: translate(0, 55px); }
 
-/* ─── Arm positioning (at shoulder level) ─── */
+/* â”€â”€â”€ Arm positioning (at shoulder level) â”€â”€â”€ */
 .chibi-arm {
     transform-origin: center top;
 }
 .chibi-arm-l { transform: translate(0, 36px); }
 .chibi-arm-r { transform: translate(0, 36px); }
 
-/* ═══ IDLE STATE — arms slightly swinging, breathing ═══ */
+/* â•â•â• IDLE STATE â€” arms slightly swinging, breathing â•â•â• */
 .meeting-seat.idle .chibi-arm-l {
     animation: svgArmIdleL 2s ease-in-out infinite;
 }
@@ -2138,7 +1767,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     50% { transform: translateY(-2px); }
 }
 
-/* ═══ SITTING POSE — at desk, legs bent, typing ═══ */
+/* â•â•â• SITTING POSE â€” at desk, legs bent, typing â•â•â• */
 .meeting-seat.at-desk .chibi-leg-l {
     transform: translate(-4px, 50px) rotate(70deg) !important;
     animation: none !important;
@@ -2180,7 +1809,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     75% { transform: translateY(1px) rotate(-0.5deg); }
 }
 
-/* ═══ WALKING — arms and legs swing alternately ═══ */
+/* â•â•â• WALKING â€” arms and legs swing alternately â•â•â• */
 .meeting-seat.walking .chibi-arm-l {
     animation: svgArmWalkL 0.4s ease-in-out infinite !important;
 }
@@ -2228,7 +1857,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     75% { transform: translateY(-2px); }
 }
 
-/* ═══ SPEAKING — glow pulse ═══ */
+/* â•â•â• SPEAKING â€” glow pulse â•â•â• */
 .meeting-seat.speaking .agent-avatar {
     filter: drop-shadow(0 0 15px rgba(0,214,143,0.6)) drop-shadow(0 4px 8px rgba(0,0,0,0.3));
 }
@@ -2240,7 +1869,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     50% { transform: translateY(-3px) scale(1.05); }
 }
 
-/* ─── Name tags ─── */
+/* â”€â”€â”€ Name tags â”€â”€â”€ */
 .boss-name {
     color: #d4a017 !important;
     font-size: 10px !important;
@@ -2265,7 +1894,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     backdrop-filter: blur(4px);
 }
 
-/* ═══ DESK POSITIONS — agent'lar ofiste dağılmış çalışıyor ═══ */
+/* â•â•â• DESK POSITIONS â€” agent'lar ofiste daÄŸÄ±lmÄ±ÅŸ Ã§alÄ±ÅŸÄ±yor â•â•â• */
 .seat-0.at-desk  { top: 25px;  left: 48%;  }
 .seat-1.at-desk  { top: 100px; left: 10%; }
 .seat-2.at-desk  { top: 100px; left: 86%; }
@@ -2278,7 +1907,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .seat-9.at-desk  { top: 680px; left: 32%; }
 .seat-10.at-desk { top: 680px; left: 62%; }
 
-/* ═══ MEETING POSITIONS — toplantı masası etrafında ═══ */
+/* â•â•â• MEETING POSITIONS â€” toplantÄ± masasÄ± etrafÄ±nda â•â•â• */
 .seat-0.at-table  { top: 230px; left: 48%;  transform: translateX(-50%); z-index: 8; }
 .seat-1.at-table  { top: 285px; left: 72%; }
 .seat-2.at-table  { top: 285px; left: 22%; }
@@ -2291,7 +1920,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
 .seat-9.at-table  { top: 620px; left: 56%; }
 .seat-10.at-table { top: 620px; left: 38%; }
 
-/* ─── Status indicator dot ─── */
+/* â”€â”€â”€ Status indicator dot â”€â”€â”€ */
 .agent-status-dot {
     position: absolute;
     top: 2px;
@@ -2314,7 +1943,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     50% { opacity: 0.4; }
 }
 
-/* ─── Konuşma Baloncukları ─── */
+/* â”€â”€â”€ KonuÅŸma BaloncuklarÄ± â”€â”€â”€ */
 .speech-bubbles-overlay {
     position: absolute;
     inset: 0;
@@ -2362,7 +1991,7 @@ input[type="checkbox"]:checked::after { content: '✓'; position: absolute; top:
     to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-/* ─── Canlı Sohbet Akışı ─── */
+/* â”€â”€â”€ CanlÄ± Sohbet AkÄ±ÅŸÄ± â”€â”€â”€ */
 .meeting-chat-stream {
     max-height: 350px;
     overflow-y: auto;
