@@ -183,7 +183,15 @@ class SendingStrategist:
         if plan["remaining_today"] <= 0:
             return False, f"Günlük limit doldu ({plan['daily_limit']}/gün)"
 
-        # Optimal saat kontrolü — zorunlu değil, uyarı
+        # Optimal saat kontrolü — gece gönderimini kesinlikle engelle
+        current_hour = plan["current_hour"]
+        if current_hour < 8 or current_hour >= 18:
+            return False, (
+                f"Gece gönderimi engellendi (saat {current_hour}:00). "
+                f"İzin verilen saatler: 08:00-18:00 CET."
+            )
+
+        # Optimal saat kontrolü — uyarı (gönderim devam eder)
         if not plan["in_optimal_hours"]:
             log.info(
                 f"[STRATEJI] Optimal saat dışı (saat {plan['current_hour']}). "

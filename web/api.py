@@ -2690,9 +2690,11 @@ def brevo_webhook_v2():
 
         # Bounce ise lead'i isaretle
         if db_event == "bounce":
-            compliance.add_opt_out(email)
+            compliance.add_unsubscribe(email, "bounce")
+            db.add_opt_out(email, reason=f"brevo_{event_type}")
         elif db_event == "unsubscribe":
-            compliance.add_opt_out(email)
+            compliance.add_unsubscribe(email, "unsubscribe")
+            db.add_opt_out(email, reason=f"brevo_{event_type}")
 
     except Exception as e:
         log.error(f"[WEBHOOK] Hata: {e}")
@@ -2879,7 +2881,12 @@ def cron_run_cycle():
         batch_size = min(10, remaining)
         _auto_log(f"📊 Bugün gönderilen: {today_sent}/{config.DAILY_SEND_LIMIT}, kalan: {remaining}")
 
-        if batch_size > 0:
+        # ★ SAAT KONTROLÜ — gece gönderimi engelle (08:00-18:00 CET)
+        current_hour = datetime.now().hour
+        if current_hour < 8 or current_hour >= 18:
+            _auto_log(f"⏰ Gece saati (saat {current_hour}:00) — Phase 3 atlanıyor. İzin: 08:00-18:00")
+            results["phase_3_send"] = {"sent": 0, "skipped": "night_hours", "hour": current_hour}
+        elif batch_size > 0:
             unsent = db.get_unsent_leads(limit=batch_size)
             if unsent:
                 _auto_log(f"📋 {len(unsent)} gönderilmemiş lead bulundu")
@@ -2892,6 +2899,16 @@ def cron_run_cycle():
                             continue
 
                         if db.is_duplicate_email(email_addr):
+                            continue
+
+                        # ★ COMPLIANCE KONTROLÜ — unsubscribed/opt-out kontrolü
+                        if db.is_unsubscribed(email_addr):
+                            _auto_log(f"⛔ Opt-out/unsubscribe: {email_addr} — atlanıyor")
+                            continue
+
+                        ok, reason = compliance.is_ok_to_send(email_addr)
+                        if not ok:
+                            _auto_log(f"⛔ Compliance engeli: {email_addr} — {reason}")
                             continue
 
                         # ReconAgent
@@ -2940,11 +2957,23 @@ def cron_run_cycle():
                         except Exception:
                             pass
 
-                        # Gönder
+                        # Gönder — template ile sar
                         if send_engine:
+                            # Template engine ile body_html'i sar
+                            try:
+                                from core.template_engine import TemplateEngine
+                                _te = TemplateEngine()
+                                wrapped_html = _te.render(
+                                    body_html=body_html,
+                                    company_name=company,
+                                    sector=sector,
+                                )
+                            except Exception:
+                                wrapped_html = body_html  # fallback
+
                             msg = EmailMessage(
                                 to_email=email_addr, to_name=company,
-                                subject=subject, html_body=body_html,
+                                subject=subject, html_body=wrapped_html,
                                 text_body=body_text, lead_id=email_addr,
                             )
                             result = send_engine.send(msg)
