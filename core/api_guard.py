@@ -1,17 +1,16 @@
 """
-core/api_guard.py — Self-Healing API Guard (Rate Limit + Circuit Breaker)
-Tüm Claude API çağrılarını merkezi olarak korur.
-- Otomatik retry + exponential backoff (429 hatalarında)
-- Token-bucket rate limiter (dakika başı istek sınırı)
-- Circuit breaker (art arda hata → geçici durdurma)
-- Retry-After header desteği
-- Thread-safe (otomasyon pipeline ile uyumlu)
+core/api_guard.py — Self-Healing API Guard (Gemini + Claude)
+Tüm AI API çağrılarını merkezi olarak korur.
+- Otomatik Gemini ↔ Claude payload dönüşümü
+- Rate limiter + exponential backoff + circuit breaker
+- Thread-safe
 
-Kullanım:
+Kullanım — agent'lar hiç değişmeden çalışır:
     from core.api_guard import api_guard
     response = api_guard.call(payload, headers)
 """
 import time
+import json
 import threading
 import requests
 from core.logger import get_logger
@@ -19,79 +18,75 @@ from core.logger import get_logger
 log = get_logger("api_guard")
 
 CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 
 
 class APIGuard:
-    """Self-healing, rate-limit-aware API caller for Claude."""
+    """Self-healing, rate-limit-aware API caller — Gemini & Claude."""
 
     def __init__(
         self,
-        max_requests_per_minute: int = 4,
-        max_retries: int = 4,
-        base_backoff_seconds: float = 12.0,
-        circuit_breaker_threshold: int = 5,
-        circuit_breaker_cooldown: int = 120,
+        max_requests_per_minute: int = 14,
+        max_retries: int = 3,
+        base_backoff_seconds: float = 5.0,
+        circuit_breaker_threshold: int = 8,
+        circuit_breaker_cooldown: int = 90,
     ):
-        # Rate limiter — token bucket (thread-safe)
         self._lock = threading.Lock()
         self._max_rpm = max_requests_per_minute
         self._request_timestamps: list[float] = []
 
-        # Retry settings
         self._max_retries = max_retries
         self._base_backoff = base_backoff_seconds
 
-        # Circuit breaker
         self._consecutive_failures = 0
         self._cb_threshold = circuit_breaker_threshold
         self._cb_cooldown = circuit_breaker_cooldown
         self._circuit_open_until: float = 0
 
-        # Stats
         self._total_calls = 0
         self._total_retries = 0
         self._total_429s = 0
         self._total_successes = 0
 
+        # Provider detection
+        from config import config as cfg
+        self._provider = cfg.AI_PROVIDER  # "gemini" or "claude"
+        self._gemini_key = cfg.GEMINI_API_KEY
+        self._gemini_model = cfg.GEMINI_MODEL
+
+        provider_name = "Gemini 2.0 Flash" if self._provider == "gemini" else "Claude"
         log.info(
-            f"[API Guard] Hazır — {max_requests_per_minute} req/dk, "
-            f"max {max_retries} retry, circuit breaker: {circuit_breaker_threshold} hata"
+            f"[API Guard] {provider_name} — {max_requests_per_minute} req/dk, "
+            f"max {max_retries} retry"
         )
 
     # ─── RATE LIMITER ────────────────────────────────────────────
 
     def _wait_for_rate_limit(self):
-        """Token-bucket: dakika başı max N istek. Gerekirse bekler."""
         with self._lock:
             now = time.time()
             one_minute_ago = now - 60
-
-            # Eski timestamp'leri temizle
             self._request_timestamps = [
                 ts for ts in self._request_timestamps if ts > one_minute_ago
             ]
-
             if len(self._request_timestamps) >= self._max_rpm:
-                # En eski isteğin 1 dakika dolmasını bekle
                 oldest = self._request_timestamps[0]
-                wait = (oldest + 60) - now + 0.5  # +0.5s güvenlik payı
+                wait = (oldest + 60) - now + 0.5
                 if wait > 0:
-                    log.info(f"[API Guard] Rate limit — {wait:.1f}sn bekleniyor ({len(self._request_timestamps)}/{self._max_rpm} req/dk)")
+                    log.info(f"[API Guard] Rate limit — {wait:.1f}sn bekleniyor")
                     time.sleep(wait)
-
             self._request_timestamps.append(time.time())
 
     # ─── CIRCUIT BREAKER ─────────────────────────────────────────
 
     def _check_circuit_breaker(self) -> bool:
-        """Circuit breaker açık mı kontrol et."""
         if self._circuit_open_until > 0:
             if time.time() < self._circuit_open_until:
                 remaining = int(self._circuit_open_until - time.time())
                 log.warning(f"[API Guard] Circuit breaker AÇIK — {remaining}sn kaldı")
                 return False
             else:
-                # Cooldown bitti, circuit'i kapat
                 log.info("[API Guard] Circuit breaker kapandı — tekrar deneniyor")
                 self._circuit_open_until = 0
                 self._consecutive_failures = 0
@@ -106,9 +101,87 @@ class APIGuard:
         if self._consecutive_failures >= self._cb_threshold:
             self._circuit_open_until = time.time() + self._cb_cooldown
             log.error(
-                f"[API Guard] ⚠️ Circuit breaker AÇILDI — {self._consecutive_failures} art arda hata! "
-                f"{self._cb_cooldown}sn bekleniyor..."
+                f"[API Guard] ⚠️ Circuit breaker AÇILDI — {self._consecutive_failures} art arda hata!"
             )
+
+    # ─── CLAUDE → GEMINI PAYLOAD DÖNÜŞÜMÜ ────────────────────────
+
+    def _claude_to_gemini(self, payload: dict) -> tuple[str, dict]:
+        """
+        Claude formatındaki payload'ı Gemini formatına çevirir.
+        Returns: (url, gemini_payload)
+        """
+        messages = payload.get("messages", [])
+        max_tokens = payload.get("max_tokens", 4096)
+
+        # Claude messages → Gemini contents
+        contents = []
+        for msg in messages:
+            role = "user" if msg.get("role") == "user" else "model"
+            text = msg.get("content", "")
+            # Handle content that's a list (Claude format)
+            if isinstance(text, list):
+                text = " ".join(
+                    part.get("text", "") for part in text if isinstance(part, dict)
+                )
+            contents.append({
+                "role": role,
+                "parts": [{"text": str(text)}]
+            })
+
+        gemini_payload = {
+            "contents": contents,
+            "generationConfig": {
+                "maxOutputTokens": max_tokens,
+                "temperature": 0.7,
+            }
+        }
+
+        # System instruction (from Claude system field)
+        system = payload.get("system")
+        if system:
+            gemini_payload["systemInstruction"] = {
+                "parts": [{"text": system}]
+            }
+
+        model = self._gemini_model
+        url = GEMINI_API_URL.format(model=model) + f"?key={self._gemini_key}"
+        return url, gemini_payload
+
+    def _gemini_to_claude_response(self, gemini_resp: requests.Response) -> requests.Response:
+        """
+        Gemini'nin response'ını Claude response formatına çevirir.
+        Agent'lar fark etmeden çalışmaya devam eder.
+        """
+        try:
+            data = gemini_resp.json()
+            # Extract text from Gemini response
+            text = ""
+            candidates = data.get("candidates", [])
+            if candidates:
+                parts = candidates[0].get("content", {}).get("parts", [])
+                text = " ".join(p.get("text", "") for p in parts)
+
+            # Build Claude-compatible response
+            claude_format = {
+                "content": [{"type": "text", "text": text}],
+                "model": self._gemini_model,
+                "role": "assistant",
+                "stop_reason": "end_turn",
+                "usage": data.get("usageMetadata", {})
+            }
+
+            # Create a fake Response object that looks like Claude's
+            fake_resp = requests.models.Response()
+            fake_resp.status_code = 200
+            fake_resp._content = json.dumps(claude_format).encode("utf-8")
+            fake_resp.headers["content-type"] = "application/json"
+            fake_resp.encoding = "utf-8"
+            return fake_resp
+
+        except Exception as e:
+            log.error(f"[API Guard] Gemini response parse hatası: {e}")
+            return gemini_resp
 
     # ─── ANA API ÇAĞRISI ─────────────────────────────────────────
 
@@ -119,32 +192,39 @@ class APIGuard:
         timeout: int = 60,
     ) -> requests.Response | None:
         """
-        Claude API'yi çağır — rate limit + retry + circuit breaker korumalı.
-        Başarılı → Response döner.
-        Başarısız → None döner (exception fırlatmaz, pipeline çökmez).
+        AI API'yi çağır — provider'a göre otomatik yönlendir.
+        Agent'lar Claude formatında payload gönderir,
+        api_guard otomatik olarak Gemini'ye çevirir.
         """
         self._total_calls += 1
 
-        # Circuit breaker kontrolü
         if not self._check_circuit_breaker():
             return None
 
-        # Rate limiter — gerekirse bekle
         self._wait_for_rate_limit()
 
-        # Retry loop with exponential backoff
+        # Provider'a göre URL ve payload belirle
+        if self._provider == "gemini":
+            url, actual_payload = self._claude_to_gemini(payload)
+            actual_headers = {"Content-Type": "application/json"}
+            is_gemini = True
+        else:
+            url = CLAUDE_API_URL
+            actual_payload = payload
+            actual_headers = headers
+            is_gemini = False
+
         for attempt in range(self._max_retries + 1):
             try:
                 resp = requests.post(
-                    CLAUDE_API_URL,
-                    json=payload,
-                    headers=headers,
+                    url,
+                    json=actual_payload,
+                    headers=actual_headers,
                     timeout=timeout,
                 )
 
                 if resp.status_code == 429:
                     self._total_429s += 1
-                    # Retry-After header kontrolü
                     wait_time = self._base_backoff * (2 ** attempt)
                     retry_after = resp.headers.get("retry-after")
                     if retry_after:
@@ -152,8 +232,6 @@ class APIGuard:
                             wait_time = max(wait_time, float(retry_after))
                         except (ValueError, TypeError):
                             pass
-
-                    # Max wait cap: 120 saniye
                     wait_time = min(wait_time, 120)
 
                     if attempt < self._max_retries:
@@ -169,12 +247,11 @@ class APIGuard:
                         self._record_failure()
                         return None
 
-                if resp.status_code == 529:
-                    # Anthropic overloaded
-                    wait_time = 30 * (attempt + 1)
+                if resp.status_code in (529, 503):
+                    wait_time = 15 * (attempt + 1)
                     if attempt < self._max_retries:
                         self._total_retries += 1
-                        log.warning(f"[API Guard] 529 Overloaded — {wait_time}sn bekleniyor")
+                        log.warning(f"[API Guard] {resp.status_code} — {wait_time}sn bekleniyor")
                         time.sleep(wait_time)
                         continue
                     else:
@@ -183,10 +260,12 @@ class APIGuard:
 
                 if resp.ok:
                     self._record_success()
+                    # Gemini response'ı Claude formatına çevir
+                    if is_gemini:
+                        return self._gemini_to_claude_response(resp)
                     return resp
 
-                # Diğer hatalar (400, 401, 500, vb.) — retry yok
-                log.warning(f"[API Guard] API hata: {resp.status_code}")
+                log.warning(f"[API Guard] API hata: {resp.status_code} — {resp.text[:200]}")
                 self._record_failure()
                 return resp
 
@@ -219,6 +298,8 @@ class APIGuard:
 
     def get_stats(self) -> dict:
         return {
+            "provider": self._provider,
+            "model": self._gemini_model if self._provider == "gemini" else "claude",
             "total_calls": self._total_calls,
             "total_successes": self._total_successes,
             "total_retries": self._total_retries,

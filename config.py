@@ -9,6 +9,9 @@ load_dotenv()
 
 class Config:
     # ─── AI ──────────────────────────────────────────────────────
+    AI_PROVIDER        = os.getenv("AI_PROVIDER", "gemini")  # "gemini" veya "claude"
+    GEMINI_API_KEY     = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_MODEL       = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
     ANTHROPIC_API_KEY  = os.getenv("ANTHROPIC_API_KEY", "")
     CLAUDE_MODEL       = "claude-haiku-4-5-20251001"
 
@@ -93,7 +96,9 @@ class Config:
 
     def validate(self) -> list[str]:
         errors = []
-        if not self.ANTHROPIC_API_KEY:
+        if self.AI_PROVIDER == "gemini" and not self.GEMINI_API_KEY:
+            errors.append("GEMINI_API_KEY eksik")
+        elif self.AI_PROVIDER == "claude" and not self.ANTHROPIC_API_KEY:
             errors.append("ANTHROPIC_API_KEY eksik")
         if not self.BREVO_API_KEY and not self.BREVO_SMTP_PASS:
             errors.append("BREVO_API_KEY veya BREVO_SMTP_PASS gerekli")

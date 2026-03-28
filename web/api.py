@@ -788,17 +788,12 @@ JSON formatında cevap ver (yalnızca JSON, başka metin olmasın):
             from config import config as cfg
             from core.api_guard import api_guard
 
-            headers = {
-                "x-api-key": cfg.ANTHROPIC_API_KEY,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            }
+            # api_guard otomatik olarak Gemini'ye çevirir
             payload = {
-                "model": "claude-sonnet-4-20250514",
                 "max_tokens": 4096,
                 "messages": [{"role": "user", "content": prompt}],
             }
-            resp = api_guard.call(payload, headers, timeout=120)
+            resp = api_guard.call(payload, {}, timeout=120)
 
             if resp and resp.ok:
                 result = resp.json()
