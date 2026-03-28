@@ -112,6 +112,18 @@ body {
 
 .sidebar-brand h1 { font-size: 17px; font-weight: 800; letter-spacing: -0.4px; }
 .brand-sub { font-size: 10px; color: var(--purple); font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px; }
+.app-version {
+    display: inline-block;
+    margin-top: 4px;
+    font-size: 9px;
+    font-weight: 700;
+    color: rgba(124,92,252,0.7);
+    background: rgba(124,92,252,0.1);
+    border: 1px solid rgba(124,92,252,0.2);
+    padding: 2px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.5px;
+}
 
 .sidebar-nav {
     flex: 1;
