@@ -193,6 +193,7 @@ Gebruik INLINE CSS op elk element. Geen <html>, <head>, <body> tags nodig.
    <p style="margin:24px 0 0;font-size:15px;color:#333;line-height:1.7;">
    Met vriendelijke groet,<br>
    <strong>FleetTrack Holland Team</strong><br>
+   <a href="https://www.fleettrackholland.nl" style="color:#CC0000;text-decoration:none;font-weight:600;font-size:14px;">www.fleettrackholland.nl</a><br>
    <span style="font-size:13px;color:#888;">sales@fleettrackholland.nl</span></p>
 
 ═══ SCHRIJFREGELS — NIET ONDERHANDELBAAR ═══
@@ -204,7 +205,7 @@ Gebruik INLINE CSS op elk element. Geen <html>, <head>, <body> tags nodig.
 6. Benoem de berekende maandprijs als voertuigaantal bekend is
 7. Gebruik "▸" als bullet — geen andere bullets
 8. GEEN CTA-knop genereren — de template doet dit automatisch
-9. Ondertekening: "Met vriendelijke groet," + "FleetTrack Holland Team" + sales@fleettrackholland.nl
+9. Ondertekening: "Met vriendelijke groet," + "FleetTrack Holland Team" + www.fleettrackholland.nl + sales@fleettrackholland.nl
 10. GEEN telefoonnummer
 11. GEEN footer of afmeldlink — de template doet dit
 12. Alles in het Nederlands

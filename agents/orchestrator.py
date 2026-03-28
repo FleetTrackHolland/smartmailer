@@ -26,6 +26,7 @@ from agents.response_tracker import ResponseTracker
 from agents.lead_finder import LeadFinder
 from agents.sending_strategist import SendingStrategist
 from agents.churn_analyst import ChurnAnalyst
+from core.template_engine import TemplateEngine
 
 log = get_logger("orchestrator")
 
@@ -55,6 +56,7 @@ class Orchestrator:
         self.lead_finder     = LeadFinder()
         self.strategist      = SendingStrategist()
         self.churn_analyst   = ChurnAnalyst()
+        self.template_engine = TemplateEngine()
         self.watchdog        = WatchdogAgent(
             agents={
                 "copywriter":    self.copywriter,
@@ -293,12 +295,19 @@ class Orchestrator:
                 log.info(f"[REVIEW] Reddedildi: {company}")
                 return
 
-        # 6. Gönder
+        # 6. Template ile sar ve gönder
+        sector = (lead.get("sector") or lead.get("Sector") or "").lower()
+        wrapped_html = self.template_engine.render(
+            body_html=draft.body_html,
+            company_name=company,
+            sector=sector,
+        )
+
         msg = EmailMessage(
             to_email=email,
             to_name=company,
             subject=chosen_subject,
-            html_body=draft.body_html,
+            html_body=wrapped_html,
             text_body=draft.body_text,
             campaign_id=campaign_id,
             lead_id=email,
@@ -403,11 +412,19 @@ class Orchestrator:
 
         for fu in pending:
             try:
+                # Follow-up e-postalarını da template ile sar
+                fu_sector = fu.get("sector", "")
+                fu_wrapped_html = self.template_engine.render(
+                    body_html=fu["body_html"],
+                    company_name=fu.get("company", ""),
+                    sector=fu_sector,
+                )
+
                 msg = EmailMessage(
                     to_email=fu["email"],
                     to_name=fu.get("company", ""),
                     subject=fu["subject"],
-                    html_body=fu["body_html"],
+                    html_body=fu_wrapped_html,
                     text_body=fu["body_text"],
                     campaign_id="followup",
                     lead_id=fu["email"],
